@@ -11441,8 +11441,11 @@ Sobrevoo Sem Pouso dentro dos limites da FIR: NÃO
     ['exportBtn','showProtocolBtn','exactMessageBtn','copySummaryBtn','restartBtn','prevBtn','playBtn','nextBtn','scrubber','speedSelect','soundBtn','fpvToggleBtn','stripToggleBtn']
       .forEach(id => { els[id].disabled = !enabled; });
     if (enabled && state.parsed) {
-      els.scrubber.max = String(Math.max(0, state.parsed.events.length - 1));
+      const lastIndex = Math.max(0, state.parsed.events.length - 1);
+      els.scrubber.max = String(lastIndex);
       els.endTimeLabel.textContent = state.parsed.events[state.parsed.events.length - 1].time || '--:--:--';
+      els.prevBtn.disabled = state.index <= 0;
+      els.nextBtn.disabled = state.index >= lastIndex;
     } else {
       els.scrubber.max = '0';
       els.endTimeLabel.textContent = '--:--:--';
