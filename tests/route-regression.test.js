@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { spawnSync } = require('node:child_process');
 
 function loadRouteApi(htmlPath) {
   const html = fs.readFileSync(htmlPath, 'utf8');
@@ -143,13 +144,18 @@ function installCriticalFixture(api, sandbox) {
 
 const ROOT = process.env.FLIGHTFLOW_ROOT || path.resolve(__dirname, '..');
 const HTML = process.env.FLIGHTFLOW_HTML || path.resolve(ROOT, 'index.html');
+const BASELINE_COMMIT = '73ebac3a9ad2ee4add6cf4a9d5eb2602e1d3bc97';
+const BASELINE_SHA256 = '1a4ec449abd99ac34ffd5eeec91baa2c9975058b9459bf1952309c2fe0eac96f';
 const { api, sandbox } = loadRouteApi(HTML);
 
-test('baseline congelada mantém o SHA-256 conhecido', () => {
-  const baseline = path.resolve(ROOT, 'baseline', 'FlightFlow_TIOP_CINDACTA1_NOVO.html');
-  assert.ok(fs.existsSync(baseline), 'cópia congelada da baseline deve existir');
-  const digest = crypto.createHash('sha256').update(fs.readFileSync(baseline)).digest('hex');
-  assert.equal(digest, '1a4ec449abd99ac34ffd5eeec91baa2c9975058b9459bf1952309c2fe0eac96f');
+test('baseline Git mantém o SHA-256 conhecido', () => {
+  const shown = spawnSync('git', ['show', `${BASELINE_COMMIT}:index.html`], {
+    cwd: ROOT, encoding: null, maxBuffer: 8 * 1024 * 1024,
+  });
+  // Em uma cópia sem o histórico Git completo, usa o index atual apenas como fallback local.
+  const bytes = shown.status === 0 ? shown.stdout : fs.readFileSync(HTML);
+  const digest = crypto.createHash('sha256').update(bytes).digest('hex');
+  assert.equal(digest, BASELINE_SHA256, 'o conteúdo do commit de baseline não pode mudar');
 });
 
 test('baseline expõe API pública v7.4.12 necessária aos testes', () => {
