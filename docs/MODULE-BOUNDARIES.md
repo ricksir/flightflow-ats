@@ -13,7 +13,7 @@ A baseline lógica anterior à primeira extração possuía:
 - **711 nomes únicos**;
 - **11 nomes de função repetidos** em mais de uma declaração.
 
-Esses números são um **guardrail de arquitetura**, não uma métrica de qualidade isolada. Uma repetição pode ser legítima quando as declarações vivem em IIFEs diferentes. Após a extração do `FlightParser`, o inventário continua seguindo o arquivo externo para não perder visibilidade sobre essas funções.
+Esses números são um **guardrail de arquitetura**, não uma métrica de qualidade isolada. Uma repetição pode ser legítima quando as declarações vivem em IIFEs diferentes. O inventário segue os arquivos externos para que mover código para `src/` não reduza artificialmente a visibilidade arquitetural.
 
 ## As 8 fronteiras atuais
 
@@ -26,7 +26,7 @@ Esses números são um **guardrail de arquitetura**, não uma métrica de qualid
 | 5 | motor de IA/governança (`AI_ENGINE_VERSION`) | IIFE relativamente independente | após módulos já isolados |
 | 6 | `flightflow-secure-storage-module` | IIFE identificado e especializado em armazenamento | **3** |
 | 7 | camada FIR v7.3.5, ligada a `window.__FlightFlowFirBridge` | extensão especializada sobre a ponte do mapa | **4** |
-| 8 | `flightflow-route-processed-v7412` / `window.FlightFlowRouteProcessedV7412` | IIFE com API pública e suíte de regressão dedicada | **2** |
+| 8 | `flightflow-route-processed-v7412` / `window.FlightFlowRouteProcessedV7412` | **extraído para `src/route/route-processed-v7412.js`**; API e inicialização preservadas | concluída |
 
 ## Nomes repetidos catalogados
 
@@ -57,7 +57,7 @@ O inventário é propositalmente conservador: ele não chama essas ocorrências 
 
 ### 1. FlightParser — concluído
 
-A primeira extração move o UMD existente para `src/parser/flight-parser.js` e mantém os contratos anteriores:
+O UMD existente foi movido para `src/parser/flight-parser.js` mantendo:
 
 - `window.FlightParser` no navegador;
 - `module.exports` para testes Node/CommonJS;
@@ -66,20 +66,21 @@ A primeira extração move o UMD existente para `src/parser/flight-parser.js` e 
 
 O contrato é protegido por `tests/parser-module.test.js` e pelos testes de navegador.
 
-### 2. Rota Processada v7.4.12
+### 2. Rota Processada v7.4.12 — concluído nesta etapa
 
-Por que em seguida:
+O IIFE existente foi movido para `src/route/route-processed-v7412.js` mantendo:
 
-- possui `id` próprio no `<script>`;
-- impede dupla inicialização com `window.FlightFlowRouteProcessedV7412`;
-- já expõe API pública;
-- a suíte `tests/route-regression.test.js` cobre a lógica mais sensível de DEP, ETIM, progressão e evento 78→79.
+- o guard contra dupla inicialização `window.FlightFlowRouteProcessedV7412`;
+- a versão pública `7.4.12`;
+- o mesmo gancho de inicialização por `DOMContentLoaded`/`setTimeout`;
+- a mesma API pública construída por `publicApi()`;
+- a mesma cobertura de DEP, ETIM, progressão e do caso crítico evento 78→79.
 
-A extração só deve trocar o local físico do código; a API pública e o comportamento devem permanecer idênticos.
+A suíte `tests/route-regression.test.js` passou a carregar o arquivo externo diretamente no sandbox de regressão, sem alterar os fixtures nem as expectativas de rota.
 
 ### 3. Secure Storage
 
-O bloco `flightflow-secure-storage-module` já tem responsabilidade específica, nome próprio e fronteira clara. Deve ser extraído depois que o padrão de carregamento externo estiver comprovado nos dois primeiros módulos.
+O bloco `flightflow-secure-storage-module` já tem responsabilidade específica, nome próprio e fronteira clara. É o próximo candidato depois que as duas primeiras extrações externas estiverem comprovadas pelo CI e pelo navegador.
 
 ### 4. FIR
 
@@ -110,4 +111,4 @@ Somente depois das extrações de baixo risco. O bloco principal concentra respo
 
 ## Próximo candidato concreto
 
-Após validar e mesclar a extração do `FlightParser`, o próximo candidato é **Rota Processada v7.4.12 → `src/route/route-processed-v7412.js`**, preservando `window.FlightFlowRouteProcessedV7412`, seu mecanismo de inicialização e a suíte dedicada do caso crítico 78→79.
+Depois de validar e mesclar a Rota Processada v7.4.12, o próximo candidato é **Secure Storage → `src/storage/secure-storage.js`**, preservando seu identificador, suas chaves de armazenamento, API/efeitos globais e qualquer integração com snapshots antes de qualquer limpeza interna.
