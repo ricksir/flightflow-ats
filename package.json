@@ -7,7 +7,8 @@
     "test": "node --test tests/*.test.js",
     "test:ui": "playwright test",
     "audit": "python3 tools/audit_static.py index.html",
-    "check": "npm run audit && npm test && npm run test:ui"
+    "inventory": "python3 tools/function_inventory.py index.html --check",
+    "check": "npm run audit && npm run inventory && npm test && npm run test:ui"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1"
