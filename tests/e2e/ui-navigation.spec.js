@@ -7,7 +7,16 @@ async function loadDemo(page) {
   else await page.locator('#demoBtn').click();
 
   await expect(page.locator('#scrubber')).toBeEnabled();
+  await expect(page.locator('.timeline-item')).not.toHaveCount(0);
+
+  // Os botões de demonstração chamam loadDemo(true): a aplicação inicia o autoplay
+  // cerca de 500 ms depois. Esperamos esse estado e usamos Reiniciar, que para a
+  // reprodução e volta ao evento 1. Assim todos os cenários começam determinísticos.
+  await expect(page.locator('#playBtn')).toHaveAttribute('title', /Pausar/, { timeout: 5_000 });
+  await page.locator('#restartBtn').click();
+  await expect(page.locator('#playBtn')).toHaveAttribute('title', /Reproduzir/);
   await expect(page.locator('#frameCounter')).toContainText('1 / ');
+  expect(await page.locator('#scrubber').inputValue()).toBe('0');
   expect(await page.locator('.timeline-item').count()).toBeGreaterThan(2);
 }
 
@@ -110,13 +119,11 @@ test('Home e End respeitam os limites e desabilitam os botões corretos', async 
 });
 
 test('autoplay avança e uma navegação manual interrompe a reprodução', async ({ page }) => {
-  // Em 4× a demonstração pode terminar antes que uma asserção observe o estado transitório "Pausar".
-  // Velocidade normal mantém a reprodução ativa tempo suficiente e testa o mesmo contrato funcional.
   await page.locator('#speedSelect').selectOption('1');
   await page.locator('#playBtn').click();
   await expect(page.locator('#playBtn')).toHaveAttribute('title', /Pausar/);
 
-  await expect.poll(async () => Number(await page.locator('#scrubber').inputValue()), { timeout: 3_000 }).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await page.locator('#scrubber').inputValue()), { timeout: 3_500 }).toBeGreaterThan(0);
   const beforeManual = Number(await page.locator('#scrubber').inputValue());
 
   await page.locator('#nextBtn').click();
