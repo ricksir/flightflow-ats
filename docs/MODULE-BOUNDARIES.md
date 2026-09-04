@@ -24,8 +24,8 @@ Esses números são um **guardrail de arquitetura**, não uma métrica de qualid
 | 3 | `window.__FLIGHTFLOW_GEO_DATA__` | grande base geográfica serializada, sem funções nomeadas | posterior |
 | 4 | IIFE principal da aplicação (`FlightFlow ATS - TIOP Cindacta1`) | maior núcleo: estado, UI, timeline, mapa e integrações | **por último** |
 | 5 | motor de IA/governança (`AI_ENGINE_VERSION`) | IIFE relativamente independente | após módulos já isolados |
-| 6 | `flightflow-secure-storage-module` | IIFE identificado e especializado em armazenamento | **3** |
-| 7 | camada FIR v7.3.5, ligada a `window.__FlightFlowFirBridge` | extensão especializada sobre a ponte do mapa | **4** |
+| 6 | `flightflow-secure-storage-module` / `window.FlightFlowStorage` | **extraído para `src/storage/secure-storage.js`**; IndexedDB, API e autosave preservados | concluída |
+| 7 | camada FIR v7.3.5, ligada a `window.__FlightFlowFirBridge` | extensão especializada sobre a ponte do mapa | próxima |
 | 8 | `flightflow-route-processed-v7412` / `window.FlightFlowRouteProcessedV7412` | **extraído para `src/route/route-processed-v7412.js`**; API e inicialização preservadas | concluída |
 
 ## Nomes repetidos catalogados
@@ -66,7 +66,7 @@ O UMD existente foi movido para `src/parser/flight-parser.js` mantendo:
 
 O contrato é protegido por `tests/parser-module.test.js` e pelos testes de navegador.
 
-### 2. Rota Processada v7.4.12 — concluído nesta etapa
+### 2. Rota Processada v7.4.12 — concluído
 
 O IIFE existente foi movido para `src/route/route-processed-v7412.js` mantendo:
 
@@ -78,13 +78,37 @@ O IIFE existente foi movido para `src/route/route-processed-v7412.js` mantendo:
 
 A suíte `tests/route-regression.test.js` passou a carregar o arquivo externo diretamente no sandbox de regressão, sem alterar os fixtures nem as expectativas de rota.
 
-### 3. Secure Storage
+### 3. Secure Storage — concluído nesta etapa
 
-O bloco `flightflow-secure-storage-module` já tem responsabilidade específica, nome próprio e fronteira clara. É o próximo candidato depois que as duas primeiras extrações externas estiverem comprovadas pelo CI e pelo navegador.
+O IIFE `flightflow-secure-storage-module` foi movido para `src/storage/secure-storage.js` sem alterar a implementação interna. Foram preservados:
 
-### 4. FIR
+- `window.FlightFlowStorage`;
+- `APP_VERSION = FINAL-OFICIAL-SECURE-1.1`;
+- `SCHEMA_VERSION = 1` e `FlightFlowSecureDB`;
+- stores, tombstones, backups, metadados e hashes;
+- reconhecimento das chaves legadas de configuração, localidades, aeródromos, geodados e IA;
+- autosave/snapshot por `scheduleSnapshot()` e `flush()`;
+- exportação/importação/validação/restauração de backup;
+- restauração de histórico por `selectFile`/`loadFile` quando esses hooks globais existem;
+- auto-inicialização via `DOMContentLoaded`.
 
-A camada FIR depende explicitamente de `window.__FlightFlowFirBridge`. Antes da extração, a ponte precisa ser documentada como contrato de entrada.
+Os consumidores que aparecem antes do módulo continuam usando `window.FlightFlowStorage?.scheduleSnapshot(...)`, portanto permanecem tolerantes ao módulo ainda não ter sido carregado naquele instante. O contrato é protegido por `tests/storage-module.test.js` e por um smoke test Playwright em Chrome real.
+
+### 4. FIR — próxima fronteira
+
+A camada FIR depende explicitamente de `window.__FlightFlowFirBridge`. Antes do corte físico, o contrato da ponte deve ficar congelado em teste. A dependência observada inclui pelo menos:
+
+- `state`;
+- `realMapState`;
+- `normalizeLocalityCode`;
+- `closeLeafletRing`;
+- `sanitizeLeafletAreaPoints`;
+- `projectGeo`;
+- `polygonCentroid`;
+- `escapeHtml`;
+- `toast`.
+
+A primeira extração FIR deve apenas mover o IIFE para `src/map/fir-layers.js`, preservando a chave `flightflow-manual-firs-v1`, o catálogo FIR, `window.renderManualFirLayers` e os listeners já existentes.
 
 ### 5. IIFE principal
 
@@ -111,4 +135,4 @@ Somente depois das extrações de baixo risco. O bloco principal concentra respo
 
 ## Próximo candidato concreto
 
-Depois de validar e mesclar a Rota Processada v7.4.12, o próximo candidato é **Secure Storage → `src/storage/secure-storage.js`**, preservando seu identificador, suas chaves de armazenamento, API/efeitos globais e qualquer integração com snapshots antes de qualquer limpeza interna.
+Depois de validar e mesclar o Secure Storage, o próximo candidato é **FIR → `src/map/fir-layers.js`**. Antes disso, deve ser criado um teste que congele o contrato de `window.__FlightFlowFirBridge` e a presença de `window.renderManualFirLayers`, evitando que a extração transforme dependências implícitas do mapa em regressões silenciosas.
