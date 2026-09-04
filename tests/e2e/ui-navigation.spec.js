@@ -1,11 +1,7 @@
-const path = require('node:path');
-const { pathToFileURL } = require('node:url');
 const { test, expect } = require('@playwright/test');
 
-const APP_URL = pathToFileURL(path.resolve(__dirname, '../../index.html')).href;
-
 async function loadDemo(page) {
-  await page.goto(APP_URL, { waitUntil: 'load' });
+  await page.goto('/index.html', { waitUntil: 'load' });
   const overlayDemo = page.locator('#overlayDemoBtn');
   if (await overlayDemo.isVisible()) await overlayDemo.click();
   else await page.locator('#demoBtn').click();
