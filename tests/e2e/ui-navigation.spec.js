@@ -8,6 +8,12 @@ async function loadDemo(page) {
 
   await expect(page.locator('#scrubber')).toBeEnabled();
   await expect(page.locator('#frameCounter')).toContainText('1 / ');
+  expect(await page.locator('.timeline-item').count()).toBeGreaterThan(2);
+}
+
+async function openTimeline(page) {
+  await page.locator('.tab[data-tab="timeline"]').click();
+  await expect(page.locator('[data-panel="timeline"]')).toHaveClass(/active/);
   await expect(page.locator('.timeline-item').first()).toBeVisible();
 }
 
@@ -44,6 +50,9 @@ test('demonstração habilita timeline e controles no primeiro evento', async ({
   await expect(page.locator('#nextBtn')).toBeEnabled();
   expect(await page.locator('#scrubber').inputValue()).toBe('0');
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '0');
+
+  await openTimeline(page);
+  await expect(page.locator('.timeline-item.active')).toBeVisible();
 });
 
 test('Próximo e Anterior mantêm scrubber, frame e seleção sincronizados', async ({ page }) => {
@@ -64,6 +73,7 @@ test('Próximo, clique na timeline e scrubber convergem para o mesmo estado vis�
   expect(viaNext.activeIndex).toBe('3');
 
   await page.locator('#restartBtn').click();
+  await openTimeline(page);
   await page.locator('.timeline-item[data-event-index="3"]').click();
   const viaTimeline = await visibleState(page);
 
