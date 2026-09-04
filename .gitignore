@@ -1,0 +1,20 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary / local exports
+*.tmp
+*.log
+backups/
+exports/
+
+# Python cache used by local tooling
+__pycache__/
+*.pyc
+
+# Never commit local secrets
+.env
+.env.*
+!.env.example
