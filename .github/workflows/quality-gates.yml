@@ -12,7 +12,9 @@ permissions:
 jobs:
   regression-and-static-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,8 +31,17 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+
       - name: Static audit
         run: npm run audit
 
       - name: Timeline and route regression tests
         run: npm test
+
+      - name: Browser availability
+        run: google-chrome --version
+
+      - name: UI navigation regression tests
+        run: npm run test:ui
