@@ -55,12 +55,12 @@ test.beforeEach(async ({ page }) => {
 test('demonstração habilita timeline e inicia no primeiro evento', async ({ page }) => {
   const total = await page.locator('.timeline-item').count();
   expect(total).toBeGreaterThan(2);
+  await expect(page.locator('#prevBtn')).toBeDisabled();
   await expect(page.locator('#nextBtn')).toBeEnabled();
   expect(await page.locator('#scrubber').inputValue()).toBe('0');
   await expect(page.locator('#frameCounter')).toContainText('1 / ');
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '0');
 
-  // O estado disabled de Anterior no evento 1 é um bug conhecido e rastreado separadamente (#4).
   await openTimeline(page);
   await expect(page.locator('.timeline-item.active')).toBeVisible();
 });
@@ -75,6 +75,7 @@ test('Próximo e Anterior mantêm scrubber, frame e seleção sincronizados', as
   expect(await page.locator('#scrubber').inputValue()).toBe('0');
   await expect(page.locator('#frameCounter')).toContainText('1 / ');
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '0');
+  await expect(page.locator('#prevBtn')).toBeDisabled();
 });
 
 test('Próximo, clique na timeline e scrubber convergem para o mesmo estado visível', async ({ page }) => {
@@ -103,6 +104,7 @@ test('teclado ArrowRight e ArrowLeft usa a mesma navegação da interface', asyn
   await page.keyboard.press('ArrowLeft');
   expect(await page.locator('#scrubber').inputValue()).toBe('0');
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '0');
+  await expect(page.locator('#prevBtn')).toBeDisabled();
 });
 
 test('Home e End respeitam os limites e desabilitam os botões corretos', async ({ page }) => {
@@ -114,8 +116,8 @@ test('Home e End respeitam os limites e desabilitam os botões corretos', async 
 
   await page.keyboard.press('Home');
   expect(await page.locator('#scrubber').inputValue()).toBe('0');
+  await expect(page.locator('#prevBtn')).toBeDisabled();
   await expect(page.locator('#nextBtn')).toBeEnabled();
-  // A validação de Anterior desabilitado no primeiro evento será ativada ao corrigir #4.
 });
 
 test('autoplay avança e uma navegação manual interrompe a reprodução', async ({ page }) => {
