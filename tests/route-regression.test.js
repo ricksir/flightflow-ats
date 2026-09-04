@@ -6,13 +6,10 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
-function loadRouteApi(htmlPath) {
-  const html = fs.readFileSync(htmlPath, 'utf8');
-  const m = html.match(/<script id="flightflow-route-processed-v7412">([\s\S]*?)<\/script>\s*<!-- flightflow-route-processed-v7412:end -->/);
-  assert.ok(m, 'módulo flightflow-route-processed-v7412 deve existir no index.html');
-  let source = m[1];
+function loadRouteApi(modulePath) {
+  let source = fs.readFileSync(modulePath, 'utf8');
   const initTail = /if\(document\.readyState==='loading'\)document\.addEventListener\('DOMContentLoaded',\(\)=>setTimeout\(init,0\),\{once:true\}\);else setTimeout\(init,0\);/;
-  assert.match(source, initTail, 'gancho de inicialização esperado não encontrado');
+  assert.match(source, initTail, 'gancho de inicialização esperado não encontrado no módulo externo');
   source = source.replace(initTail, 'window.FlightFlowRouteProcessedV7412=publicApi();');
 
   const sandbox = {
@@ -26,7 +23,7 @@ function loadRouteApi(htmlPath) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
-  vm.runInContext(source, sandbox, { filename: 'flightflow-route-processed-v7412.js' });
+  vm.runInContext(source, sandbox, { filename: modulePath });
   assert.ok(sandbox.FlightFlowRouteProcessedV7412, 'API pública da rota processada deve ser criada');
   return { api: sandbox.FlightFlowRouteProcessedV7412, sandbox };
 }
@@ -144,9 +141,10 @@ function installCriticalFixture(api, sandbox) {
 
 const ROOT = process.env.FLIGHTFLOW_ROOT || path.resolve(__dirname, '..');
 const HTML = process.env.FLIGHTFLOW_HTML || path.resolve(ROOT, 'index.html');
+const ROUTE_MODULE = process.env.FLIGHTFLOW_ROUTE_MODULE || path.resolve(ROOT, 'src', 'route', 'route-processed-v7412.js');
 const BASELINE_COMMIT = '73ebac3a9ad2ee4add6cf4a9d5eb2602e1d3bc97';
 const BASELINE_SHA256 = '1a4ec449abd99ac34ffd5eeec91baa2c9975058b9459bf1952309c2fe0eac96f';
-const { api, sandbox } = loadRouteApi(HTML);
+const { api, sandbox } = loadRouteApi(ROUTE_MODULE);
 
 test('baseline Git mantém o SHA-256 conhecido', () => {
   const shown = spawnSync('git', ['show', `${BASELINE_COMMIT}:index.html`], {
@@ -156,6 +154,13 @@ test('baseline Git mantém o SHA-256 conhecido', () => {
   const bytes = shown.status === 0 ? shown.stdout : fs.readFileSync(HTML);
   const digest = crypto.createHash('sha256').update(bytes).digest('hex');
   assert.equal(digest, BASELINE_SHA256, 'o conteúdo do commit de baseline não pode mudar');
+});
+
+test('index carrega a Rota Processada v7.4.12 pelo módulo externo', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  const tag = '<script id="flightflow-route-processed-v7412" src="src/route/route-processed-v7412.js"></script>';
+  assert.equal(html.split(tag).length - 1, 1, 'referência externa da Rota Processada deve ser única');
+  assert.equal(html.includes('window.FlightFlowRouteProcessedV7412=publicApi();'), false, 'implementação não deve permanecer inline');
 });
 
 test('baseline expõe API pública v7.4.12 necessária aos testes', () => {
