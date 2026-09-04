@@ -35,7 +35,20 @@ jobs:
           node - <<'NODE'
           const api = require('./src/parser/flight-parser.js');
           if (!api || typeof api !== 'object') throw new Error('FlightParser não exportou objeto CommonJS.');
-          if (typeof api.parseHistory !== 'function') throw new Error('FlightParser.parseHistory não está disponível.');
+          for (const name of [
+            'decodeHistoryBuffer',
+            'parseHistoryText',
+            'normalizeJson',
+            'exportNormalized',
+            'formatDof',
+            'stageForProgress',
+            'applyDepartureCorrelationGate',
+            'isDepartureCorrelationEvent'
+          ]) {
+            if (typeof api[name] !== 'function') throw new Error(`FlightParser.${name} não está disponível.`);
+          }
+          if (!api.STATUS_MAP || typeof api.STATUS_MAP !== 'object') throw new Error('FlightParser.STATUS_MAP não está disponível.');
+          if (!Array.isArray(api.TRACKED_FIELDS)) throw new Error('FlightParser.TRACKED_FIELDS não está disponível.');
           console.log('FlightParser CommonJS smoke test: OK');
           NODE
 
