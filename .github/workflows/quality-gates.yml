@@ -37,6 +37,9 @@ jobs:
       - name: Static audit
         run: npm run audit
 
+      - name: Function declaration inventory
+        run: npm run inventory
+
       - name: Timeline and route regression tests
         run: npm test
 
