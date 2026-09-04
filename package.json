@@ -1,0 +1,14 @@
+{
+  "name": "flightflow-ats",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FlightFlow ATS — baseline e testes de regressão do núcleo temporal/espacial",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "audit": "python3 tools/audit_static.py index.html",
+    "check": "npm run audit && npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
