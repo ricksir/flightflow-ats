@@ -9,8 +9,8 @@ const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'geo', 'coordinate-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const REFERENCE = '<script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>';
-const MODULE_BYTES = 1173;
-const MODULE_SHA256 = 'a1b8d67e5ad4361b0e9995fbc899c08dd1f69274fdf804caf9049ca570773051';
+const MODULE_BYTES = 1561;
+const MODULE_SHA256 = '06e572d6f76851bb8ff8a25e17e97add6f89a429581fe5b6b0c8b75fec75396d';
 
 const EXPECTED = Object.freeze({
   normalizeCoordinateInput: {
@@ -32,6 +32,14 @@ const EXPECTED = Object.freeze({
   groundCentroid: {
     bytes: 279,
     sha256: '6b44bab8c967d72ca473e966bd782704177f9d595589451a4c42eab4dbe15559',
+  },
+  runwayTokens: {
+    bytes: 104,
+    sha256: 'ea7c2d4dc62cfc56fa3bda6177625df9caff5213888cf700d5d5ad05d8eb7b2f',
+  },
+  runwayHeading: {
+    bytes: 243,
+    sha256: '290ed08d8817232463fe1838fedf8e9d1f0a7efed4f663d5bcea3e8c8e06b715',
   },
 });
 
@@ -109,7 +117,7 @@ test('módulo coordinate-utils mantém identidade estrutural completa', () => {
   assert.ok(source.endsWith('})();\n'));
 });
 
-test('cinco utilitários geográficos preservam identidade byte a byte após a extração', () => {
+test('sete utilitários geográficos preservam identidade byte a byte após a extração', () => {
   const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
@@ -129,7 +137,7 @@ test('módulo carrega antes do IIFE e o núcleo usa aliases explícitos sem rede
   const kernel = kernelSource();
   assert.ok(kernel.includes('const CoordinateUtils = window.FlightFlowCoordinateUtils;'));
   assert.ok(kernel.includes("if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');"));
-  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid } = CoordinateUtils;'));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading } = CoordinateUtils;'));
   for (const name of Object.keys(EXPECTED)) {
     assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar declarado inline`);
   }

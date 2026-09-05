@@ -22,11 +22,21 @@
     return {lat:valid.reduce((s,p)=>s+p.lat,0)/valid.length,lon:valid.reduce((s,p)=>s+p.lon,0)/valid.length};
   }
 
+  function runwayTokens(value) { return String(value||'').toUpperCase().match(/\b\d{2}[LCR]?\b/g)||[]; }
+
+  function runwayHeading(value,fallback) {
+    const token=runwayTokens(value)[0];
+    if(!token)return((Number(fallback)||90)+360)%360;
+    const n=Number(token.slice(0,2));return Number.isFinite(n)?((n%36)*10)%360:(Number(fallback)||90);
+  }
+
   window.FlightFlowCoordinateUtils = Object.freeze({
     normalizeCoordinateInput,
     validAerodromeCoordinate,
     formatGeoCoord,
     atsCoordinateLabel,
     groundCentroid,
+    runwayTokens,
+    runwayHeading,
   });
 })();
