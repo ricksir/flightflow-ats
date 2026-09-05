@@ -5,7 +5,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  function create(options = {}) {
+  const create = (options = {}) => {
     const state = options.state;
     const playBtn = options.playBtn;
     const currentEvent = options.currentEvent;
@@ -63,7 +63,7 @@
       togglePlayback,
       scheduleNext,
     });
-  }
+  };
 
   return Object.freeze({ create });
 });
