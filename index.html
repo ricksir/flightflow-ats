@@ -5483,6 +5483,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
+<script id="flightflow-route-update-utils" src="src/route/route-update-utils.js"></script>
 <script id="flightflow-communication-context-utils" src="src/timeline/communication-context-utils.js"></script>
 <script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>
 <script id="flightflow-transport-navigation-controller" src="src/timeline/transport-navigation-controller.js"></script>
@@ -5515,6 +5516,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;
   if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');
   const { airportGroundQuery } = AirportGroundQueryModule;
+
+  const RouteUpdateUtils = window.FlightFlowRouteUpdateUtils;
+  if (!RouteUpdateUtils) throw new Error('FlightFlowRouteUpdateUtils não foi carregado.');
+  const { isRouteUpdateEvent } = RouteUpdateUtils;
 
   const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;
   if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');
@@ -5579,7 +5584,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   try { localStorage.removeItem('flightflow-geo-v2'); } catch (_) { /* armazenamento indisponível */ }
   const GEO_VIEWBOX = Object.freeze({ x:0, y:0, width:1600, height:900 });
   const GEO_MARGIN = Object.freeze({ x:70, y:35 });
-  const ROUTE_UPDATE_KEYS = new Set(['route','sid','star','adep','ades','runwayDeparture','runwayArrival','cfl','rfl']);
 
   function mergeGeoData(baseData, incomingData) {
     const empty={bounds:{minLon:-75,maxLon:-33,minLat:-35,maxLat:6},airports:[],apps:[],accs:[],accSectors:[],towers:[]};
@@ -6748,24 +6752,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     renderRouteRevisionMarkers(events.length?events[0]:null);
     if(events.length && state.geo.eventRoutes[0]) els.flightPath.setAttribute('d',state.geo.eventRoutes[0].path);
     state.geo.relevantBounds=mergeBounds(state.geo.relevantBounds,pointsBounds(relevantPoints.length?relevantPoints:route));
-  }
-
-  function isRouteUpdateEvent(event) {
-    const type=String(event.messageType||'').toUpperCase();
-    const operation=String(event.operation||'').toUpperCase();
-    const updateContext=/^(CHG|CRQ|CRP|DLA|INFARC)$/.test(type)||/(MODIFICA|ATUALIZA|RECEPÇÃO DE MENSAGEM (?:CHG|DLA|CRQ|CRP)|ENVIO DE MENSAGEM CRP|INFARC)/.test(operation);
-    if(!updateContext) return false;
-    return (event.changes||[]).some(change=>isMeaningfulRouteChange(change));
-  }
-
-  function isMeaningfulRouteChange(change) {
-    if(!change||!ROUTE_UPDATE_KEYS.has(change.key)) return false;
-    const clean=value=>String(value??'').trim().toUpperCase().replace(/\s+/g,' ');
-    const before=clean(change.before);
-    const after=clean(change.after);
-    if(!after||after==='—'||after==='N/A'||before===after) return false;
-    if(['sid','star','runwayDeparture','runwayArrival'].includes(change.key)) return true;
-    return !!before;
   }
 
   function routeRevisionReason(event,destinationChanged=false) {

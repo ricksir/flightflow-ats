@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1139435;
-const EXPECTED_SHA256 = '91fe6caa396eba960df8899e72517b7da7e30fd7dd5ebe7a336b8dd8600dfb86';
-const EXPECTED_LINES = 5392;
+const EXPECTED_BYTES = 1138600;
+const EXPECTED_SHA256 = '410413c3a91b28c654860f62a305436b51d7c944bbc781c88a0c4e8bc9e86f13';
+const EXPECTED_LINES = 5377;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -21,6 +21,7 @@ const EXTRACTED_COORDINATE_UTILS = [
   'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode', 'polygonGeoCentroid', 'geoOffset'
 ];
 const EXTRACTED_AIRPORT_GROUND_QUERY = ['airportGroundQuery'];
+const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
 const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
@@ -71,6 +72,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;',
     "if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');",
     'const { airportGroundQuery } = AirportGroundQueryModule;',
+    'const RouteUpdateUtils = window.FlightFlowRouteUpdateUtils;',
+    "if (!RouteUpdateUtils) throw new Error('FlightFlowRouteUpdateUtils não foi carregado.');",
+    'const { isRouteUpdateEvent } = RouteUpdateUtils;',
     'const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;',
     "if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');",
     'const { internalTransitionDetails } = CommunicationContextUtils;',
@@ -133,15 +137,15 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após nove extrações puras e sete cortes de timeline', () => {
+test('inventário interno do núcleo mantém nomes únicos após dez extrações puras e sete cortes de timeline', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 338);
-  assert.equal(counts.size, 338);
+  assert.equal(names.length, 336);
+  assert.equal(counts.size, 336);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
@@ -149,6 +153,7 @@ test('inventário interno do núcleo mantém nomes únicos após nove extraçõe
     ...EXTRACTED_OPERATIONAL_STATE_UTILS,
     ...EXTRACTED_COORDINATE_UTILS,
     ...EXTRACTED_AIRPORT_GROUND_QUERY,
+    ...EXTRACTED_ROUTE_UPDATE_UTILS,
     ...EXTRACTED_COMMUNICATION_CONTEXT_UTILS,
     ...EXTRACTED_PLAYBACK,
     ...EXTRACTED_TRANSPORT,

@@ -42,6 +42,8 @@ test('abrir aba Eventos rola o item já ativo com nearest e smooth', async ({ pa
 
 test('navegação com Eventos aberto move seleção e rola somente o novo ativo', async ({ page }) => {
   await page.locator('.tab[data-tab="timeline"]').click();
+  await expect(page.locator('[data-panel="timeline"]')).toHaveClass(/active/);
+  await expect.poll(() => page.evaluate(() => window.__timelineScrollCalls.at(-1)?.index)).toBe('0');
   await page.evaluate(() => { window.__timelineScrollCalls.length = 0; });
   await page.locator('#nextBtn').click();
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '1');
