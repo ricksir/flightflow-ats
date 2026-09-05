@@ -208,8 +208,9 @@ Contratos após a extração:
 
 - módulo: **1.554 bytes**;
 - SHA-256 do módulo: `d6620a7d53a24376969e2ae33b20a84f71a02eaaa7f852d98b43416e1af9f778`;
-- núcleo principal: **1.145.319 bytes** / **5.499 linhas**;
-- SHA-256 do núcleo: `9a84b0f527e399cfc6a9a2be1838588bc16b0fc6b05d6cf7ebfd2aa21599c1a9`;
+- corpo bruto do IIFE: **1.145.319 bytes**, SHA-256 `9a84b0f527e399cfc6a9a2be1838588bc16b0fc6b05d6cf7ebfd2aa21599c1a9`;
+- contrato normalizado do núcleo: **1.145.315 bytes** / **5.495 linhas**;
+- SHA-256 normalizado do núcleo: `a98a94f86875d5b66c7c3e2859c6d830178e9348d0d4ac935d3c2093a3e8232f`;
 - núcleo: **361 funções nomeadas / 361 nomes únicos / zero duplicações internas**;
 - inventário global permanece em **722 declarações / 711 nomes únicos / 9 nomes repetidos conhecidos**;
 - `index.html` passa a ter **11 blocos de script**, sendo **10 módulos locais externos**.
