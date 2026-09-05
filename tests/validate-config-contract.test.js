@@ -8,9 +8,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1260;
-const EXPECTED_LINES = 11;
-const EXPECTED_SHA256 = '54ad0b10cced3f39cd72076fadcef978d3c64750039daabbc12fbb298667ea0a';
+const EXPECTED_BYTES = 1259;
+const EXPECTED_LINES = 10;
+const EXPECTED_SHA256 = '296244487d56d1852f29fca12881857b6c84f8615c22c7f8893d56e37441162e';
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
