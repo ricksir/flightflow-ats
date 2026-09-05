@@ -20,7 +20,7 @@ O inventário é um guardrail de arquitetura. Repetição de nome não é classi
 | Fronteira | Situação |
 |---|---|
 | `FlightParser` / `window.FlightParser` | **externo em `src/parser/flight-parser.js`** |
-| `window.__SAMPLE_HISTORY__` | ainda inline; dado de demonstração |
+| `window.__SAMPLE_HISTORY__` | **externo em `src/data/sample-history.js`**; bytes e conteúdo de demonstração preservados |
 | `window.__FLIGHTFLOW_GEO_DATA__` | ainda inline; grande base geográfica |
 | IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; **último grande alvo** |
 | motor IA/governança | ainda inline |
@@ -60,29 +60,15 @@ Movido para `src/storage/secure-storage.js` mantendo `window.FlightFlowStorage`,
 
 ### 4. FIR v7.3.5
 
-Antes do corte, o contrato de `window.__FlightFlowFirBridge` foi congelado em Node e Chrome real. A ponte permanece publicada pelo IIFE principal como `Object.freeze()` com exatamente:
+Antes do corte, o contrato de `window.__FlightFlowFirBridge` foi congelado em Node e Chrome real. A implementação foi movida mecanicamente para `src/map/fir-layers.js`, preservando a ponte, a chave `flightflow-manual-firs-v1`, o catálogo FIR, `window.renderManualFirLayers`, listeners e inicialização. Proteções: `tests/fir-bridge.test.js` + `tests/e2e/fir-bridge.spec.js`.
 
-- `state`;
-- `realMapState`;
-- `normalizeLocalityCode`;
-- `closeLeafletRing`;
-- `sanitizeLeafletAreaPoints`;
-- `projectGeo`;
-- `polygonCentroid`;
-- `escapeHtml`;
-- `toast`.
+### 5. Histórico de demonstração
 
-A implementação FIR foi então movida mecanicamente para `src/map/fir-layers.js`, preservando:
+A definição de `window.__SAMPLE_HISTORY__` foi movida para `src/data/sample-history.js` sem alterar seu conteúdo. A extração comparou o SHA-256 antes e depois do movimento e preservou exatamente:
 
-- consumo e guard de `window.__FlightFlowFirBridge`;
-- chave `flightflow-manual-firs-v1`;
-- catálogo SBBS/SBAZ/SBCW/SBRE;
-- renderização vetorial, Leaflet e Google existente;
-- `window.renderManualFirLayers`;
-- listener de `storage`;
-- inicialização em `DOMContentLoaded`.
+`283887403c91163bc09206f772850754cf455ac59794ece1c0bbd7d226d9cc1d`
 
-Proteções: `tests/fir-bridge.test.js` + `tests/e2e/fir-bridge.spec.js`.
+O fixture continua sendo uma `String.raw` contendo o histórico conhecido de TAM3542, ADEP SBBR e ADES SBGO. Os consumidores existentes de `window.__SAMPLE_HISTORY__` não foram alterados. Proteções permanentes: `tests/sample-history-module.test.js` e `tests/e2e/sample-history-module.spec.js`.
 
 ## Regras para os próximos PRs
 
@@ -97,9 +83,8 @@ Proteções: `tests/fir-bridge.test.js` + `tests/e2e/fir-bridge.spec.js`.
 
 ## Próximos candidatos
 
-Antes de dividir o IIFE principal, há duas fronteiras de risco menor que podem reduzir bastante o HTML sem tocar em lógica:
+O próximo corte de baixo risco é:
 
-1. `window.__SAMPLE_HISTORY__` → `src/data/sample-history.js`;
-2. `window.__FLIGHTFLOW_GEO_DATA__` → `src/data/geo-data.js`.
+1. `window.__FLIGHTFLOW_GEO_DATA__` → `src/data/geo-data.js`.
 
-Cada base deve sair em PR separado, com teste de ordem de carregamento e equivalência do objeto global. Depois dessas duas extrações, o motor de IA/governança pode receber o mesmo tratamento de contrato → extração → teste, e somente então deve começar a decomposição por domínio do IIFE principal (`timeline/`, `navigation/`, `map/`, `flightplan/`, `ats/`, `ui/`).
+Depois dele, o motor de IA/governança pode receber o mesmo tratamento de contrato → extração → teste. Somente então deve começar a decomposição por domínio do IIFE principal (`timeline/`, `navigation/`, `map/`, `flightplan/`, `ats/`, `ui/`).
