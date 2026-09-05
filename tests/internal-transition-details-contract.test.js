@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const EXPECTED_BYTES = 628;
 const EXPECTED_LINES = 10;
 const EXPECTED_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
@@ -28,7 +29,7 @@ function kernelSource() {
 function functionSource(container, name) {
   const marker = `  function ${name}(`;
   const start = container.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = container.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -73,19 +74,19 @@ function functionSource(container, name) {
 }
 
 function loadFunction() {
-  const source = functionSource(kernelSource(), 'internalTransitionDetails');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'internalTransitionDetails');
   return Function(`${source}; return internalTransitionDetails;`)();
 }
 
 test('internalTransitionDetails mantém identidade exata antes da extração', () => {
-  const source = functionSource(kernelSource(), 'internalTransitionDetails');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'internalTransitionDetails');
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(source.split(/\r?\n/).length, EXPECTED_LINES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
 });
 
 test('internalTransitionDetails permanece folha local e desacoplada de infraestrutura', () => {
-  const source = functionSource(kernelSource(), 'internalTransitionDetails');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'internalTransitionDetails');
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -98,8 +99,10 @@ test('internalTransitionDetails permanece folha local e desacoplada de infraestr
 
 test('internalTransitionDetails mantém exatamente um consumidor real', () => {
   const kernel = kernelSource();
-  const consumers = [...kernel.matchAll(/(?<![\w$.])internalTransitionDetails\s*\(/g)].length - 1;
+  assert.equal(kernel.includes('function internalTransitionDetails('), false, 'internalTransitionDetails não deve permanecer inline');
+  const consumers = [...kernel.matchAll(/(?<![\w$.])internalTransitionDetails\s*\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
+  assert.ok(kernel.includes('const { internalTransitionDetails } = CommunicationContextUtils;'));
 });
 
 test('rawBlock prevalece sobre snapshot e preserva trim e regex case-insensitive', () => {
