@@ -16,10 +16,17 @@
   function atsCoordinateLabel(lat,lon){
     return `LAT ${formatGeoCoord(Number(lat),'NS')} · LONG ${formatGeoCoord(Number(lon),'EW')}`;
   }
+  function groundCentroid(points) {
+    const valid=(points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+    if(!valid.length)return{lat:0,lon:0};
+    return {lat:valid.reduce((s,p)=>s+p.lat,0)/valid.length,lon:valid.reduce((s,p)=>s+p.lon,0)/valid.length};
+  }
+
   window.FlightFlowCoordinateUtils = Object.freeze({
     normalizeCoordinateInput,
     validAerodromeCoordinate,
     formatGeoCoord,
     atsCoordinateLabel,
+    groundCentroid,
   });
 })();

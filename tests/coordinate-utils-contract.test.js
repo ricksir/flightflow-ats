@@ -9,8 +9,8 @@ const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'geo', 'coordinate-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const REFERENCE = '<script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>';
-const MODULE_BYTES = 872;
-const MODULE_SHA256 = '426cfdffc6a803275e6432bea2ee28a2e2c71c6464f4e27998e668641fcd44ea';
+const MODULE_BYTES = 1173;
+const MODULE_SHA256 = 'a1b8d67e5ad4361b0e9995fbc899c08dd1f69274fdf804caf9049ca570773051';
 
 const EXPECTED = Object.freeze({
   normalizeCoordinateInput: {
@@ -28,6 +28,10 @@ const EXPECTED = Object.freeze({
   atsCoordinateLabel: {
     bytes: 141,
     sha256: '541c59f892839907c29cbfeac7ac7256251aca2272180d83c4f3b355ecc532b6',
+  },
+  groundCentroid: {
+    bytes: 279,
+    sha256: '6b44bab8c967d72ca473e966bd782704177f9d595589451a4c42eab4dbe15559',
   },
 });
 
@@ -105,7 +109,7 @@ test('módulo coordinate-utils mantém identidade estrutural completa', () => {
   assert.ok(source.endsWith('})();\n'));
 });
 
-test('quatro utilitários de coordenadas preservam identidade byte a byte após a extração', () => {
+test('cinco utilitários geográficos preservam identidade byte a byte após a extração', () => {
   const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
@@ -125,7 +129,7 @@ test('módulo carrega antes do IIFE e o núcleo usa aliases explícitos sem rede
   const kernel = kernelSource();
   assert.ok(kernel.includes('const CoordinateUtils = window.FlightFlowCoordinateUtils;'));
   assert.ok(kernel.includes("if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');"));
-  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel } = CoordinateUtils;'));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid } = CoordinateUtils;'));
   for (const name of Object.keys(EXPECTED)) {
     assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar declarado inline`);
   }
