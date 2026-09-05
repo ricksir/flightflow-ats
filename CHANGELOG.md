@@ -22,3 +22,6 @@
 - extraídos `normalizeCoordinateInput`, `validAerodromeCoordinate`, `formatGeoCoord` e `atsCoordinateLabel` para `src/geo/coordinate-utils.js`;
 - adicionados contratos Node e Chrome para a nova fronteira `FlightFlowCoordinateUtils`;
 - nenhuma lógica de timeline, rota processada, aeronave ou mapa foi reescrita durante a extração.
+
+- movidos `getPath` e `setPath` do IIFE principal para a fronteira existente `FlightFlowCoreUtils`, preservando seus corpos e consumidores;
+- ampliados os contratos Node e Chrome de `CoreUtils` para 11 utilitários e atualizado o baseline estrutural do núcleo.

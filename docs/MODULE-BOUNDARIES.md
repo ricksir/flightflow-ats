@@ -259,3 +259,24 @@ Contratos após a extração:
 - o inventário global continua protegido contra novas duplicações.
 
 Proteções: `tests/coordinate-utils-contract.test.js`, `tests/e2e/coordinate-utils-module.spec.js`, `tests/main-kernel-contract.test.js`, auditoria estática, inventário global, regressão 78→79 e suíte Playwright/Chrome.
+
+### 14. Sexta extração por domínio: acesso a objetos por caminho
+
+Após comparar famílias ainda presentes no núcleo, o par `getPath`/`setPath` foi selecionado por possuir somente **483 bytes / 3 consumidores conhecidos**, sem dependências de DOM, estado global, rede, armazenamento, mapa ou parser. As famílias de geometria de solo/pista e polígonos foram adiadas por apresentarem raio de consumidores significativamente maior.
+
+O PR de contrato congelou antes do corte:
+
+- `getPath` — **138 bytes** / SHA-256 `247f4a3dd072d9a76e62f80d3b247d7891c65d0b4a3c2082bb4f932dd67963ea`;
+- `setPath` — **345 bytes** / SHA-256 `b8e0c78106388a4ced70f669fff1012e9583f6fc1ecfff51e5b2da3a90db1c91`.
+
+Como ambos são utilitários genéricos, a extração reutilizou a fronteira existente `src/core/core-utils.js` em vez de criar um novo script. Os dois corpos foram movidos byte a byte para `window.FlightFlowCoreUtils`, e o IIFE mantém aliases locais com os mesmos nomes; os três consumidores não foram reescritos.
+
+Contratos após a extração:
+
+- `FlightFlowCoreUtils`: **2.188 bytes** / SHA-256 `9c3d540e55f3332ff04a828993cef10b03fc5869529bf52ce79858f13bfaf87a`;
+- corpo bruto do IIFE: **1.144.458 bytes** / SHA-256 `ea9d262b1a809711831b383b532159fe559a56fc8cbe0bf116fc86cba690d0f0`;
+- contrato normalizado do IIFE: **1.144.454 bytes / 5.480 linhas**;
+- SHA-256 normalizado: `2bac43822e8a24f573969d61b7b2b7c4f1cd5c5696c03bdbdd4ebcd989df9dd3`;
+- **355 funções nomeadas / 355 nomes únicos / zero duplicações internas** no contrato do núcleo.
+
+Proteções: `tests/object-path-utils-contract.test.js`, `tests/core-utils-contract.test.js`, `tests/e2e/core-utils-module.spec.js`, `tests/main-kernel-contract.test.js`, auditoria, inventário, regressão 78→79 e Playwright/Chrome.
