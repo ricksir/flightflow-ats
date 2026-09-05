@@ -6,11 +6,12 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1147287;
-const EXPECTED_SHA256 = 'c76c79f1ccfd325108d9f3be56777985523d4b404b53c069050acb4c6f5c1740';
-const EXPECTED_LINES = 5522;
+const EXPECTED_BYTES = 1146763;
+const EXPECTED_SHA256 = '60411ca70b0dcd32ca6abbba8a6e5fc15e83733f9b18e3622700a71c011c1f97';
+const EXPECTED_LINES = 5506;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = ['shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes'];
+const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 'fontLayoutDescription'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -33,7 +34,7 @@ test('núcleo principal mantém identidade estrutural de baseline', () => {
   assert.match(source, /\}\)\(\);\n$/);
 });
 
-test('núcleo mantém dependências explícitas de Parser/CoreUtils e identidade da aplicação', () => {
+test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUtils e identidade da aplicação', () => {
   const source = kernelSource();
   for (const token of [
     'const Parser = window.FlightParser;',
@@ -41,6 +42,9 @@ test('núcleo mantém dependências explícitas de Parser/CoreUtils e identidade
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
     'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes } = CoreUtils;',
+    'const TypographyUtils = window.FlightFlowTypographyUtils;',
+    "if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');",
+    'const { normalizeFontScale, fontLayoutForScale, fontLayoutDescription } = TypographyUtils;',
     "name: 'FlightFlow ATS - TIOP Cindacta1'",
     "subtitle: 'Histórico animado de Plano de Voo'",
     "version: '7.3.2'"
@@ -82,19 +86,20 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após primeira extração por domínio', () => {
+test('inventário interno do núcleo mantém nomes únicos após duas extrações por domínio', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 370);
-  assert.equal(counts.size, 370);
+  assert.equal(names.length, 367);
+  assert.equal(counts.size, 367);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   assert.equal(counts.get('buildTimeline'), 1);
   assert.equal(counts.get('getSourceClass'), 1);
-  for (const name of EXTRACTED_CORE_UTILS) {
+  for (const name of [...EXTRACTED_CORE_UTILS, ...EXTRACTED_TYPOGRAPHY_UTILS]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
+  assert.equal(counts.get('repairTypographyLayout'), 1, 'repairTypographyLayout deve permanecer no IIFE');
 });
