@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'core', 'core-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 
 const EXPECTED = Object.freeze({
@@ -25,6 +26,10 @@ const FORBIDDEN_COUPLING = [
   'setTimeout', 'setInterval', 'requestAnimationFrame', 'navigator.',
   'CustomEvent', 'dispatchEvent', 'addEventListener', 'querySelector', 'getElementById'
 ];
+
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -62,7 +67,7 @@ function scanBalanced(source, openIndex, openChar, closeChar) {
 function extractFunction(source, name) {
   const pattern = new RegExp('(^|\\n)([ \\t]*)function\\s+' + name + '\\s*\\(', 'g');
   const matches = [...source.matchAll(pattern)];
-  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no núcleo`);
+  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no módulo`);
   const match = matches[0];
   const offset = match.index + (match[1] === '\n' ? 1 : 0);
   const paren = source.indexOf('(', offset);
@@ -80,8 +85,8 @@ function compile(source, name) {
   return Function(`${source}; return ${name};`)();
 }
 
-test('getPath e setPath preservam identidade estrutural atual', () => {
-  const source = kernelSource();
+test('getPath e setPath preservam identidade byte a byte dentro de CoreUtils', () => {
+  const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
     assert.equal(Buffer.byteLength(body, 'utf8'), expected.bytes, `${name}: tamanho mudou`);
@@ -89,8 +94,16 @@ test('getPath e setPath preservam identidade estrutural atual', () => {
   }
 });
 
+test('núcleo consome o par por alias de FlightFlowCoreUtils e não o redeclara', () => {
+  const kernel = kernelSource();
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;'));
+  for (const name of Object.keys(EXPECTED)) {
+    assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar inline`);
+  }
+});
+
 test('cluster de acesso por caminho permanece puro e desacoplado de infraestrutura', () => {
-  const source = kernelSource();
+  const source = moduleSource();
   for (const name of Object.keys(EXPECTED)) {
     const body = extractFunction(source, name);
     for (const token of FORBIDDEN_COUPLING) assert.ok(!body.includes(token), `${name} passou a depender de ${token}`);
@@ -98,7 +111,7 @@ test('cluster de acesso por caminho permanece puro e desacoplado de infraestrutu
 });
 
 test('getPath preserva leitura aninhada e semântica atual de caminhos ausentes', () => {
-  const fn = compile(extractFunction(kernelSource(), 'getPath'), 'getPath');
+  const fn = compile(extractFunction(moduleSource(), 'getPath'), 'getPath');
   const data = { flight: { route: { first: 'PADIL' }, nullNode: null }, zero: 0, empty: '' };
   assert.equal(fn(data, 'flight.route.first'), 'PADIL');
   assert.equal(fn(data, 'zero'), 0);
@@ -109,7 +122,7 @@ test('getPath preserva leitura aninhada e semântica atual de caminhos ausentes'
 });
 
 test('setPath preserva criação de objetos intermediários', () => {
-  const fn = compile(extractFunction(kernelSource(), 'setPath'), 'setPath');
+  const fn = compile(extractFunction(moduleSource(), 'setPath'), 'setPath');
   const data = {};
   assert.equal(fn(data, 'flight.route.first', 'PADIL'), undefined);
   assert.deepEqual(data, { flight: { route: { first: 'PADIL' } } });
@@ -118,7 +131,7 @@ test('setPath preserva criação de objetos intermediários', () => {
 });
 
 test('setPath preserva criação automática de arrays para segmentos numéricos', () => {
-  const fn = compile(extractFunction(kernelSource(), 'setPath'), 'setPath');
+  const fn = compile(extractFunction(moduleSource(), 'setPath'), 'setPath');
   const data = {};
   fn(data, 'points.0.ident', 'PADIL');
   fn(data, 'points.1.ident', 'MASVA');
@@ -127,7 +140,7 @@ test('setPath preserva criação automática de arrays para segmentos numéricos
 });
 
 test('setPath preserva valores intermediários existentes em vez de recriá-los', () => {
-  const fn = compile(extractFunction(kernelSource(), 'setPath'), 'setPath');
+  const fn = compile(extractFunction(moduleSource(), 'setPath'), 'setPath');
   const existing = { config: { ui: { scale: 1 } } };
   const originalUi = existing.config.ui;
   fn(existing, 'config.ui.scale', 1.25);
