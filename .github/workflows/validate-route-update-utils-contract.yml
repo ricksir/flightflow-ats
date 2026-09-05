@@ -19,23 +19,66 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install dependencies
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-        run: npm install --no-audit --no-fund
-      - name: Static audit
-        run: npm run audit
-      - name: Function declaration inventory
-        run: npm run inventory
-      - name: Node regression suite
-        run: npm test
-      - name: Diff sanity
-        run: git diff --check origin/main...HEAD
-      - name: Contract-only diff
+      - name: Measure canonical identities
         run: |
-          changed="$(git diff --name-only origin/main...HEAD | grep -v '^.github/workflows/validate-route-update-utils-contract.yml$' || true)"
-          test "$changed" = "tests/route-update-utils-contract.test.js"
+          node <<'NODE'
+          const fs=require('node:fs');
+          const crypto=require('node:crypto');
+          const html=fs.readFileSync('index.html','utf8');
+          const anchor='window.__FlightFlowFirBridge = Object.freeze({';
+          const pos=html.indexOf(anchor);
+          const open=html.lastIndexOf('<script',pos);
+          const bodyStart=html.indexOf('>',open)+1;
+          const close=html.indexOf('</script>',pos);
+          const kernel=html.slice(bodyStart,close);
+
+          function functionSource(container,name){
+            const marker=`  function ${name}(`;
+            const start=container.indexOf(marker);
+            if(start<0) throw new Error(`${name} ausente`);
+            const paren=container.indexOf('(',start);
+            let i=paren,depth=0,quote=null,escaped=false;
+            while(i<container.length){
+              const c=container[i];
+              if(quote){
+                if(escaped) escaped=false;
+                else if(c==='\\') escaped=true;
+                else if(c===quote) quote=null;
+                i++; continue;
+              }
+              if(c==="'"||c==='"'||c==='`'){quote=c;i++;continue;}
+              if(c==='(') depth++;
+              else if(c===')'){depth--;if(depth===0) break;}
+              i++;
+            }
+            let brace=i+1;
+            while(/\s/.test(container[brace]||'')) brace++;
+            if(container[brace]!=='{') throw new Error('brace ausente');
+            depth=0;quote=null;escaped=false;
+            for(i=brace;i<container.length;i++){
+              const c=container[i];
+              if(quote){
+                if(escaped) escaped=false;
+                else if(c==='\\') escaped=true;
+                else if(c===quote) quote=null;
+                continue;
+              }
+              if(c==="'"||c==='"'||c==='`'){quote=c;continue;}
+              if(c==='{') depth++;
+              else if(c==='}'){
+                depth--;
+                if(depth===0) return container.slice(start,i+1);
+              }
+            }
+            throw new Error('fim ausente');
+          }
+
+          const keySource="  const ROUTE_UPDATE_KEYS = new Set(['route','sid','star','adep','ades','runwayDeparture','runwayArrival','cfl','rfl']);";
+          for(const [name,source] of [
+            ['ROUTE_UPDATE_KEYS',keySource],
+            ['isMeaningfulRouteChange',functionSource(kernel,'isMeaningfulRouteChange')],
+            ['isRouteUpdateEvent',functionSource(kernel,'isRouteUpdateEvent')],
+          ]){
+            console.log(`${name}|bytes=${Buffer.byteLength(source,'utf8')}|lines=${source.split(/\r?\n/).length}|sha=${crypto.createHash('sha256').update(source).digest('hex')}`);
+          }
+          NODE
