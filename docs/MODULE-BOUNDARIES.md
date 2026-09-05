@@ -19,7 +19,7 @@ Após a eliminação das duplicações internas byte-idênticas `buildTimeline` 
 - **711 nomes únicos**;
 - **9 nomes repetidos** entre fronteiras/módulos diferentes.
 
-A extração dos primeiros utilitários do núcleo não altera esses totais globais: as seis declarações apenas mudaram de fronteira.
+As extrações por domínio não alteram esses totais globais: as declarações apenas mudam de fronteira.
 
 ## Fronteiras atuais
 
@@ -29,6 +29,7 @@ A extração dos primeiros utilitários do núcleo não altera esses totais glob
 | `window.__SAMPLE_HISTORY__` | **externo em `src/data/sample-history.js`** |
 | `window.__FLIGHTFLOW_GEO_DATA__` | **externo em `src/data/geo-data.js`** |
 | utilitários puros / `window.FlightFlowCoreUtils` | **externo em `src/core/core-utils.js`** |
+| tipografia pura / `window.FlightFlowTypographyUtils` | **externo em `src/ui/typography-utils.js`** |
 | IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; decomposição continua **por domínio** |
 | motor IA/governança / `window.__flightflowAI` | **externo em `src/ai/ai-engine.js`** |
 | Secure Storage / `window.FlightFlowStorage` | **externo em `src/storage/secure-storage.js`** |
@@ -140,6 +141,31 @@ Contratos após a extração:
 
 Proteções: `tests/core-utils-contract.test.js`, `tests/e2e/core-utils-module.spec.js` e `tests/main-kernel-contract.test.js`.
 
+### 10. Segunda extração por domínio: utilitários puros de tipografia
+
+O segundo cluster foi novamente escolhido por baixo acoplamento. Antes do corte, `tests/typography-utils-contract.test.js` congelou tamanho, SHA-256 e comportamento de:
+
+- `normalizeFontScale`;
+- `fontLayoutForScale`;
+- `fontLayoutDescription`.
+
+As três funções são matemáticas/textuais e não dependem de `state`, DOM, mapa, rede, armazenamento, `FlightParser` ou timers. `repairTypographyLayout` foi deliberadamente excluída porque manipula a UI e permanece no IIFE principal.
+
+A implementação foi movida mecanicamente para `src/ui/typography-utils.js` e publicada como `window.FlightFlowTypographyUtils = Object.freeze(...)`. O módulo é carregado depois de `FlightFlowCoreUtils` e antes do IIFE principal. O núcleo mantém aliases locais com os nomes originais, sem reescrever os consumidores.
+
+Contratos após a extração:
+
+- módulo: **940 bytes**;
+- SHA-256 do módulo: `15bed357076afacc2732b70d5d2f6f0f425e7d6be7d59788c811d009d94fac23`;
+- cada corpo de função preserva exatamente seu tamanho e SHA anterior;
+- núcleo principal: **1.146.763 bytes** / **5.506 linhas**;
+- SHA-256 do núcleo: `60411ca70b0dcd32ca6abbba8a6e5fc15e83733f9b18e3622700a71c011c1f97`;
+- núcleo: **367 funções nomeadas / 367 nomes únicos / zero duplicações internas**;
+- inventário global: **722 declarações / 711 nomes únicos / 9 nomes repetidos conhecidos**;
+- `repairTypographyLayout` permanece exatamente uma vez no IIFE principal.
+
+Proteções: `tests/typography-utils-contract.test.js`, `tests/e2e/typography-utils-module.spec.js` e `tests/main-kernel-contract.test.js`.
+
 ## Regras para os próximos PRs
 
 1. **Não misturar extração e melhoria funcional.**
@@ -152,6 +178,6 @@ Proteções: `tests/core-utils-contract.test.js`, `tests/e2e/core-utils-module.s
 
 ## Próxima etapa
 
-O grande IIFE principal permanece inline, agora com **370 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
+O grande IIFE principal permanece inline, agora com **367 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
 
-O próximo passo é escolher o segundo cluster de baixa dependência. Devem ser priorizadas funções puras ou quase puras de formatação/configuração antes de `timeline/`, `navigation/`, `map/` ou do núcleo temporal/espacial da rota e da aeronave.
+O próximo cluster deve continuar priorizando funções puras ou quase puras, evitando ainda o motor de timeline, navegação, mapa e o núcleo temporal/espacial da rota e da aeronave até que suas dependências sejam mapeadas e cobertas por contratos específicos.
