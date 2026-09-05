@@ -125,7 +125,9 @@ test('stripTheme preserva prioridade e classificação operacional atuais', () =
     [{ snapshot: { status: 'PRÉ-ATIVO', authorizationState: 'AUTORIZADO' } }, 'theme-pre-dark'],
     [{ snapshot: { status: 'PRÉ-ATIVO', authorizationState: '' } }, 'theme-pre-light'],
     [{ snapshot: { status: 'ATIVO' } }, 'theme-controlled'],
-    [{ snapshot: { status: 'INATIVO' } }, 'theme-noncontrolled'],
+    // Contrato de equivalência: no código atual, "INATIVO" contém "ATIVO" e cai em theme-controlled.
+    // Este PR não corrige essa regra; apenas impede que a extração altere o comportamento existente.
+    [{ snapshot: { status: 'INATIVO' } }, 'theme-controlled'],
     [null, 'theme-noncontrolled'],
   ];
   for (const [event, expected] of cases) assert.equal(fn(event), expected, JSON.stringify(event));
