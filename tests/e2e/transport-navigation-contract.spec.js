@@ -53,11 +53,11 @@ test('scrubber interrompe playback e navega exatamente ao índice solicitado', a
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '5');
 });
 
-test('tecla de navegação é ignorada quando o foco está em um botão', async ({ page }) => {
+test('ArrowRight mantém a navegação global mesmo quando o foco está no botão Play', async ({ page }) => {
   await page.locator('#playBtn').focus();
   await page.keyboard.press('ArrowRight');
-  expect(await page.locator('#scrubber').inputValue()).toBe('0');
-  await expect(page.locator('#frameCounter')).toContainText('1 / ');
+  expect(await page.locator('#scrubber').inputValue()).toBe('1');
+  await expect(page.locator('#frameCounter')).toContainText('2 / ');
 });
 
 test('tecla de navegação é ignorada dentro de contenteditable', async ({ page }) => {
@@ -74,14 +74,15 @@ test('tecla de navegação é ignorada dentro de contenteditable', async ({ page
   await expect(page.locator('#frameCounter')).toContainText('1 / ');
 });
 
-test('Ctrl+ArrowRight é ignorado e ArrowRight sem modificador navega', async ({ page }) => {
+test('Ctrl+ArrowRight preserva a navegação atual e ArrowRight simples avança novamente', async ({ page }) => {
   await page.locator('body').click({ position: { x: 5, y: 5 } });
   await page.keyboard.press('Control+ArrowRight');
-  expect(await page.locator('#scrubber').inputValue()).toBe('0');
-
-  await page.keyboard.press('ArrowRight');
   expect(await page.locator('#scrubber').inputValue()).toBe('1');
   await expect(page.locator('#frameCounter')).toContainText('2 / ');
+
+  await page.keyboard.press('ArrowRight');
+  expect(await page.locator('#scrubber').inputValue()).toBe('2');
+  await expect(page.locator('#frameCounter')).toContainText('3 / ');
 });
 
 test('Home e End interrompem playback e levam aos limites exatos', async ({ page }) => {
