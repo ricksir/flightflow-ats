@@ -1,4 +1,4 @@
-name: Materialize groundCentroid extraction
+name: Materialize groundCentroid extraction v2
 
 on:
   push:
