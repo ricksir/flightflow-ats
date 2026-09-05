@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1143472;
-const EXPECTED_SHA256 = 'f887c2d77637aabb87b307392a18610cbab9f779bb79c48e518c5718a26340a9';
-const EXPECTED_LINES = 5467;
+const EXPECTED_BYTES = 1142269;
+const EXPECTED_SHA256 = '1312235a530adbf3fa0c92587e0ea05ab3ffe01af0492670b83d873c80e8fc9a';
+const EXPECTED_LINES = 5457;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -24,6 +24,7 @@ const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTrans
 const EXTRACTED_KEYBOARD = ['handleKeyboard'];
 const EXTRACTED_TIMELINE_SELECTION = ['updateTimelineSelection'];
 const EXTRACTED_CONTROL_STATE = ['enableControls'];
+const EXTRACTED_TIMELINE_BUILDER = ['buildTimeline'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -78,6 +79,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const ControlStateController = window.FlightFlowControlStateController;',
     "if (!ControlStateController) throw new Error('FlightFlowControlStateController não foi carregado.');",
     'const { enableControls } = ControlStateController.create({',
+    'const TimelineBuilderController = window.FlightFlowTimelineBuilderController;',
+    "if (!TimelineBuilderController) throw new Error('FlightFlowTimelineBuilderController não foi carregado.');",
+    'const { buildTimeline } = TimelineBuilderController.create({',
     "name: 'FlightFlow ATS - TIOP Cindacta1'",
     "subtitle: 'Histórico animado de Plano de Voo'",
     "version: '7.3.2'"
@@ -119,17 +123,16 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e cinco cortes de timeline', () => {
+test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e seis cortes de timeline', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 348);
-  assert.equal(counts.size, 348);
+  assert.equal(names.length, 347);
+  assert.equal(counts.size, 347);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
-  assert.equal(counts.get('buildTimeline'), 1);
   assert.equal(counts.get('getSourceClass'), 1);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
@@ -141,12 +144,12 @@ test('inventário interno do núcleo mantém nomes únicos após seis extraçõe
     ...EXTRACTED_KEYBOARD,
     ...EXTRACTED_TIMELINE_SELECTION,
     ...EXTRACTED_CONTROL_STATE,
+    ...EXTRACTED_TIMELINE_BUILDER,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
   assert.equal(counts.get('goTo'), 1, 'goTo deve permanecer inline neste corte');
   assert.equal(counts.get('renderCurrent'), 1, 'renderCurrent deve permanecer inline neste corte');
-  assert.equal(counts.get('buildTimeline'), 1, 'buildTimeline deve permanecer inline neste corte');
   assert.equal(counts.get('clamp'), 1, 'clamp deve permanecer inline neste corte');
   assert.equal(counts.get('clamp01'), 1, 'clamp01 deve permanecer inline neste corte');
   assert.equal(counts.get('repairTypographyLayout'), 1, 'repairTypographyLayout deve permanecer no IIFE');
