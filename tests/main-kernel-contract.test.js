@@ -6,11 +6,14 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1146763;
-const EXPECTED_SHA256 = '60411ca70b0dcd32ca6abbba8a6e5fc15e83733f9b18e3622700a71c011c1f97';
+const EXPECTED_BYTES = 1146463;
+const EXPECTED_SHA256 = '5933449b1c5aebf65f71c46b48f0040ad18117abb113d936ac4d72b68d074c5b';
 const EXPECTED_LINES = 5506;
 const EXPECTED_DUPLICATES = [];
-const EXTRACTED_CORE_UTILS = ['shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes'];
+const EXTRACTED_CORE_UTILS = [
+  'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
+  'angleDifference', 'hashString', 'seeded'
+];
 const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 'fontLayoutDescription'];
 
 function kernelSource() {
@@ -41,7 +44,7 @@ test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUt
     "if (!Parser) throw new Error('FlightParser não foi carregado.');",
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
-    'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes } = CoreUtils;',
+    'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded } = CoreUtils;',
     'const TypographyUtils = window.FlightFlowTypographyUtils;',
     "if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');",
     'const { normalizeFontScale, fontLayoutForScale, fontLayoutDescription } = TypographyUtils;',
@@ -86,20 +89,22 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após duas extrações por domínio', () => {
+test('inventário interno do núcleo mantém nomes únicos após três extrações por domínio', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 367);
-  assert.equal(counts.size, 367);
+  assert.equal(names.length, 364);
+  assert.equal(counts.size, 364);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   assert.equal(counts.get('buildTimeline'), 1);
   assert.equal(counts.get('getSourceClass'), 1);
   for (const name of [...EXTRACTED_CORE_UTILS, ...EXTRACTED_TYPOGRAPHY_UTILS]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
+  assert.equal(counts.get('clamp'), 1, 'clamp deve permanecer inline neste corte');
+  assert.equal(counts.get('clamp01'), 1, 'clamp01 deve permanecer inline neste corte');
   assert.equal(counts.get('repairTypographyLayout'), 1, 'repairTypographyLayout deve permanecer no IIFE');
 });
