@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1140678;
-const EXPECTED_SHA256 = 'fb104639e66fd3069833638de3b0ff9967882be9da8c81fc8a1df1f53a6703c7';
-const EXPECTED_LINES = 5418;
+const EXPECTED_BYTES = 1140460;
+const EXPECTED_SHA256 = '7240af8daf7d03baff9d5b2517265e9ec0ea48ccc988f0920c2bcd7bedfe6722';
+const EXPECTED_LINES = 5412;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -20,6 +20,7 @@ const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel', 'groundCentroid',
   'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode', 'polygonGeoCentroid'
 ];
+const EXTRACTED_AIRPORT_GROUND_QUERY = ['airportGroundQuery'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
 const EXTRACTED_KEYBOARD = ['handleKeyboard'];
@@ -66,6 +67,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const CoordinateUtils = window.FlightFlowCoordinateUtils;',
     "if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');",
     'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid } = CoordinateUtils;',
+    'const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;',
+    "if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');",
+    'const { airportGroundQuery } = AirportGroundQueryModule;',
     'const PlaybackController = window.FlightFlowPlaybackController;',
     "if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');",
     'const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({',
@@ -125,21 +129,22 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e sete cortes de timeline', () => {
+test('inventário interno do núcleo mantém nomes únicos após sete extrações puras e sete cortes de timeline', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 341);
-  assert.equal(counts.size, 341);
+  assert.equal(names.length, 340);
+  assert.equal(counts.size, 340);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
     ...EXTRACTED_TYPOGRAPHY_UTILS,
     ...EXTRACTED_OPERATIONAL_STATE_UTILS,
     ...EXTRACTED_COORDINATE_UTILS,
+    ...EXTRACTED_AIRPORT_GROUND_QUERY,
     ...EXTRACTED_PLAYBACK,
     ...EXTRACTED_TRANSPORT,
     ...EXTRACTED_KEYBOARD,

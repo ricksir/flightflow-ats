@@ -5482,6 +5482,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
+    <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
 <script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>
 <script id="flightflow-transport-navigation-controller" src="src/timeline/transport-navigation-controller.js"></script>
 <script id="flightflow-keyboard-navigation-controller" src="src/timeline/keyboard-navigation-controller.js"></script>
@@ -5509,6 +5510,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
   const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid } = CoordinateUtils;
+
+  const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;
+  if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');
+  const { airportGroundQuery } = AirportGroundQueryModule;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -5946,16 +5951,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
       });
       db.close();
     } catch (_) { /* cache é otimização, não requisito */ }
-  }
-
-  function airportGroundQuery(airport) {
-    const lat = Number(airport.lat).toFixed(7);
-    const lon = Number(airport.lon).toFixed(7);
-    const radius = 7000;
-    return `[out:json][timeout:28];(
-      way(around:${radius},${lat},${lon})["aeroway"~"^(runway|taxiway|taxilane|parking_position|apron|terminal)$"];
-      node(around:${radius},${lat},${lon})["aeroway"~"^(holding_position|parking_position|gate|terminal)$"];
-    );out body geom;`;
   }
 
   async function fetchAirportGroundPayload(airport) {
