@@ -28,7 +28,7 @@ function kernelSource() {
 function functionSource(container, name) {
   const marker = `  function ${name}(`;
   const start = container.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo`);
   const brace = container.indexOf('{', start);
   let depth = 0;
   let quote = null;
@@ -48,15 +48,15 @@ function functionSource(container, name) {
   throw new Error(`fim de ${name} não encontrado`);
 }
 
-test('runwayHeadingFromCode mantém identidade exata antes da extração', () => {
-  const source = functionSource(kernelSource(), 'runwayHeadingFromCode');
+test('runwayHeadingFromCode foi movida preservando exatamente a identidade congelada', () => {
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'runwayHeadingFromCode');
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(source.split(/\r?\n/).length, EXPECTED_LINES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
 });
 
 test('runwayHeadingFromCode permanece pura e sem dependência de infraestrutura', () => {
-  const source = functionSource(kernelSource(), 'runwayHeadingFromCode');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'runwayHeadingFromCode');
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -64,15 +64,16 @@ test('runwayHeadingFromCode permanece pura e sem dependência de infraestrutura'
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('runwayHeadingFromCode mantém exatamente um consumidor e ainda não está no módulo', () => {
+test('IIFE usa runwayHeadingFromCode pelo CoordinateUtils preservando o único consumidor', () => {
   const kernel = kernelSource();
-  const consumers = [...kernel.matchAll(/(?<![\w$.])runwayHeadingFromCode\s*\(/g)].length - 1;
+  assert.equal(kernel.includes('function runwayHeadingFromCode('), false);
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode } = CoordinateUtils;'));
+  const consumers = [...kernel.matchAll(/(?<![\w$.])runwayHeadingFromCode\s*\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
-  assert.equal(fs.readFileSync(MODULE, 'utf8').includes('runwayHeadingFromCode'), false);
 });
 
 test('runwayHeadingFromCode preserva semântica atual de cabeceiras e fallback', () => {
-  const source = functionSource(kernelSource(), 'runwayHeadingFromCode');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'runwayHeadingFromCode');
   const fn = Function(`${source}; return runwayHeadingFromCode;`)();
   assert.equal(fn('09', 270), 90);
   assert.equal(fn('09L', 270), 90);

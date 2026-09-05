@@ -30,6 +30,14 @@
     const n=Number(token.slice(0,2));return Number.isFinite(n)?((n%36)*10)%360:(Number(fallback)||90);
   }
 
+  function runwayHeadingFromCode(code, fallbackHeading = 90) {
+    const match = String(code || '').toUpperCase().match(/\b(\d{2})[LCR]?\b/);
+    if (!match) return (Number(fallbackHeading) + 360) % 360;
+    const num = Number(match[1]);
+    if (!Number.isFinite(num)) return (Number(fallbackHeading) + 360) % 360;
+    return ((num % 36) * 10 + 360) % 360;
+  }
+
   window.FlightFlowCoordinateUtils = Object.freeze({
     normalizeCoordinateInput,
     validAerodromeCoordinate,
@@ -38,5 +46,6 @@
     groundCentroid,
     runwayTokens,
     runwayHeading,
+    runwayHeadingFromCode,
   });
 })();

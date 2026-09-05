@@ -93,6 +93,8 @@ test('cluster runway geometry foi externalizado sem alterar consumidores', () =>
     const consumers = [...kernel.matchAll(new RegExp(`(?<![\\w$.])${name}\\s*\\(`, 'g'))].length;
     assert.equal(consumers, name === 'runwayTokens' ? 3 : expected.consumers);
   }
-  assert.ok(kernel.includes('function runwayHeadingFromCode('));
-  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading } = CoordinateUtils;'));
+  assert.equal(kernel.includes('function runwayHeadingFromCode('), false);
+  assert.ok(module.includes('function runwayHeadingFromCode('));
+  assert.ok(module.includes('    runwayHeadingFromCode,'));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode } = CoordinateUtils;'));
 });
