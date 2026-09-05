@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MATERIALIZER = ROOT / 'tools' / 'materialize_runway_geometry_extraction.py'
 RUNWAY_TEST = ROOT / 'tests' / 'runway-geometry-contract.test.js'
+GROUND_TEST = ROOT / 'tests' / 'ground-centroid-contract.test.js'
 
 text = MATERIALIZER.read_text(encoding='utf-8')
 old = """post_kernel = kernel_source(html)\nfor name, (_, _, _, exp_consumers) in EXPECTED.items():\n    if f'function {name}(' in post_kernel:\n        raise SystemExit(f'{name} continua inline')\n    consumers = len(re.findall(rf'(?<![\\w$.]){name}\\s*\\(', post_kernel))\n    if consumers != exp_consumers:\n        raise SystemExit(f'{name}: consumidores mudaram após extração: {consumers}')\n"""
@@ -31,3 +32,13 @@ if test.count(old_final) != 1:
     raise SystemExit(f'asserção final de consumidores não encontrada de modo inequívoco: {test.count(old_final)}')
 test = test.replace(old_final, new_final, 1)
 RUNWAY_TEST.write_text(test, encoding='utf-8')
+
+# groundCentroid continua com o mesmo contrato funcional; apenas o destructuring
+# explícito do mesmo CoordinateUtils cresce com o novo par geográfico.
+ground = GROUND_TEST.read_text(encoding='utf-8')
+old_alias = "{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid } = CoordinateUtils;"
+new_alias = "{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading } = CoordinateUtils;"
+if ground.count(old_alias) != 1:
+    raise SystemExit(f'alias antigo do contrato groundCentroid não encontrado de modo inequívoco: {ground.count(old_alias)}')
+ground = ground.replace(old_alias, new_alias, 1)
+GROUND_TEST.write_text(ground, encoding='utf-8')
