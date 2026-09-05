@@ -9,8 +9,8 @@ const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'playback-controller.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const REFERENCE = '<script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>';
-const MODULE_BYTES = 2426;
-const MODULE_SHA256 = 'fbb16dca96619407c8f41df7bd08ccdf1f1a1e13b81be035b662ab55310d1c41';
+const MODULE_BYTES = 2616;
+const MODULE_SHA256 = 'b0d08389e4d333f3f2f885272d962e49544273d94a3ef95e51dcdf8f85fbe965';
 const PLAYBACK_FUNCTIONS = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 
 function moduleSource() {
@@ -63,7 +63,8 @@ function controllerHarness(overrides = {}) {
     if (Number.isFinite(next)) state.index = Math.max(0, Math.min(state.parsed.events.length - 1, next));
   };
   const currentEvent = () => state.parsed?.events?.[state.index] || null;
-  const api = PlaybackController.create({ state, playBtn, currentEvent, goTo, setTimeout, clearTimeout });
+  const getPlayBtn = overrides.getPlayBtn || (() => playBtn);
+  const api = PlaybackController.create({ state, getPlayBtn, currentEvent, goTo, setTimeout, clearTimeout });
   return { PlaybackController, state, playBtn, calls, timers, api };
 }
 
@@ -95,7 +96,7 @@ test('index carrega playback antes do IIFE e o núcleo instancia dependências e
     'const PlaybackController = window.FlightFlowPlaybackController;',
     "if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');",
     'const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({',
-    'playBtn: els.playBtn,',
+    'getPlayBtn: () => els.playBtn,',
     'currentEvent: () => currentEvent(),',
     'goTo: (index, options) => goTo(index, options),',
     'setTimeout: (fn, delay) => window.setTimeout(fn, delay),',
@@ -120,9 +121,10 @@ test('módulo playback não importa rota, mapa, aeronave, storage ou parser', ()
 test('fábrica exige somente as dependências explícitas necessárias', () => {
   const api = loadModule();
   assert.throws(() => api.create(), /requer state/);
-  assert.throws(() => api.create({ state: {} }), /requer currentEvent/);
-  assert.throws(() => api.create({ state: {}, currentEvent() {} }), /requer goTo/);
-  assert.throws(() => api.create({ state: {}, currentEvent() {}, goTo() {} }), /requer timers explícitos/);
+  assert.throws(() => api.create({ state: {} }), /requer getPlayBtn/);
+  assert.throws(() => api.create({ state: {}, getPlayBtn() {} }), /requer currentEvent/);
+  assert.throws(() => api.create({ state: {}, getPlayBtn() {}, currentEvent() {} }), /requer goTo/);
+  assert.throws(() => api.create({ state: {}, getPlayBtn() {}, currentEvent() {}, goTo() {} }), /requer timers explícitos/);
 });
 
 test('instância criada é congelada e expõe somente quatro operações', () => {
@@ -130,6 +132,18 @@ test('instância criada é congelada e expõe somente quatro operações', () =>
   assert.equal(Object.isFrozen(h.api), true);
   assert.deepEqual(Object.keys(h.api), PLAYBACK_FUNCTIONS);
   for (const name of PLAYBACK_FUNCTIONS) assert.equal(typeof h.api[name], 'function');
+});
+
+test('botão Play é resolvido tardiamente após cacheElements preencher o DOM', () => {
+  let livePlayBtn = null;
+  const h = controllerHarness({ getPlayBtn: () => livePlayBtn });
+  livePlayBtn = { textContent: '▶', title: 'Reproduzir (Espaço)' };
+  h.api.startPlayback();
+  assert.equal(livePlayBtn.textContent, 'Ⅱ');
+  assert.equal(livePlayBtn.title, 'Pausar (Espaço)');
+  h.api.stopPlayback();
+  assert.equal(livePlayBtn.textContent, '▶');
+  assert.equal(livePlayBtn.title, 'Reproduzir (Espaço)');
 });
 
 test('startPlayback no último evento reinicia silenciosamente no primeiro antes de reproduzir', () => {

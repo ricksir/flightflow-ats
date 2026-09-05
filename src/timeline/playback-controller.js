@@ -7,13 +7,14 @@
 
   const create = (options = {}) => {
     const state = options.state;
-    const playBtn = options.playBtn;
+    const getPlayBtn = options.getPlayBtn;
     const currentEvent = options.currentEvent;
     const goTo = options.goTo;
     const setTimer = options.setTimeout;
     const clearTimer = options.clearTimeout;
 
     if (!state) throw new Error('FlightFlowPlaybackController requer state.');
+    if (typeof getPlayBtn !== 'function') throw new Error('FlightFlowPlaybackController requer getPlayBtn().');
     if (typeof currentEvent !== 'function') throw new Error('FlightFlowPlaybackController requer currentEvent().');
     if (typeof goTo !== 'function') throw new Error('FlightFlowPlaybackController requer goTo().');
     if (typeof setTimer !== 'function' || typeof clearTimer !== 'function') {
@@ -24,6 +25,7 @@
       if (!state.parsed) return;
       if (state.index >= state.parsed.events.length - 1) goTo(0, { silent: true });
       state.playing = true;
+      const playBtn = getPlayBtn();
       playBtn.textContent = 'Ⅱ';
       playBtn.title = 'Pausar (Espaço)';
       scheduleNext();
@@ -33,6 +35,7 @@
       state.playing = false;
       if (state.timer) clearTimer(state.timer);
       state.timer = null;
+      const playBtn = getPlayBtn();
       if (playBtn) {
         playBtn.textContent = '▶';
         playBtn.title = 'Reproduzir (Espaço)';

@@ -253,9 +253,9 @@ Contratos após a extração:
 
 - módulo: **872 bytes**;
 - SHA-256 do módulo: `426cfdffc6a803275e6432bea2ee28a2e2c71c6464f4e27998e668641fcd44ea`;
-- corpo bruto do IIFE: **1.144.923 bytes** / SHA-256 `0c136e2f689a5caa5ad676bd091499574ec042ab177ce8ff56593f4c9b77e501`;
-- contrato normalizado do IIFE: **1.144.919 bytes / 5.490 linhas**;
-- SHA-256 normalizado: `4eba80a6f22abeac32e519ddef51afcd7754ea1e514d5c0e8cec7725fe63a92c`;
+- corpo bruto do IIFE: **1.143.741 bytes** / SHA-256 `2a368c80164933a8c472bac330f51049b0f0f8e87755da67004d3399a7746ceb`;
+- contrato normalizado do IIFE: **1.143.741 bytes / 5.460 linhas**;
+- SHA-256 normalizado: `2a368c80164933a8c472bac330f51049b0f0f8e87755da67004d3399a7746ceb`;
 - as quatro declarações deixam de existir inline e permanecem disponíveis pelos aliases;
 - o inventário global continua protegido contra novas duplicações.
 
@@ -287,11 +287,11 @@ Proteções: `tests/object-path-utils-contract.test.js`, `tests/core-utils-contr
 
 O domínio timeline/estado começou pela subfronteira de menor acoplamento. Antes do corte, o PR #31 congelou em Node e Chrome o comportamento de `startPlayback`, `stopPlayback`, `togglePlayback` e `scheduleNext`, incluindo reinício no primeiro evento quando Play é acionado no fim, cancelamento de timer, velocidade/ênfase ATS, piso de 350 ms e término exato no último evento.
 
-A implementação foi movida para `src/timeline/playback-controller.js` e publicada como `window.FlightFlowPlaybackController = Object.freeze({ create })`. A fábrica recebe explicitamente `state`, botão Play, `currentEvent`, `goTo`, `setTimeout` e `clearTimeout`; o módulo não importa diretamente rota processada, mapa, aeronave, storage ou parser. `goTo`, `renderCurrent`, `buildTimeline` e `enableControls` permanecem no IIFE.
+A implementação foi movida para `src/timeline/playback-controller.js` e publicada como `window.FlightFlowPlaybackController = Object.freeze({ create })`. A fábrica recebe explicitamente `state`, um resolvedor preguiçoso do botão Play (`getPlayBtn`), `currentEvent`, `goTo`, `setTimeout` e `clearTimeout`; o módulo não importa diretamente rota processada, mapa, aeronave, storage ou parser. `goTo`, `renderCurrent`, `buildTimeline` e `enableControls` permanecem no IIFE.
 
 Contratos após a extração:
 
-- módulo: **2.426 bytes** / SHA-256 `fbb16dca96619407c8f41df7bd08ccdf1f1a1e13b81be035b662ab55310d1c41`;
+- módulo: **2.616 bytes** / SHA-256 `b0d08389e4d333f3f2f885272d962e49544273d94a3ef95e51dcdf8f85fbe965`;
 - corpo bruto do IIFE: **1.143.736 bytes** / SHA-256 `b56a79bd9b1d5cefbd795851a566fa47ebb2c13ad6a889d88d7a7c3526a3da0e`;
 - contrato normalizado do IIFE: **1.143.732 bytes / 5.460 linhas**;
 - SHA-256 normalizado: `c91da8d798192b0b0764a717a9dd464046810d1eac6066681d94d07f1615e41e`;

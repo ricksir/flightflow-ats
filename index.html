@@ -10042,7 +10042,7 @@ Destinatário(s): ${context.recipients}`;
   if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');
   const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({
     state,
-    playBtn: els.playBtn,
+    getPlayBtn: () => els.playBtn,
     currentEvent: () => currentEvent(),
     goTo: (index, options) => goTo(index, options),
     setTimeout: (fn, delay) => window.setTimeout(fn, delay),
