@@ -25,7 +25,7 @@ function aiSource() {
   const bodyStart = html.indexOf('>', open) + 1;
   const close = html.indexOf('</script>', tokenIndex);
   assert.ok(open >= 0 && bodyStart > open && close > bodyStart, 'bloco de IA deve continuar delimitado');
-  return html.slice(bodyStart, close).replace(/^\n|\n$/g, '') + '\n';
+  return html.slice(bodyStart, close).replace(/^\n+|\n+$/g, '') + '\n';
 }
 
 test('motor IA inline mantém identidade estrutural antes da extração', () => {
