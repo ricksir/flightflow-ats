@@ -22,8 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Materialize extraction
-        run: python3 tools/materialize_geo_offset_extraction.py
+      - name: Materialize extraction v2
+        run: python3 tools/run_geo_offset_extraction.py
       - name: Install dependencies
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
