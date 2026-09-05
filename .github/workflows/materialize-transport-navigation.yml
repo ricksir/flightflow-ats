@@ -1,0 +1,54 @@
+name: Materialize transport navigation extraction
+
+on:
+  push:
+    branches:
+      - refactor/extract-transport-navigation
+    paths:
+      - .github/workflows/materialize-transport-navigation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize extraction
+        run: python3 tools/materialize_transport_navigation.py
+
+      - name: Install test dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm install --no-audit --no-fund
+
+      - name: Static audit
+        run: npm run audit
+
+      - name: Function declaration inventory
+        run: npm run inventory
+
+      - name: Node regression suite
+        run: npm test
+
+      - name: Diff sanity
+        run: git diff --check
+
+      - name: Commit materialized files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html tests/main-kernel-contract.test.js
+          git diff --cached --quiet && exit 0
+          git commit -m "refactor: wire transport navigation controller"
+          git push
