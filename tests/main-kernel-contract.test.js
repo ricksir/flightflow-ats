@@ -6,10 +6,11 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1148151;
-const EXPECTED_SHA256 = '09a49e38f076badb3f1e6a72f368de3a5fc330e76b9adc93a1768eb769c7ea9e';
-const EXPECTED_LINES = 5540;
+const EXPECTED_BYTES = 1147287;
+const EXPECTED_SHA256 = 'c76c79f1ccfd325108d9f3be56777985523d4b404b53c069050acb4c6f5c1740';
+const EXPECTED_LINES = 5522;
 const EXPECTED_DUPLICATES = [];
+const EXTRACTED_CORE_UTILS = ['shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -32,11 +33,14 @@ test('núcleo principal mantém identidade estrutural de baseline', () => {
   assert.match(source, /\}\)\(\);\n$/);
 });
 
-test('núcleo continua dependente explicitamente do FlightParser e mantém identidade da aplicação', () => {
+test('núcleo mantém dependências explícitas de Parser/CoreUtils e identidade da aplicação', () => {
   const source = kernelSource();
   for (const token of [
     'const Parser = window.FlightParser;',
     "if (!Parser) throw new Error('FlightParser não foi carregado.');",
+    'const CoreUtils = window.FlightFlowCoreUtils;',
+    "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
+    'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes } = CoreUtils;',
     "name: 'FlightFlow ATS - TIOP Cindacta1'",
     "subtitle: 'Histórico animado de Plano de Voo'",
     "version: '7.3.2'"
@@ -78,16 +82,19 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo exige nomes de função únicos antes da decomposição', () => {
+test('inventário interno do núcleo mantém nomes únicos após primeira extração por domínio', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 376);
-  assert.equal(counts.size, 376);
+  assert.equal(names.length, 370);
+  assert.equal(counts.size, 370);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   assert.equal(counts.get('buildTimeline'), 1);
   assert.equal(counts.get('getSourceClass'), 1);
+  for (const name of EXTRACTED_CORE_UTILS) {
+    assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
+  }
 });

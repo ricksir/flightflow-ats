@@ -19,6 +19,8 @@ Após a eliminação das duplicações internas byte-idênticas `buildTimeline` 
 - **711 nomes únicos**;
 - **9 nomes repetidos** entre fronteiras/módulos diferentes.
 
+A extração dos primeiros utilitários do núcleo não altera esses totais globais: as seis declarações apenas mudaram de fronteira.
+
 ## Fronteiras atuais
 
 | Fronteira | Situação |
@@ -26,7 +28,8 @@ Após a eliminação das duplicações internas byte-idênticas `buildTimeline` 
 | `FlightParser` / `window.FlightParser` | **externo em `src/parser/flight-parser.js`** |
 | `window.__SAMPLE_HISTORY__` | **externo em `src/data/sample-history.js`** |
 | `window.__FLIGHTFLOW_GEO_DATA__` | **externo em `src/data/geo-data.js`** |
-| IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; decomposição deve ocorrer **por domínio** |
+| utilitários puros / `window.FlightFlowCoreUtils` | **externo em `src/core/core-utils.js`** |
+| IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; decomposição continua **por domínio** |
 | motor IA/governança / `window.__flightflowAI` | **externo em `src/ai/ai-engine.js`** |
 | Secure Storage / `window.FlightFlowStorage` | **externo em `src/storage/secure-storage.js`** |
 | FIR v7.3.5 / `window.renderManualFirLayers` | **externo em `src/map/fir-layers.js`** |
@@ -110,6 +113,33 @@ Foram removidas somente as primeiras cópias redundantes. O núcleo passou a ter
 
 `tests/main-kernel-contract.test.js` exige que `buildTimeline` e `getSourceClass` existam exatamente uma vez e que nenhuma nova duplicação interna seja introduzida.
 
+### 9. Primeira extração por domínio: utilitários puros
+
+O primeiro cluster retirado do IIFE foi escolhido por baixo acoplamento. Antes da mudança, `tests/core-utils-contract.test.js` congelou tamanho, SHA-256 e comportamento de:
+
+- `shortMessageType`;
+- `displayValue`;
+- `cleanDisplay`;
+- `humanize`;
+- `clone`;
+- `formatBytes`.
+
+O mapeamento confirmou que essas funções não dependiam de `state`, DOM, mapa, rede, armazenamento, `FlightParser` ou timers.
+
+A implementação foi movida mecanicamente para `src/core/core-utils.js` e publicada como `window.FlightFlowCoreUtils = Object.freeze(...)`. O IIFE principal mantém aliases locais explícitos para os mesmos seis nomes, portanto os consumidores não foram reescritos.
+
+Contratos após a extração:
+
+- módulo: **1.284 bytes**;
+- SHA-256 do módulo: `7d1e6b33134764ea46281988e486a55e98f09a6770ab6de06778b99a97a2b289`;
+- cada corpo de função preserva exatamente seu tamanho e SHA anterior;
+- núcleo principal: **1.147.287 bytes** / **5.522 linhas**;
+- SHA-256 do núcleo: `c76c79f1ccfd325108d9f3be56777985523d4b404b53c069050acb4c6f5c1740`;
+- núcleo: **370 funções nomeadas / 370 nomes únicos / zero duplicações internas**;
+- inventário global: **722 declarações / 711 nomes únicos / 9 nomes repetidos conhecidos**.
+
+Proteções: `tests/core-utils-contract.test.js`, `tests/e2e/core-utils-module.spec.js` e `tests/main-kernel-contract.test.js`.
+
 ## Regras para os próximos PRs
 
 1. **Não misturar extração e melhoria funcional.**
@@ -122,6 +152,6 @@ Foram removidas somente as primeiras cópias redundantes. O núcleo passou a ter
 
 ## Próxima etapa
 
-O grande IIFE principal permanece inline, mas agora está protegido por contrato e sem duplicações internas. Ele **não deve ser movido inteiro**.
+O grande IIFE principal permanece inline, agora com **370 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
 
-O próximo passo é escolher o primeiro cluster pequeno de baixa dependência, criar um teste de contrato específico para esse cluster e só então extraí-lo. A decomposição continuará por domínio (`timeline/`, `navigation/`, `map/`, `flightplan/`, `ats/`, `ui/`), priorizando fronteiras com menos estado compartilhado antes de tocar no núcleo temporal/espacial da rota e da aeronave.
+O próximo passo é escolher o segundo cluster de baixa dependência. Devem ser priorizadas funções puras ou quase puras de formatação/configuração antes de `timeline/`, `navigation/`, `map/` ou do núcleo temporal/espacial da rota e da aeronave.

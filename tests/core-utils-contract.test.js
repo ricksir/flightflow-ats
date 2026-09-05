@@ -6,7 +6,11 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'core', 'core-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
+const REFERENCE = '<script id="flightflow-core-utils" src="src/core/core-utils.js"></script>';
+const MODULE_BYTES = 1284;
+const MODULE_SHA256 = '7d1e6b33134764ea46281988e486a55e98f09a6770ab6de06778b99a97a2b289';
 const EXPECTED = Object.freeze({
   shortMessageType: { bytes: 124, sha256: 'c61517a0039c41c02772b7d261d23925ad705fd5ef36dbbd6c47ef01d15b68c3' },
   displayValue: { bytes: 379, sha256: '79d5ccbcaec3caead3749f1defa25434e8d05b6f00cca3ac81fd6da66bbe341b' },
@@ -17,10 +21,14 @@ const EXPECTED = Object.freeze({
 });
 
 const FORBIDDEN_COUPLING = [
-  'state', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
+  'state', 'els.', 'document.', 'localStorage', 'sessionStorage',
   'indexedDB', 'fetch(', 'realMapState', 'google.', 'L.', 'Parser',
   'setTimeout', 'requestAnimationFrame'
 ];
+
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -36,7 +44,7 @@ function kernelSource() {
 function extractFunction(source, name) {
   const pattern = new RegExp('(^|\\n)([ \\t]*)function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{', 'g');
   const matches = [...source.matchAll(pattern)];
-  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no núcleo antes da extração`);
+  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no módulo`);
   const match = matches[0];
   const offset = match.index + (match[1] === '\n' ? 1 : 0);
   const brace = source.indexOf('{', offset);
@@ -86,34 +94,60 @@ function compile(source, name) {
   return Function(`${source}; return ${name};`)();
 }
 
-test('seis utilitários puros mantêm identidade byte a byte antes da extração', () => {
-  const kernel = kernelSource();
+test('módulo core-utils mantém identidade estrutural completa', () => {
+  const source = moduleSource();
+  assert.equal(Buffer.byteLength(source, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), MODULE_SHA256);
+  assert.ok(source.startsWith("(function () {\n  'use strict';"));
+  assert.ok(source.includes('window.FlightFlowCoreUtils = Object.freeze({'));
+  assert.ok(source.endsWith('})();\n'));
+});
+
+test('seis utilitários preservam identidade byte a byte dentro do módulo', () => {
+  const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
-    const source = extractFunction(kernel, name);
-    assert.equal(Buffer.byteLength(source, 'utf8'), expected.bytes, `${name}: tamanho mudou`);
-    assert.equal(crypto.createHash('sha256').update(source).digest('hex'), expected.sha256, `${name}: SHA mudou`);
+    const body = extractFunction(source, name);
+    assert.equal(Buffer.byteLength(body, 'utf8'), expected.bytes, `${name}: tamanho mudou`);
+    assert.equal(crypto.createHash('sha256').update(body).digest('hex'), expected.sha256, `${name}: SHA mudou`);
   }
 });
 
-test('cluster escolhido permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
+test('módulo é carregado antes do IIFE e o núcleo usa aliases explícitos', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  assert.equal(html.split(REFERENCE).length - 1, 1, 'referência de core-utils deve ser única');
+  const referenceIndex = html.indexOf(REFERENCE);
+  const anchorIndex = html.indexOf(ANCHOR);
+  const mainScriptStart = html.lastIndexOf('<script', anchorIndex);
+  assert.ok(referenceIndex >= 0 && referenceIndex < mainScriptStart, 'core-utils deve carregar antes do núcleo principal');
+
   const kernel = kernelSource();
+  assert.ok(kernel.includes('const CoreUtils = window.FlightFlowCoreUtils;'));
+  assert.ok(kernel.includes("if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');"));
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes } = CoreUtils;'));
   for (const name of Object.keys(EXPECTED)) {
-    const source = extractFunction(kernel, name);
+    assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar declarado inline`);
+  }
+});
+
+test('cluster permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
+  const source = moduleSource();
+  for (const name of Object.keys(EXPECTED)) {
+    const body = extractFunction(source, name);
     for (const token of FORBIDDEN_COUPLING) {
-      assert.ok(!source.includes(token), `${name} passou a depender de ${token}`);
+      assert.ok(!body.includes(token), `${name} passou a depender de ${token}`);
     }
   }
 });
 
 test('shortMessageType preserva normalização atual', () => {
-  const fn = compile(extractFunction(kernelSource(), 'shortMessageType'), 'shortMessageType');
+  const fn = compile(extractFunction(moduleSource(), 'shortMessageType'), 'shortMessageType');
   assert.equal(fn(), 'ATS');
   assert.equal(fn('DEP'), 'DEP');
   assert.equal(fn('  cpl-abc/12 !!'), 'cplabc/1');
 });
 
 test('displayValue preserva representação de vazios, listas e objetos', () => {
-  const fn = compile(extractFunction(kernelSource(), 'displayValue'), 'displayValue');
+  const fn = compile(extractFunction(moduleSource(), 'displayValue'), 'displayValue');
   assert.equal(fn(null), '—');
   assert.equal(fn(''), '—');
   assert.equal(fn('ABC'), 'ABC');
@@ -123,9 +157,9 @@ test('displayValue preserva representação de vazios, listas e objetos', () => 
 });
 
 test('cleanDisplay e humanize preservam formatação textual atual', () => {
-  const kernel = kernelSource();
-  const cleanDisplay = compile(extractFunction(kernel, 'cleanDisplay'), 'cleanDisplay');
-  const humanize = compile(extractFunction(kernel, 'humanize'), 'humanize');
+  const source = moduleSource();
+  const cleanDisplay = compile(extractFunction(source, 'cleanDisplay'), 'cleanDisplay');
+  const humanize = compile(extractFunction(source, 'humanize'), 'humanize');
   assert.equal(cleanDisplay(null), '');
   assert.equal(cleanDisplay('  A   B  '), 'A B');
   assert.equal(cleanDisplay('A\nB\tC'), 'A B C');
@@ -135,7 +169,7 @@ test('cleanDisplay e humanize preservam formatação textual atual', () => {
 });
 
 test('clone continua produzindo cópia profunda JSON independente', () => {
-  const clone = compile(extractFunction(kernelSource(), 'clone'), 'clone');
+  const clone = compile(extractFunction(moduleSource(), 'clone'), 'clone');
   const original = { a: 1, nested: { b: 2 } };
   const copied = clone(original);
   copied.nested.b = 99;
@@ -144,7 +178,7 @@ test('clone continua produzindo cópia profunda JSON independente', () => {
 });
 
 test('formatBytes preserva unidades e arredondamento atuais', () => {
-  const fn = compile(extractFunction(kernelSource(), 'formatBytes'), 'formatBytes');
+  const fn = compile(extractFunction(moduleSource(), 'formatBytes'), 'formatBytes');
   assert.equal(fn(0), '0 B');
   assert.equal(fn(Number.NaN), '0 B');
   assert.equal(fn(1024), '1.0 KB');
