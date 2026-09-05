@@ -1,4 +1,4 @@
-name: Materialize groundCentroid extraction v2
+name: Materialize groundCentroid extraction v3
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
           node-version: 22
 
       - name: Materialize extraction
-        run: python3 tools/materialize_ground_centroid_extraction.py
+        run: python3 tools/run_ground_centroid_extraction.py
 
       - name: Install dependencies
         env:
