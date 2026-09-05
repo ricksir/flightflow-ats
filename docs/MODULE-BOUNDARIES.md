@@ -234,3 +234,28 @@ Proteções: `tests/operational-state-utils-contract.test.js`, `tests/e2e/operat
 O grande IIFE principal permanece inline, agora com **361 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
 
 O cluster de coordenadas continua sendo um candidato de baixo acoplamento, mas possui 13 consumidores e deve receber contrato próprio antes de qualquer corte. `clamp`/`clamp01` só devem sair depois de um contrato específico que cubra seus muitos consumidores. Timeline, navegação, mapa e o núcleo temporal/espacial da rota e da aeronave permanecem protegidos de refatorações amplas até que suas dependências sejam mapeadas e cobertas por testes dedicados.
+
+### 13. Quinta extração por domínio: utilitários puros de coordenadas
+
+Após a correção funcional isolada de `INATIVO`, o núcleo voltou ao fluxo de decomposição por baixo acoplamento. O ranking dos candidatos restantes selecionou o cluster de coordenadas por coerência de domínio e ausência de dependências de DOM, estado global, rede, armazenamento, mapa ou parser.
+
+Antes do corte, `tests/coordinate-utils-contract.test.js` congelou tamanho, SHA-256 e comportamento de:
+
+- `normalizeCoordinateInput` — **196 bytes** / SHA-256 `25eeb5945c7e4d2b8d6e3fcd17bce4fd78d3eb4c51e779c9f80360a26e75f528`;
+- `validAerodromeCoordinate` — **192 bytes** / SHA-256 `3e113b6ba7a93eb851c5f70ad19a5aff715436c3b1804a36da4335fef87563c5`;
+- `formatGeoCoord` — **135 bytes** / SHA-256 `a7219e2ed5d6939754accd2b96248cecbfc826c43bc905718d082c52ee6f963e`;
+- `atsCoordinateLabel` — **141 bytes** / SHA-256 `541c59f892839907c29cbfeac7ac7256251aca2272180d83c4f3b355ecc532b6`.
+
+Os quatro corpos, totalizando **664 bytes** e **13 pontos consumidores conhecidos**, foram movidos mecanicamente para `src/geo/coordinate-utils.js` e publicados em `window.FlightFlowCoordinateUtils = Object.freeze(...)`. O IIFE principal mantém aliases locais com os mesmos nomes, portanto os consumidores existentes não foram reescritos.
+
+Contratos após a extração:
+
+- módulo: **872 bytes**;
+- SHA-256 do módulo: `426cfdffc6a803275e6432bea2ee28a2e2c71c6464f4e27998e668641fcd44ea`;
+- corpo bruto do IIFE: **1.144.923 bytes** / SHA-256 `0c136e2f689a5caa5ad676bd091499574ec042ab177ce8ff56593f4c9b77e501`;
+- contrato normalizado do IIFE: **1.144.919 bytes / 5.490 linhas**;
+- SHA-256 normalizado: `4eba80a6f22abeac32e519ddef51afcd7754ea1e514d5c0e8cec7725fe63a92c`;
+- as quatro declarações deixam de existir inline e permanecem disponíveis pelos aliases;
+- o inventário global continua protegido contra novas duplicações.
+
+Proteções: `tests/coordinate-utils-contract.test.js`, `tests/e2e/coordinate-utils-module.spec.js`, `tests/main-kernel-contract.test.js`, auditoria estática, inventário global, regressão 78→79 e suíte Playwright/Chrome.
