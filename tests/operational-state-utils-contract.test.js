@@ -9,12 +9,12 @@ const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'ui', 'operational-state-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const REFERENCE = '<script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>';
-const MODULE_BYTES = 1554;
-const MODULE_SHA256 = 'd6620a7d53a24376969e2ae33b20a84f71a02eaaa7f852d98b43416e1af9f778';
+const MODULE_BYTES = 1638;
+const MODULE_SHA256 = 'b0cd46c421ac0c356489db36bf5fd1c3c89f034e6e4b4af91de1824a35555894';
 
 const EXPECTED = Object.freeze({
   themeSwatch: { bytes: 330, sha256: 'f6a08de7486f9f317f9ae48739bf130d2d3f7f07b45ab5c4f76afa609994ba52' },
-  stripTheme: { bytes: 653, sha256: '2dd09d6f90d269c0441ca63a5022d66a12de606235acbe8d5554ef2bf8c6f2f4' },
+  stripTheme: { bytes: 737, sha256: '3468babaabc1ce0570d1c8d4b20d4ef76510ed42c10117ff4ebfcb410e774cbb' },
   statusClass: { bytes: 413, sha256: '459acb249e4af18bb6973d305fbd6e43c9c558ec89452b975de71ee4d122f12e' },
 });
 
@@ -92,7 +92,7 @@ test('módulo operational-state mantém identidade estrutural completa', () => {
   assert.ok(source.endsWith('})();\n'));
 });
 
-test('três utilitários preservam identidade byte a byte após a extração', () => {
+test('três utilitários preservam identidade byte a byte após a correção funcional', () => {
   const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
@@ -141,20 +141,22 @@ test('themeSwatch preserva paleta operacional atual e fallback', () => {
   });
 });
 
-test('stripTheme preserva exatamente a prioridade e classificação operacional atuais', () => {
+test('stripTheme preserva prioridades especiais e classifica INATIVO como não controlado', () => {
   const fn = compile(extractFunction(moduleSource(), 'stripTheme'), 'stripTheme');
   const cases = [
     [{ snapshot: { status: 'ATIVO' }, operation: 'EMERG' }, 'theme-alert'],
+    [{ snapshot: { status: 'INATIVO' }, operation: 'EMERG' }, 'theme-alert'],
     [{ snapshot: { status: 'ATIVO', rvsm: 'X' } }, 'theme-nonrvsm'],
+    [{ snapshot: { status: 'INATIVO', rvsm: 'X' } }, 'theme-nonrvsm'],
     [{ snapshot: { status: 'PROPOSTA' } }, 'theme-proposal'],
     [{ snapshot: { groundState: 'DOADOR' } }, 'theme-donor'],
     [{ snapshot: { groundState: 'RECEPTOR' } }, 'theme-receiver'],
+    [{ snapshot: { status: 'INATIVO' } }, 'theme-noncontrolled'],
+    [{ snapshot: { status: 'INATIVO' }, operation: 'Criação pelo Arquivo de RPL' }, 'theme-noncontrolled'],
     [{ snapshot: { status: 'TERMINADO' } }, 'theme-finished'],
     [{ snapshot: { status: 'PRÉ-ATIVO', authorizationState: 'AUTORIZADO' } }, 'theme-pre-dark'],
     [{ snapshot: { status: 'PRÉ-ATIVO', authorizationState: '' } }, 'theme-pre-light'],
     [{ snapshot: { status: 'ATIVO' } }, 'theme-controlled'],
-    // Equivalência deliberada: a extração não corrige a regra atual em que INATIVO contém ATIVO.
-    [{ snapshot: { status: 'INATIVO' } }, 'theme-controlled'],
     [null, 'theme-noncontrolled'],
   ];
   for (const [event, expected] of cases) assert.equal(fn(event), expected, JSON.stringify(event));
