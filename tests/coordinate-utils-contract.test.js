@@ -9,8 +9,8 @@ const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'geo', 'coordinate-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const REFERENCE = '<script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>';
-const MODULE_BYTES = 1950;
-const MODULE_SHA256 = '9e946ea3e60193aaef3c1502699c92fa3bfe5d9d9cfee62afab8361ec9c360cd';
+const MODULE_BYTES = 2313;
+const MODULE_SHA256 = 'c8a2c7f78cd11811606792becc515139abd76ef7f0856aa66428829658f8eac5';
 
 const EXPECTED = Object.freeze({
   normalizeCoordinateInput: {
@@ -44,6 +44,10 @@ const EXPECTED = Object.freeze({
   runwayHeadingFromCode: {
     bytes: 360,
     sha256: '6e8196889acf6a28ce1606462f73c70e381db5ef84732ea32c36c3e572bff053',
+  },
+  polygonGeoCentroid: {
+    bytes: 337,
+    sha256: 'af2ed9697962ac78039ec6c758b9de6e8f1e24367e5d362a8cf245b14572ba61',
   },
 });
 
@@ -121,7 +125,7 @@ test('módulo coordinate-utils mantém identidade estrutural completa', () => {
   assert.ok(source.endsWith('})();\n'));
 });
 
-test('oito utilitários geográficos preservam identidade byte a byte após a extração', () => {
+test('nove utilitários geográficos preservam identidade byte a byte após a extração', () => {
   const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
@@ -141,7 +145,7 @@ test('módulo carrega antes do IIFE e o núcleo usa aliases explícitos sem rede
   const kernel = kernelSource();
   assert.ok(kernel.includes('const CoordinateUtils = window.FlightFlowCoordinateUtils;'));
   assert.ok(kernel.includes("if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');"));
-  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode } = CoordinateUtils;'));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid } = CoordinateUtils;'));
   for (const name of Object.keys(EXPECTED)) {
     assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar declarado inline`);
   }

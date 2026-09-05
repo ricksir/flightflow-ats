@@ -5508,7 +5508,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
-  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode } = CoordinateUtils;
+  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid } = CoordinateUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -6524,16 +6524,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
       if(intersect)inside=!inside;
     }
     return inside;
-  }
-
-  function polygonGeoCentroid(points){
-    if(!Array.isArray(points)||!points.length)return null;
-    let lon=0,lat=0,count=0;
-    points.forEach(p=>{
-      const x=Number(p&&p[0]),y=Number(p&&p[1]);
-      if(Number.isFinite(x)&&Number.isFinite(y)){lon+=x;lat+=y;count++;}
-    });
-    return count?{lon:lon/count,lat:lat/count}:null;
   }
 
   function inferAccAddressesForFlight(dep,arr){

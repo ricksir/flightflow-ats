@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1140997;
-const EXPECTED_SHA256 = '75f852a0d2190deaeeb1ecfc58f91b66c791e1c1100be869e5eaf4d4c50a3baa';
-const EXPECTED_LINES = 5428;
+const EXPECTED_BYTES = 1140678;
+const EXPECTED_SHA256 = 'fb104639e66fd3069833638de3b0ff9967882be9da8c81fc8a1df1f53a6703c7';
+const EXPECTED_LINES = 5418;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -18,7 +18,7 @@ const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 
 const EXTRACTED_OPERATIONAL_STATE_UTILS = ['themeSwatch', 'stripTheme', 'statusClass'];
 const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel', 'groundCentroid',
-  'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode'
+  'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode', 'polygonGeoCentroid'
 ];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
@@ -65,7 +65,7 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;',
     'const CoordinateUtils = window.FlightFlowCoordinateUtils;',
     "if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');",
-    'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode } = CoordinateUtils;',
+    'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid } = CoordinateUtils;',
     'const PlaybackController = window.FlightFlowPlaybackController;',
     "if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');",
     'const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({',
@@ -132,8 +132,8 @@ test('inventário interno do núcleo mantém nomes únicos após seis extraçõe
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 342);
-  assert.equal(counts.size, 342);
+  assert.equal(names.length, 341);
+  assert.equal(counts.size, 341);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
