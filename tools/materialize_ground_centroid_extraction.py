@@ -212,12 +212,12 @@ test('groundCentroid permanece função geográfica pura e folha', () => {{
 test('IIFE usa groundCentroid pelo coordinate-utils sem alterar os dois consumidores', () => {{
   const kernel = kernelSource();
   assert.equal(kernel.includes('function groundCentroid('), false);
-  assert.ok(kernel.includes('{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid } = CoordinateUtils;'));
+  assert.ok(kernel.includes('{{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid }} = CoordinateUtils;'));
   const consumers = [...kernel.matchAll(/(?<![\\w$.])groundCentroid\\s*\\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('function groundMidpoint('), 'groundMidpoint deve permanecer inline');
   const module = fs.readFileSync(MODULE, 'utf8');
-  assert.ok(module.includes('    groundCentroid,\n  });'));
+  assert.ok(module.includes('    groundCentroid,\n  }});'));
 }});
 '''
 CENTROID_TEST.write_text(centroid_test, encoding='utf-8')
