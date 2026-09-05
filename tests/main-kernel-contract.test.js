@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1143741;
-const EXPECTED_SHA256 = '2a368c80164933a8c472bac330f51049b0f0f8e87755da67004d3399a7746ceb';
-const EXPECTED_LINES = 5460;
+const EXPECTED_BYTES = 1144104;
+const EXPECTED_SHA256 = '29572a22049dab1562ce974ff44211bf351e31bbea9b1bae7be7e0cd943f03e5';
+const EXPECTED_LINES = 5470;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -20,6 +20,7 @@ const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel'
 ];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
+const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -62,6 +63,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const PlaybackController = window.FlightFlowPlaybackController;',
     "if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');",
     'const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({',
+    'const TransportNavigationController = window.FlightFlowTransportNavigationController;',
+    "if (!TransportNavigationController) throw new Error('FlightFlowTransportNavigationController não foi carregado.');",
+    'const { restartTransport, previousTransport, nextTransport, scrubTransport } = TransportNavigationController.create({',
     "name: 'FlightFlow ATS - TIOP Cindacta1'",
     "subtitle: 'Histórico animado de Plano de Voo'",
     "version: '7.3.2'"
@@ -103,7 +107,7 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e o primeiro corte de timeline', () => {
+test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e dois cortes de timeline', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
@@ -121,6 +125,7 @@ test('inventário interno do núcleo mantém nomes únicos após seis extraçõe
     ...EXTRACTED_OPERATIONAL_STATE_UTILS,
     ...EXTRACTED_COORDINATE_UTILS,
     ...EXTRACTED_PLAYBACK,
+    ...EXTRACTED_TRANSPORT,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
