@@ -5,7 +5,8 @@
 - corrigida a classificação visual de planos `INATIVO` no strip: passam a usar o tema não controlado (cinza) em vez do tema controlado (preto);
 - operações cujo texto contém “Arquivo” deixam de marcar indevidamente um plano `INATIVO` como finalizado;
 - preservadas as prioridades de alerta/emergência, RVSM, doador e receptor acima da regra de `INATIVO`;
-- adicionada regressão baseada nos 10 eventos `INATIVO` do histórico de demonstração.
+- adicionada regressão baseada nos 10 eventos `INATIVO` do histórico de demonstração;
+- corrigida a resolução prematura do botão Play na extração do controlador: `getPlayBtn` agora preserva o acesso ao DOM somente após `cacheElements()`.
 
 ## 0.1.0 — 2026-09-04
 
