@@ -359,8 +359,22 @@
     const ades=firstMatch(raw,[/\bADES\s*:\s*([A-Z0-9]{4})\b/i,/-ADES\s+([A-Z0-9]{4})\b/i,/\bADES\s+([A-Z0-9]{4})\b/i]);
     const ids=[...raw.matchAll(/(?:IDPLANO\s*:\s*|-IDPLANO\s+|IDPLANO\s+)([A-Z0-9]{6,14})/gi)].map(m=>norm(m[1]));
     const idPlano=ids.at(-1)||'';
-    const routeMatch=raw.match(/^\s*Rota\s*:\s*(.*?)\s*$/im);
-    const route=routeMatch?routeMatch[1].trim():'';
+    const routeLines=raw.split('\n');
+    let route='';
+    for(let i=0;i<routeLines.length;i++){
+      const routeMatch=/^\s*Rota\s*:\s*(.*?)\s*$/i.exec(routeLines[i]);
+      if(!routeMatch)continue;
+      const parts=[String(routeMatch[1]||'').trim()];
+      for(let j=i+1;j<routeLines.length;j++){
+        const line=routeLines[j];
+        if(!/^\s+\S/.test(line))break;
+        const trimmed=String(line).trim();
+        if(/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 .()/_-]{0,48}\s*:/.test(trimmed))break;
+        parts.push(trimmed);
+      }
+      route=parts.filter(Boolean).join(' ');
+      break;
+    }
     const blocks=raw.split(/\n?#{20,}\n?/).map(x=>x.trim()).filter(Boolean);
     const routeSegments=parseRouteSegments(raw);
     const snapshots=[];

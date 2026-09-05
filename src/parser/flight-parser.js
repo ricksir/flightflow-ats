@@ -63,6 +63,48 @@
     return line.trim().split(/\s+/).map(clean).filter(Boolean);
   }
 
+
+  function wrappedLabeledField(block, label) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const lines = normalizeText(block).split('\n');
+    const pattern = new RegExp(`^\\s*${escaped}[ \t]*:[ \t]*(.*)$`, 'i');
+    for (let index = 0; index < lines.length; index += 1) {
+      const match = pattern.exec(lines[index]);
+      if (!match) continue;
+      const parts = [clean(match[1])];
+      for (let next = index + 1; next < lines.length; next += 1) {
+        const line = lines[next];
+        if (!/^[ \t]+\S/.test(line)) break;
+        const trimmed = clean(line);
+        if (/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 .()/_-]{0,48}[ \t]*:/.test(trimmed)) break;
+        parts.push(trimmed);
+      }
+      return parts.filter(Boolean).join(' ');
+    }
+    return '';
+  }
+
+  function wrappedTag(content, name) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const lines = normalizeText(content).split('\n');
+    const pattern = new RegExp(`^\\s*-${escaped}[ \t]+(.*)$`, 'i');
+    for (let index = 0; index < lines.length; index += 1) {
+      const match = pattern.exec(lines[index]);
+      if (!match) continue;
+      const first = clean(match[1]);
+      if (/[ \t]+-[A-Z][A-Z0-9]*[ \t]/.test(first)) return tag(content, name);
+      const parts = [first];
+      for (let next = index + 1; next < lines.length; next += 1) {
+        const line = lines[next];
+        if (/^\s*-[A-Z][A-Z0-9]*\b/.test(line)) break;
+        if (!/^[ \t]+\S/.test(line)) break;
+        parts.push(clean(line));
+      }
+      return parts.filter(Boolean).join(' ');
+    }
+    return tag(content, name);
+  }
+
   function parseDateTime(block) {
     const eventLine = /data:\s*([^\n]+?)\s+hora:\s*([^\n]+?)\s+posi(?:ç|c)ão:\s*([^\n]+?)\s+ambiente:\s*([^\n]+)/i.exec(block);
     if (!eventLine) return { date: '', time: '', position: '', environment: '', timestamp: '' };
@@ -197,7 +239,7 @@
       rfl: rfl ? `F${rfl}` : '',
       cfl: rfl ? `F${rfl}` : '',
       ssr: allocated || requested,
-      route: safeMatch(block, /^Rota[ \t]*:[ \t]*(.*)$/mi),
+      route: wrappedLabeledField(block, 'Rota'),
       remarks: safeMatch(block, /^Observa(?:ç|c)ão[ \t]*:[ \t]*(.*)$/mi),
       sid: safeMatch(block, /^SID[ \t]*:[ \t]*(.*)$/mi),
       star: safeMatch(block, /^STAR[ \t]*:[ \t]*(.*)$/mi),
@@ -214,9 +256,9 @@
     const rule = tag(content, 'FLTRUL');
     const type = tag(content, 'ARCTYP');
     const wake = tag(content, 'WKTRC');
-    const speed = safeMatch(tag(content, 'ROUTE'), /^([KNM][0-9]{4})/i);
+    const rawRoute = wrappedTag(content, 'ROUTE');
+    const speed = safeMatch(rawRoute, /^([KNM][0-9]{4})/i);
     const idPlano = tag(content, 'IDPLANO') || safeMatch(content, /IDPLANO[\s/]+([A-Z0-9]+)/i);
-    const rawRoute = tag(content, 'ROUTE');
     return {
       callsign: tag(content, 'ARCID'),
       adep: tag(content, 'ADEP'),
@@ -663,7 +705,7 @@
       ades: events[events.length - 1].snapshot.ades || '',
       dof: events[events.length - 1].snapshot.dof || header.dof,
       eventCount: events.length,
-      parserVersion: '1.1.2',
+      parserVersion: '1.1.3',
       warnings: []
     };
     if (!meta.callsign) meta.warnings.push('Indicativo não identificado.');
@@ -713,7 +755,7 @@
       previousFPV = event.fpv;
     }
     return {
-      meta: Object.assign({ sourceFormat: 'JSON', eventCount: events.length, parserVersion: '1.1.2', warnings: [] }, data.meta || {}),
+      meta: Object.assign({ sourceFormat: 'JSON', eventCount: events.length, parserVersion: '1.1.3', warnings: [] }, data.meta || {}),
       header: data.header || {},
       events,
       rawText: data.rawText || ''
