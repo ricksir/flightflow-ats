@@ -18,11 +18,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 KNOWN_REPEATED = {
-    'buildTimeline',
     'describeEvent',
     'escapeHtml',
     'exportNormalized',
-    'getSourceClass',
     'init',
     'normalizeSearchText',
     'openDb',
