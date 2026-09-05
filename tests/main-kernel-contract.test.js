@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1142269;
-const EXPECTED_SHA256 = '1312235a530adbf3fa0c92587e0ea05ab3ffe01af0492670b83d873c80e8fc9a';
-const EXPECTED_LINES = 5457;
+const EXPECTED_BYTES = 1141920;
+const EXPECTED_SHA256 = '9ae8d45c0f9b0d8f601c1ae2baa36cb17da1104c7e47a8b70cc1eb3b988bcadd';
+const EXPECTED_LINES = 5447;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -25,6 +25,7 @@ const EXTRACTED_KEYBOARD = ['handleKeyboard'];
 const EXTRACTED_TIMELINE_SELECTION = ['updateTimelineSelection'];
 const EXTRACTED_CONTROL_STATE = ['enableControls'];
 const EXTRACTED_TIMELINE_BUILDER = ['buildTimeline'];
+const EXTRACTED_SOURCE_CLASS = ['getSourceClass'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -123,17 +124,16 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e seis cortes de timeline', () => {
+test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e sete cortes de timeline', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 347);
-  assert.equal(counts.size, 347);
+  assert.equal(names.length, 346);
+  assert.equal(counts.size, 346);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
-  assert.equal(counts.get('getSourceClass'), 1);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
     ...EXTRACTED_TYPOGRAPHY_UTILS,
@@ -145,6 +145,7 @@ test('inventário interno do núcleo mantém nomes únicos após seis extraçõe
     ...EXTRACTED_TIMELINE_SELECTION,
     ...EXTRACTED_CONTROL_STATE,
     ...EXTRACTED_TIMELINE_BUILDER,
+    ...EXTRACTED_SOURCE_CLASS,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }

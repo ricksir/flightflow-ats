@@ -9986,19 +9986,9 @@ Destinatário(s): ${context.recipients}`;
     state,
     els,
     escapeHtml: (...args) => escapeHtml(...args),
-    getSourceClass: (...args) => getSourceClass(...args),
     goTo: (...args) => goTo(...args),
     stopPlayback: (...args) => stopPlayback(...args),
   });
-
-  function getSourceClass(sourceName) {
-    const lower = sourceName.toLowerCase();
-    if (lower.includes('app')) return 'app';
-    if (lower.includes('acc')) return 'acc';
-    if (lower.includes('twr')) return 'twr';
-    if (lower.includes('cpv')) return 'cpv';
-    return 'default';
-  }
 
 
   function activateTab(name) {
