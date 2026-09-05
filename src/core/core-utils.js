@@ -31,6 +31,19 @@
   function hashString(value) { let h=2166136261; for(const ch of String(value)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);} return h>>>0; }
 
   function seeded(seed,n) { const x=Math.sin((seed+1)*(n+11)*12.9898)*43758.5453; return x-Math.floor(x); }
+  function getPath(object, path) {
+    return String(path).split('.').reduce((value, key) => value == null ? '' : value[key], object);
+  }
+
+  function setPath(object, path, value) {
+    const parts = String(path).split('.');
+    let cursor = object;
+    parts.slice(0, -1).forEach(part => {
+      if (cursor[part] === undefined) cursor[part] = /^\d+$/.test(parts[parts.indexOf(part) + 1]) ? [] : {};
+      cursor = cursor[part];
+    });
+    cursor[parts[parts.length - 1]] = value;
+  }
   window.FlightFlowCoreUtils = Object.freeze({
     shortMessageType,
     displayValue,
@@ -41,5 +54,7 @@
     angleDifference,
     hashString,
     seeded,
+    getPath,
+    setPath,
   });
 })();

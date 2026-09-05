@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 const PUBLIC_FUNCTIONS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
-  'angleDifference', 'hashString', 'seeded'
+  'angleDifference', 'hashString', 'seeded', 'getPath', 'setPath'
 ];
 
 test('FlightFlowCoreUtils carrega antes do núcleo como API congelada e completa', async ({ page }) => {
@@ -32,6 +32,9 @@ test('utilitários externos preservam comportamento no navegador real', async ({
     const original = { a: 1, nested: { b: 2 } };
     const copied = api.clone(original);
     copied.nested.b = 99;
+    const pathObject = {};
+    api.setPath(pathObject, 'route.points.0.ident', 'PADIL');
+    api.setPath(pathObject, 'route.points.1.ident', 'MASVA');
     return {
       shortDefault: api.shortMessageType(),
       shortCpl: api.shortMessageType('  cpl-abc/12 !!'),
@@ -51,6 +54,10 @@ test('utilitários externos preservam comportamento no navegador real', async ({
       hashNumber: api.hashString(12345),
       seededA: api.seeded(42, 7),
       seededB: api.seeded(42, 8),
+      pathObject,
+      pathFirst: api.getPath(pathObject, 'route.points.0.ident'),
+      missingFinalIsUndefined: api.getPath(pathObject, 'route.points.0.missing') === undefined,
+      interruptedPath: api.getPath(pathObject, 'route.missing.ident'),
     };
   });
 
@@ -73,5 +80,9 @@ test('utilitários externos preservam comportamento no navegador real', async ({
     hashNumber: 1136836824,
     seededA: 0.04137097423517844,
     seededB: 0.6239928084542044,
+    pathObject: { route: { points: [{ ident: 'PADIL' }, { ident: 'MASVA' }] } },
+    pathFirst: 'PADIL',
+    missingFinalIsUndefined: true,
+    interruptedPath: '',
   });
 });
