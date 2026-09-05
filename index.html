@@ -5490,7 +5490,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
   const CoreUtils = window.FlightFlowCoreUtils;
   if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');
-  const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes } = CoreUtils;
+  const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded } = CoreUtils;
 
   const TypographyUtils = window.FlightFlowTypographyUtils;
   if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');
@@ -6047,7 +6047,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     const l2=l1+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(p1),Math.cos(d)-Math.sin(p1)*Math.sin(p2));
     return {lat:p2*180/Math.PI,lon:l2*180/Math.PI};
   }
-  function angleDifference(a,b) { return Math.abs(((Number(a)-Number(b)+540)%360)-180); }
+
   function groundNodeKey(point) {
     return point.id!==null&&point.id!==undefined?`n${point.id}`:`c${Number(point.lat).toFixed(7)},${Number(point.lon).toFixed(7)}`;
   }
@@ -6809,8 +6809,8 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     return [s.callsign,s.adep,s.ades,s.route,s.sid,s.star,s.cfl,s.rfl,s.runwayDeparture,s.runwayArrival,revision].join('|');
   }
 
-  function hashString(value) { let h=2166136261; for(const ch of String(value)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);} return h>>>0; }
-  function seeded(seed,n) { const x=Math.sin((seed+1)*(n+11)*12.9898)*43758.5453; return x-Math.floor(x); }
+
+
   function generateSyntheticFuture(start,end,seed,revision) {
     /*
       A rota é intencionalmente fictícia, porém deve permanecer visualmente
