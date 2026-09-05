@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'geo', 'coordinate-utils.js');
 const EXPECTED_BYTES = 662;
 const EXPECTED_LINES = 12;
 const EXPECTED_SHA256 = '760638ed416440af6ef5dec963fbfa044edb0d54a65b4807fceae796f7b33432';
@@ -28,7 +29,7 @@ function kernelSource() {
 function functionSource(container, name) {
   const marker = `  function ${name}(`;
   const start = container.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no coordinate-utils após a extração`);
   const paren = container.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -77,14 +78,14 @@ function closeTo(actual, expected, tolerance = 1e-9) {
 }
 
 test('geoOffset mantém identidade exata antes da extração', () => {
-  const source = functionSource(kernelSource(), 'geoOffset');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'geoOffset');
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(source.split(/\r?\n/).length, EXPECTED_LINES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
 });
 
 test('geoOffset permanece folha matemática e desacoplada de infraestrutura', () => {
-  const source = functionSource(kernelSource(), 'geoOffset');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'geoOffset');
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -96,12 +97,14 @@ test('geoOffset permanece folha matemática e desacoplada de infraestrutura', ()
 
 test('geoOffset mantém exatamente um consumidor real', () => {
   const kernel = kernelSource();
-  const consumers = [...kernel.matchAll(/(?<![\w$.])geoOffset\s*\(/g)].length - 1;
+  assert.equal(kernel.includes('function geoOffset('), false, 'geoOffset não deve permanecer inline');
+  const consumers = [...kernel.matchAll(/(?<![\w$.])geoOffset\s*\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
 });
 
 test('geoOffset preserva deslocamento geodésico norte e leste no equador', () => {
-  const source = functionSource(kernelSource(), 'geoOffset');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'geoOffset');
   const fn = Function(`${source}; return geoOffset;`)();
   const north = fn(0, 0, 1000, 0);
   closeTo(north.lat, 0.008993216059187304, 1e-12);
@@ -112,7 +115,7 @@ test('geoOffset preserva deslocamento geodésico norte e leste no equador', () =
 });
 
 test('geoOffset preserva coerção numérica, defaults e distância zero', () => {
-  const source = functionSource(kernelSource(), 'geoOffset');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'geoOffset');
   const fn = Function(`${source}; return geoOffset;`)();
   const zero = fn('-15.8692', '-47.9208', 0, 270);
   closeTo(zero.lat, -15.8692, 1e-12);

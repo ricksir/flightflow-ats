@@ -48,6 +48,19 @@
     return count?{lon:lon/count,lat:lat/count}:null;
   }
 
+  function geoOffset(lat, lon, distanceMeters, bearingDegrees) {
+    const R = 6371000;
+    const brng = Number(bearingDegrees || 0) * Math.PI / 180;
+    const dByR = Number(distanceMeters || 0) / R;
+    const lat1 = Number(lat) * Math.PI / 180;
+    const lon1 = Number(lon) * Math.PI / 180;
+    const sinLat1 = Math.sin(lat1), cosLat1 = Math.cos(lat1);
+    const sinD = Math.sin(dByR), cosD = Math.cos(dByR);
+    const lat2 = Math.asin(sinLat1 * cosD + cosLat1 * sinD * Math.cos(brng));
+    const lon2 = lon1 + Math.atan2(Math.sin(brng) * sinD * cosLat1, cosD - sinLat1 * Math.sin(lat2));
+    return { lat: lat2 * 180 / Math.PI, lon: lon2 * 180 / Math.PI };
+  }
+
   window.FlightFlowCoordinateUtils = Object.freeze({
     normalizeCoordinateInput,
     validAerodromeCoordinate,
@@ -58,5 +71,6 @@
     runwayHeading,
     runwayHeadingFromCode,
     polygonGeoCentroid,
+    geoOffset,
   });
 })();
