@@ -6,6 +6,8 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'ai', 'ai-engine.js');
+const REFERENCE = '<script id="flightflow-ai-engine" src="src/ai/ai-engine.js"></script>';
 const EXPECTED_SHA256 = '304326300500423f81e250208a5c4eca839b76fb07e5c16c9fa0b30d6689bcd9';
 const EXPECTED_BYTES = 165965;
 const EXPECTED_VERSION = '1.3.2';
@@ -18,22 +20,21 @@ const PUBLIC_FUNCTIONS = [
 ];
 
 function aiSource() {
-  const html = fs.readFileSync(HTML, 'utf8');
-  const tokenIndex = html.indexOf('AI_ENGINE_VERSION');
-  assert.ok(tokenIndex >= 0, 'AI_ENGINE_VERSION deve permanecer no bloco de IA');
-  const open = html.lastIndexOf('<script', tokenIndex);
-  const bodyStart = html.indexOf('>', open) + 1;
-  const close = html.indexOf('</script>', tokenIndex);
-  assert.ok(open >= 0 && bodyStart > open && close > bodyStart, 'bloco de IA deve continuar delimitado');
-  return html.slice(bodyStart, close).replace(/^\n+|\n+$/g, '') + '\n';
+  return fs.readFileSync(MODULE, 'utf8');
 }
 
-test('motor IA inline mantém identidade estrutural antes da extração', () => {
+test('motor IA externo mantém identidade estrutural exata', () => {
   const source = aiSource();
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
   assert.match(source, /^\(function \(\) \{\n\s*'use strict';/);
   assert.match(source, /\}\)\(\);\n$/);
+});
+
+test('index carrega o motor IA externo uma única vez e não mantém declaração inline', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  assert.equal(html.split(REFERENCE).length - 1, 1);
+  assert.doesNotMatch(html, /const\s+AI_ENGINE_VERSION\s*=\s*['"]1\.3\.2['"]/);
 });
 
 test('motor IA preserva versão, persistência e listeners conhecidos', () => {
@@ -67,7 +68,7 @@ test('API pública congelada mantém os 18 métodos necessários', () => {
   assert.ok(tail.includes('});'));
 });
 
-test('auto-teste interno continua disponível por ffai-test', () => {
+test('gancho opcional ffai-test continua presente no módulo externo', () => {
   const source = aiSource();
   for (const token of [
     "query.get('ffai-test') === '1'",
