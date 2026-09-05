@@ -1,0 +1,142 @@
+name: Fix playback lazy button dependency
+
+on:
+  push:
+    branches:
+      - refactor/extract-playback-controller
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply guarded playback wiring fix
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib
+          import re
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: esperado 1 ocorrência, encontrado {count}: {old!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Production module: preserve the old lazy DOM lookup semantics.
+          replace_once('src/timeline/playback-controller.js',
+              '    const playBtn = options.playBtn;\n',
+              '    const getPlayBtn = options.getPlayBtn;\n')
+          replace_once('src/timeline/playback-controller.js',
+              "    if (!state) throw new Error('FlightFlowPlaybackController requer state.');\n    if (typeof currentEvent !== 'function') throw new Error('FlightFlowPlaybackController requer currentEvent().');\n",
+              "    if (!state) throw new Error('FlightFlowPlaybackController requer state.');\n    if (typeof getPlayBtn !== 'function') throw new Error('FlightFlowPlaybackController requer getPlayBtn().');\n    if (typeof currentEvent !== 'function') throw new Error('FlightFlowPlaybackController requer currentEvent().');\n")
+          replace_once('src/timeline/playback-controller.js',
+              "      state.playing = true;\n      playBtn.textContent = 'Ⅱ';\n      playBtn.title = 'Pausar (Espaço)';\n",
+              "      state.playing = true;\n      const playBtn = getPlayBtn();\n      playBtn.textContent = 'Ⅱ';\n      playBtn.title = 'Pausar (Espaço)';\n")
+          replace_once('src/timeline/playback-controller.js',
+              "      state.timer = null;\n      if (playBtn) {\n",
+              "      state.timer = null;\n      const playBtn = getPlayBtn();\n      if (playBtn) {\n")
+
+          # Huge HTML: one surgical dependency change only.
+          replace_once('index.html',
+              '    playBtn: els.playBtn,\n',
+              '    getPlayBtn: () => els.playBtn,\n')
+
+          # Contract harness now models lazy DOM resolution.
+          replace_once('tests/playback-controller-contract.test.js',
+              '  const api = PlaybackController.create({ state, playBtn, currentEvent, goTo, setTimeout, clearTimeout });\n',
+              '  const getPlayBtn = overrides.getPlayBtn || (() => playBtn);\n  const api = PlaybackController.create({ state, getPlayBtn, currentEvent, goTo, setTimeout, clearTimeout });\n')
+          replace_once('tests/playback-controller-contract.test.js',
+              "    'playBtn: els.playBtn,',\n",
+              "    'getPlayBtn: () => els.playBtn,',\n")
+          replace_once('tests/playback-controller-contract.test.js',
+              "  assert.throws(() => api.create({ state: {} }), /requer currentEvent/);\n  assert.throws(() => api.create({ state: {}, currentEvent() {} }), /requer goTo/);\n  assert.throws(() => api.create({ state: {}, currentEvent() {}, goTo() {} }), /requer timers explícitos/);\n",
+              "  assert.throws(() => api.create({ state: {} }), /requer getPlayBtn/);\n  assert.throws(() => api.create({ state: {}, getPlayBtn() {} }), /requer currentEvent/);\n  assert.throws(() => api.create({ state: {}, getPlayBtn() {}, currentEvent() {} }), /requer goTo/);\n  assert.throws(() => api.create({ state: {}, getPlayBtn() {}, currentEvent() {}, goTo() {} }), /requer timers explícitos/);\n")
+
+          marker = "test('startPlayback no último evento reinicia silenciosamente no primeiro antes de reproduzir', () => {\n"
+          p = Path('tests/playback-controller-contract.test.js')
+          text = p.read_text(encoding='utf-8')
+          if text.count(marker) != 1:
+              raise SystemExit('marcador do teste startPlayback não é único')
+          lazy_test = """test('botão Play é resolvido tardiamente após cacheElements preencher o DOM', () => {\n  let livePlayBtn = null;\n  const h = controllerHarness({ getPlayBtn: () => livePlayBtn });\n  livePlayBtn = { textContent: '▶', title: 'Reproduzir (Espaço)' };\n  h.api.startPlayback();\n  assert.equal(livePlayBtn.textContent, 'Ⅱ');\n  assert.equal(livePlayBtn.title, 'Pausar (Espaço)');\n  h.api.stopPlayback();\n  assert.equal(livePlayBtn.textContent, '▶');\n  assert.equal(livePlayBtn.title, 'Reproduzir (Espaço)');\n});\n\n"""
+          if lazy_test not in text:
+              text = text.replace(marker, lazy_test + marker, 1)
+              p.write_text(text, encoding='utf-8')
+
+          # Recompute immutable contract fingerprints from the actual files.
+          module = Path('src/timeline/playback-controller.js').read_bytes()
+          module_bytes = len(module)
+          module_sha = hashlib.sha256(module).hexdigest()
+          p = Path('tests/playback-controller-contract.test.js')
+          text = p.read_text(encoding='utf-8')
+          text = re.sub(r'const MODULE_BYTES = \d+;', f'const MODULE_BYTES = {module_bytes};', text, count=1)
+          text = re.sub(r"const MODULE_SHA256 = '[0-9a-f]{64}';", f"const MODULE_SHA256 = '{module_sha}';", text, count=1)
+          p.write_text(text, encoding='utf-8')
+
+          html = Path('index.html').read_text(encoding='utf-8')
+          anchor = 'window.__FlightFlowFirBridge = Object.freeze({'
+          anchor_index = html.index(anchor)
+          script_start = html.rfind('<script', 0, anchor_index)
+          body_start = html.index('>', script_start) + 1
+          body_end = html.index('</script>', anchor_index)
+          kernel = html[body_start:body_end].strip('\n') + '\n'
+          kernel_bytes = len(kernel.encode('utf-8'))
+          kernel_lines = len(kernel.splitlines())
+          kernel_sha = hashlib.sha256(kernel.encode('utf-8')).hexdigest()
+
+          p = Path('tests/main-kernel-contract.test.js')
+          text = p.read_text(encoding='utf-8')
+          text = re.sub(r'const EXPECTED_BYTES = \d+;', f'const EXPECTED_BYTES = {kernel_bytes};', text, count=1)
+          text = re.sub(r"const EXPECTED_SHA256 = '[0-9a-f]{64}';", f"const EXPECTED_SHA256 = '{kernel_sha}';", text, count=1)
+          text = re.sub(r'const EXPECTED_LINES = \d+;', f'const EXPECTED_LINES = {kernel_lines};', text, count=1)
+          p.write_text(text, encoding='utf-8')
+
+          # Documentation must describe the dependency accurately and keep fingerprints current.
+          p = Path('docs/MODULE-BOUNDARIES.md')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace(
+              'A fábrica recebe explicitamente `state`, botão Play, `currentEvent`, `goTo`, `setTimeout` e `clearTimeout`;',
+              'A fábrica recebe explicitamente `state`, um resolvedor preguiçoso do botão Play (`getPlayBtn`), `currentEvent`, `goTo`, `setTimeout` e `clearTimeout`;'
+          )
+          text = re.sub(r'módulo: \*\*\d+[\d.]* bytes\*\* / SHA-256 `[0-9a-f]{64}`;',
+                        f'módulo: **{module_bytes:,} bytes** / SHA-256 `{module_sha}`;'.replace(',', '.'), text, count=1)
+          text = re.sub(r'corpo bruto do IIFE: \*\*[\d.]+ bytes\*\* / SHA-256 `[0-9a-f]{64}`;',
+                        f'corpo bruto do IIFE: **{kernel_bytes:,} bytes** / SHA-256 `{kernel_sha}`;'.replace(',', '.'), text, count=1)
+          text = re.sub(r'contrato normalizado do IIFE: \*\*[\d.]+ bytes / [\d.]+ linhas\*\*;',
+                        f'contrato normalizado do IIFE: **{kernel_bytes:,} bytes / {kernel_lines:,} linhas**;'.replace(',', '.'), text, count=1)
+          text = re.sub(r'SHA-256 normalizado: `[0-9a-f]{64}`;', f'SHA-256 normalizado: `{kernel_sha}`;', text, count=1)
+          p.write_text(text, encoding='utf-8')
+
+          print(f'module_bytes={module_bytes}')
+          print(f'module_sha={module_sha}')
+          print(f'kernel_bytes={kernel_bytes}')
+          print(f'kernel_lines={kernel_lines}')
+          print(f'kernel_sha={kernel_sha}')
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate static audit and inventory
+        run: |
+          npm run audit
+          npm run inventory
+      - name: Validate Node contracts
+        run: npm test
+      - name: Remove temporary inspection workflows
+        run: |
+          rm -f .github/workflows/inspect-playback-order.yml
+          rm -f .github/workflows/fix-playback-lazy-button.yml
+      - name: Commit materialized fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html src/timeline/playback-controller.js tests/playback-controller-contract.test.js tests/main-kernel-contract.test.js docs/MODULE-BOUNDARIES.md .github/workflows/inspect-playback-order.yml .github/workflows/fix-playback-lazy-button.yml
+          git diff --cached --check
+          git commit -m "fix: resolve playback button lazily"
+          git push
