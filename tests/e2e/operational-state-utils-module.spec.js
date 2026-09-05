@@ -19,7 +19,7 @@ test('FlightFlowOperationalStateUtils carrega antes do núcleo como API congelad
   expect(contract.methods).toEqual(PUBLIC_FUNCTIONS);
 });
 
-test('estado visual operacional preserva comportamento no navegador real', async ({ page }) => {
+test('estado visual operacional preserva prioridades e corrige INATIVO no navegador real', async ({ page }) => {
   await page.goto('/index.html', { waitUntil: 'load' });
 
   const result = await page.evaluate(() => {
@@ -28,14 +28,18 @@ test('estado visual operacional preserva comportamento no navegador real', async
       swatches: {
         alert: api.themeSwatch('theme-alert'),
         controlled: api.themeSwatch('theme-controlled'),
+        noncontrolled: api.themeSwatch('theme-noncontrolled'),
         fallback: api.themeSwatch('unknown-theme'),
       },
       themes: {
         emergency: api.stripTheme({ snapshot: { status: 'ATIVO' }, operation: 'EMERG' }),
+        inactiveEmergency: api.stripTheme({ snapshot: { status: 'INATIVO' }, operation: 'EMERG' }),
         rvsm: api.stripTheme({ snapshot: { status: 'ATIVO', rvsm: 'X' } }),
+        inactiveRvsm: api.stripTheme({ snapshot: { status: 'INATIVO', rvsm: 'X' } }),
         preAuthorized: api.stripTheme({ snapshot: { status: 'PRÉ-ATIVO', authorizationState: 'AUTORIZADO' } }),
         active: api.stripTheme({ snapshot: { status: 'ATIVO' } }),
-        inactiveCurrentBehavior: api.stripTheme({ snapshot: { status: 'INATIVO' } }),
+        inactive: api.stripTheme({ snapshot: { status: 'INATIVO' } }),
+        inactiveArquivo: api.stripTheme({ snapshot: { status: 'INATIVO' }, operation: 'Criação pelo Arquivo de RPL' }),
         empty: api.stripTheme(null),
       },
       statuses: {
@@ -53,15 +57,18 @@ test('estado visual operacional preserva comportamento no navegador real', async
     swatches: {
       alert: '#c4151d',
       controlled: '#111111',
+      noncontrolled: '#d6d6d6',
       fallback: '#d6d6d6',
     },
     themes: {
       emergency: 'theme-alert',
+      inactiveEmergency: 'theme-alert',
       rvsm: 'theme-nonrvsm',
+      inactiveRvsm: 'theme-nonrvsm',
       preAuthorized: 'theme-pre-dark',
       active: 'theme-controlled',
-      // Equivalência deliberada: correção funcional de INATIVO não pertence à extração.
-      inactiveCurrentBehavior: 'theme-controlled',
+      inactive: 'theme-noncontrolled',
+      inactiveArquivo: 'theme-noncontrolled',
       empty: 'theme-noncontrolled',
     },
     statuses: {
