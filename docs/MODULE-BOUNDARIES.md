@@ -28,7 +28,7 @@ As extrações por domínio não alteram esses totais globais: as declarações 
 | `FlightParser` / `window.FlightParser` | **externo em `src/parser/flight-parser.js`** |
 | `window.__SAMPLE_HISTORY__` | **externo em `src/data/sample-history.js`** |
 | `window.__FLIGHTFLOW_GEO_DATA__` | **externo em `src/data/geo-data.js`** |
-| utilitários puros / `window.FlightFlowCoreUtils` | **externo em `src/core/core-utils.js`** |
+| utilitários puros / `window.FlightFlowCoreUtils` | **externo e expandido em `src/core/core-utils.js`** |
 | tipografia pura / `window.FlightFlowTypographyUtils` | **externo em `src/ui/typography-utils.js`** |
 | IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; decomposição continua **por domínio** |
 | motor IA/governança / `window.__flightflowAI` | **externo em `src/ai/ai-engine.js`** |
@@ -166,6 +166,31 @@ Contratos após a extração:
 
 Proteções: `tests/typography-utils-contract.test.js`, `tests/e2e/typography-utils-module.spec.js` e `tests/main-kernel-contract.test.js`.
 
+### 11. Terceira extração por domínio: utilitários determinísticos do núcleo
+
+O terceiro corte reutiliza a fronteira já existente `FlightFlowCoreUtils`; nenhum novo módulo foi criado. Antes da mudança, `tests/deterministic-core-utils-contract.test.js` congelou tamanho, SHA-256 e comportamento de:
+
+- `angleDifference` — 89 bytes / SHA-256 `c33f42ad25fa9d352f3d38975f1d054fe026b3924bf1ac37780e11b674c5e4b2`;
+- `hashString` — 141 bytes / SHA-256 `7da6f0aba25a918f031e10e8abbd2fea0c777054758b7b5b7d0edec024555a94`;
+- `seeded` — 107 bytes / SHA-256 `e8a98352bd15958c19bfa524d389fa7f84ce3ab902bde82439dafee89dacfbc2`.
+
+As três funções são determinísticas e independentes de `state`, DOM, mapa, rede, armazenamento, `FlightParser` e timers. `clamp` e `clamp01` foram deliberadamente mantidas no IIFE por possuírem muitos consumidores em movimento, zoom, rota e UI.
+
+Os três corpos foram movidos mecanicamente para `src/core/core-utils.js`. O objeto congelado `window.FlightFlowCoreUtils` passou de seis para nove métodos, e o alias local do IIFE foi ampliado sem alterar nenhum consumidor.
+
+Contratos após a expansão:
+
+- `FlightFlowCoreUtils`: **1.676 bytes**;
+- SHA-256 do módulo: `35779c31b4a68a25ea4d79085cbac66625d52ec95c5b051033b79d06a1782193`;
+- cada corpo movido preserva exatamente o tamanho e SHA anteriores;
+- núcleo principal: **1.146.463 bytes** / **5.506 linhas**;
+- SHA-256 do núcleo: `5933449b1c5aebf65f71c46b48f0040ad18117abb113d936ac4d72b68d074c5b`;
+- núcleo: **364 funções nomeadas / 364 nomes únicos / zero duplicações internas**;
+- inventário global permanece em **722 declarações / 711 nomes únicos / 9 nomes repetidos conhecidos**;
+- `clamp` e `clamp01` permanecem exatamente uma vez no IIFE.
+
+Proteções: `tests/core-utils-contract.test.js`, `tests/deterministic-core-utils-contract.test.js`, `tests/e2e/core-utils-module.spec.js` e `tests/main-kernel-contract.test.js`.
+
 ## Regras para os próximos PRs
 
 1. **Não misturar extração e melhoria funcional.**
@@ -178,6 +203,6 @@ Proteções: `tests/typography-utils-contract.test.js`, `tests/e2e/typography-ut
 
 ## Próxima etapa
 
-O grande IIFE principal permanece inline, agora com **367 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
+O grande IIFE principal permanece inline, agora com **364 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
 
-O próximo cluster deve continuar priorizando funções puras ou quase puras, evitando ainda o motor de timeline, navegação, mapa e o núcleo temporal/espacial da rota e da aeronave até que suas dependências sejam mapeadas e cobertas por contratos específicos.
+Os próximos candidatos devem continuar priorizando funções de baixo alcance. `clamp`/`clamp01` só devem sair depois de um contrato específico que cubra seus muitos consumidores. Timeline, navegação, mapa e o núcleo temporal/espacial da rota e da aeronave permanecem protegidos de refatorações amplas até que suas dependências sejam mapeadas e cobertas por testes dedicados.
