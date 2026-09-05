@@ -169,7 +169,7 @@ test('TAM3720 ACC mantém os 9 pontos enquanto APP não inventa quadro PONTOS au
   assert.deepEqual(acc.events[0].snapshot.routePoints.map(row => row.point), [
     'SBBR', 'SEMDU', '1630S04732W', 'GEPMO', 'ANBIR', 'IREGU', 'REINA', 'ENSIG', 'SBCF'
   ]);
-  assert.equal(app.events[0].snapshot.routePoints, null);
+  assert.equal(app.events[0].snapshot.routePoints == null, true);
 });
 
 test('PSFBU ACC e APP convergem para identidade, cancelamento e arquivamento sem DEP', () => {
@@ -192,5 +192,5 @@ test('PSFBU ACC preserva a coordenada intermediária e APP não fabrica pontos i
   const acc = parse(PSFBU_ACC);
   const app = parse(PSFBU_APP);
   assert.deepEqual(acc.events[0].snapshot.routePoints.map(row => row.point), ['SBBR', '1616S04836W', 'SBGO']);
-  assert.equal(app.events[0].snapshot.routePoints, null);
+  assert.equal(app.events[0].snapshot.routePoints == null, true);
 });
