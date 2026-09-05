@@ -60,7 +60,7 @@
 
   function splitTokens(line) {
     if (!line) return [];
-    return line.trim().split(/\s{2,}|\t+/).map(clean).filter(Boolean);
+    return line.trim().split(/\s+/).map(clean).filter(Boolean);
   }
 
   function parseDateTime(block) {
@@ -96,16 +96,28 @@
   }
 
   function parsePoints(block) {
-    const pointsLine = safeMatch(block, /^PONTOS\s*:\s*(.+)$/mi);
-    if (!pointsLine) return null;
-    const points = splitTokens(pointsLine);
-    const etim = splitTokens(safeMatch(block, /^ETIM\s*:\s*(.+)$/mi));
-    const cfl = splitTokens(safeMatch(block, /^CFL\s*:\s*(.+)$/mi));
-    const rows = points.map((point, i) => ({
-      point,
-      estimate: etim[i] || '',
-      cfl: cfl[i] || ''
-    }));
+    const lines = normalizeText(block).split('\n');
+    const rows = [];
+    for (let index = 0; index < lines.length; index += 1) {
+      const pointsMatch = /^\s*PONTOS\s*:\s*(.+)$/i.exec(lines[index]);
+      if (!pointsMatch) continue;
+      const points = splitTokens(pointsMatch[1]);
+      let cfl = [];
+      let etim = [];
+      for (let offset = 1; offset <= 3 && index + offset < lines.length; offset += 1) {
+        const line = lines[index + offset];
+        if (/^\s*PONTOS\s*:/i.test(line)) break;
+        const cflMatch = /^\s*CFL(?:\/IFL)?\s*:\s*(.+)$/i.exec(line);
+        if (cflMatch) cfl = splitTokens(cflMatch[1]);
+        const etimMatch = /^\s*ETIM\s*:\s*(.+)$/i.exec(line);
+        if (etimMatch) etim = splitTokens(etimMatch[1]);
+      }
+      rows.push(...points.map((point, pointIndex) => ({
+        point,
+        estimate: etim[pointIndex] || '',
+        cfl: cfl[pointIndex] || ''
+      })));
+    }
     return rows.length ? rows : null;
   }
 
@@ -255,8 +267,13 @@
     m = /\(ARR[^\n]*?-([A-Z0-9]+)-([A-Z0-9]{4})-([A-Z0-9]{4})([0-9]{4})\)/i.exec(content);
     if (m) Object.assign(output, { callsign: m[1], adep: m[2], ades: m[3], arrivalTime: m[4] });
 
-    m = /\(DEP-?([A-Z0-9]+)?-?([A-Z0-9]{4})?([0-9]{4})?/i.exec(content);
-    if (m && m[1]) output.callsign = m[1];
+    m = /\(DEP[A-Z0-9]{4}\/[A-Z0-9]{4}\d{3}-([A-Z0-9]+)-([A-Z0-9]{4})([0-9]{4})-([A-Z0-9]{4})/i.exec(content);
+    if (m) {
+      Object.assign(output, { callsign: m[1], adep: m[2], eobt: m[3], ades: m[4] });
+    } else {
+      m = /\(DEP-([A-Z0-9]+)-([A-Z0-9]{4})([0-9]{4})-([A-Z0-9]{4})/i.exec(content);
+      if (m) Object.assign(output, { callsign: m[1], adep: m[2], eobt: m[3], ades: m[4] });
+    }
     return output;
   }
 
@@ -646,7 +663,7 @@
       ades: events[events.length - 1].snapshot.ades || '',
       dof: events[events.length - 1].snapshot.dof || header.dof,
       eventCount: events.length,
-      parserVersion: '1.1.1',
+      parserVersion: '1.1.2',
       warnings: []
     };
     if (!meta.callsign) meta.warnings.push('Indicativo não identificado.');
@@ -696,7 +713,7 @@
       previousFPV = event.fpv;
     }
     return {
-      meta: Object.assign({ sourceFormat: 'JSON', eventCount: events.length, parserVersion: '1.1.1', warnings: [] }, data.meta || {}),
+      meta: Object.assign({ sourceFormat: 'JSON', eventCount: events.length, parserVersion: '1.1.2', warnings: [] }, data.meta || {}),
       header: data.header || {},
       events,
       rawText: data.rawText || ''
