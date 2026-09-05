@@ -12,24 +12,27 @@ from pathlib import Path
 
 INDEX = Path('index.html')
 TARGET = Path('src/ai/ai-engine.js')
-TOKEN = 'AI_ENGINE_VERSION'
+DECLARATION = "const AI_ENGINE_VERSION = '1.3.2';"
 REFERENCE = '<script id="flightflow-ai-engine" src="src/ai/ai-engine.js"></script>'
 EXPECTED_BYTES = 165965
 EXPECTED_SHA256 = '304326300500423f81e250208a5c4eca839b76fb07e5c16c9fa0b30d6689bcd9'
 
 text = INDEX.read_text(encoding='utf-8')
 
-if TARGET.exists() and REFERENCE in text and TOKEN not in text:
+if TARGET.exists() and REFERENCE in text and DECLARATION not in text:
     print('AI engine já extraído; nada a fazer.')
     raise SystemExit(0)
 if TARGET.exists():
     raise SystemExit(f'{TARGET} já existe sem referência externa coerente.')
 if REFERENCE in text:
     raise SystemExit('index.html já referencia AI engine externo sem arquivo-alvo coerente.')
-if text.count(TOKEN) != 1:
-    raise SystemExit(f'Esperado exatamente um {TOKEN}; encontrado {text.count(TOKEN)}.')
+if text.count(DECLARATION) != 1:
+    raise SystemExit(
+        'Esperada exatamente uma declaração de AI_ENGINE_VERSION 1.3.2; '
+        f'encontradas {text.count(DECLARATION)}.'
+    )
 
-token_index = text.index(TOKEN)
+token_index = text.index(DECLARATION)
 open_start = text.rfind('<script', 0, token_index)
 if open_start < 0:
     raise SystemExit('Abertura <script> do AI engine não encontrada.')
@@ -57,7 +60,7 @@ if body_sha != EXPECTED_SHA256:
 checks = {
     'IIFE start': body.startswith("(function () {\n  'use strict';"),
     'IIFE end': body.rstrip().endswith('})();'),
-    'version': "const AI_ENGINE_VERSION = '1.3.2';" in body,
+    'version': DECLARATION in body,
     'model schema': 'const MODEL_SCHEMA_VERSION = 1;' in body,
     'model key': "const MODEL_KEY = 'flightflow-ai-governance-v1';" in body,
     'audit key': "const AUDIT_KEY = 'flightflow-ai-audit-v1';" in body,
@@ -87,8 +90,8 @@ patched = text[:open_start] + REFERENCE + text[close_end:]
 
 if patched.count(REFERENCE) != 1:
     raise SystemExit('Referência externa do AI engine não ficou única.')
-if TOKEN in patched:
-    raise SystemExit('Implementação do AI engine permaneceu inline após a extração.')
+if DECLARATION in patched:
+    raise SystemExit('Declaração do AI engine permaneceu inline após a extração.')
 
 INDEX.write_text(patched, encoding='utf-8')
 written = TARGET.read_bytes()
