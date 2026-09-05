@@ -1,0 +1,51 @@
+name: Materialize operational state utility extraction
+
+on:
+  push:
+    branches: [refactor/extract-operational-state-utils]
+    paths:
+      - 'tools/extract_operational_state_utils.py'
+      - '.github/workflows/materialize-operational-state-utils.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout extraction branch
+        uses: actions/checkout@v4
+        with:
+          ref: refactor/extract-operational-state-utils
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Extract guarded operational-state cluster
+        run: python3 tools/extract_operational_state_utils.py
+
+      - name: Validate generated module and global structure
+        run: |
+          node --check src/ui/operational-state-utils.js
+          python3 tools/audit_static.py index.html
+          python3 tools/function_inventory.py index.html --check
+          git diff --check
+
+      - name: Commit extracted utilities
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html src/ui/operational-state-utils.js; then
+            echo 'No extraction changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html src/ui/operational-state-utils.js
+          git commit -m 'refactor: extract operational state utilities'
+          git push origin HEAD:refactor/extract-operational-state-utils
