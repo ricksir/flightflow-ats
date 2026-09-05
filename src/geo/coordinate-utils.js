@@ -38,6 +38,16 @@
     return ((num % 36) * 10 + 360) % 360;
   }
 
+  function polygonGeoCentroid(points){
+    if(!Array.isArray(points)||!points.length)return null;
+    let lon=0,lat=0,count=0;
+    points.forEach(p=>{
+      const x=Number(p&&p[0]),y=Number(p&&p[1]);
+      if(Number.isFinite(x)&&Number.isFinite(y)){lon+=x;lat+=y;count++;}
+    });
+    return count?{lon:lon/count,lat:lat/count}:null;
+  }
+
   window.FlightFlowCoordinateUtils = Object.freeze({
     normalizeCoordinateInput,
     validAerodromeCoordinate,
@@ -47,5 +57,6 @@
     runwayTokens,
     runwayHeading,
     runwayHeadingFromCode,
+    polygonGeoCentroid,
   });
 })();

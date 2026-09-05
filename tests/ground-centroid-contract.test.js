@@ -76,7 +76,7 @@ test('groundCentroid permanece função geográfica pura e folha', () => {
 test('IIFE usa groundCentroid pelo coordinate-utils sem alterar os dois consumidores', () => {
   const kernel = kernelSource();
   assert.equal(kernel.includes('function groundCentroid('), false);
-  assert.ok(kernel.includes('{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode } = CoordinateUtils;'));
+  assert.ok(kernel.includes('{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid } = CoordinateUtils;'));
   const consumers = [...kernel.matchAll(/(?<![\w$.])groundCentroid\s*\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('function groundMidpoint('), 'groundMidpoint deve permanecer inline');
