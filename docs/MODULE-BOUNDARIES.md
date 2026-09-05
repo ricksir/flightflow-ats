@@ -23,7 +23,7 @@ Esses valores continuam sendo acompanhados mesmo quando uma fronteira sai fisica
 | `window.__SAMPLE_HISTORY__` | **externo em `src/data/sample-history.js`** |
 | `window.__FLIGHTFLOW_GEO_DATA__` | **externo em `src/data/geo-data.js`** |
 | IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; **último grande alvo** |
-| motor IA/governança | ainda inline; próximo candidato lógico |
+| motor IA/governança / `window.__flightflowAI` | **externo em `src/ai/ai-engine.js`** |
 | Secure Storage / `window.FlightFlowStorage` | **externo em `src/storage/secure-storage.js`** |
 | FIR v7.3.5 / `window.renderManualFirLayers` | **externo em `src/map/fir-layers.js`** |
 | Rota Processada v7.4.12 | **externo em `src/route/route-processed-v7412.js`** |
@@ -66,10 +66,30 @@ Proteções: `tests/sample-history-module.test.js` e `tests/e2e/sample-history-m
 
 - tamanho preservado: **590.457 bytes**;
 - SHA-256 preservado: `4db1eea05bfab2d4dae2323c78290d854881b3f575fbf5a4e9c2d196055f0844`;
-- zero funções nomeadas adicionadas/removidas;
 - consumidores do objeto global não foram modificados.
 
-Proteções permanentes: `tests/geo-data-module.test.js` e `tests/e2e/geo-data-module.spec.js`.
+Proteções: `tests/geo-data-module.test.js` e `tests/e2e/geo-data-module.spec.js`.
+
+### 7. Motor de IA/governança
+
+Antes do corte, o contrato do motor foi congelado em `tests/ai-engine-contract.test.js` e `tests/e2e/ai-engine-contract.spec.js`. O bloco foi então movido mecanicamente para `src/ai/ai-engine.js`.
+
+Contratos preservados:
+
+- tamanho exato: **165.965 bytes**;
+- SHA-256: `304326300500423f81e250208a5c4eca839b76fb07e5c16c9fa0b30d6689bcd9`;
+- `AI_ENGINE_VERSION = 1.3.2`;
+- schema de modelo 1;
+- chaves `flightflow-ai-governance-v1`, `flightflow-ai-audit-v1` e `flightflow-ai-settings-v1`;
+- IndexedDB `FlightFlowAIBrain`, versão 1, store `manuals`;
+- `window.__flightflowKnowledgeEntries`;
+- `window.__flightflowAI = Object.freeze(...)`;
+- listener `flightflow:history-session-reset`;
+- inicialização por `DOMContentLoaded`;
+- API pública com 18 métodos, incluindo `runSelfTests()`;
+- self-tests internos executáveis em Chrome real.
+
+A primeira extração não altera regras, respostas, heurísticas, base de conhecimento, persistência nem UI do motor.
 
 ## Regras para os próximos PRs
 
@@ -83,6 +103,6 @@ Proteções permanentes: `tests/geo-data-module.test.js` e `tests/e2e/geo-data-m
 
 ## Próxima etapa
 
-Com Parser, Sample History, Geo Data, Secure Storage, FIR e Rota Processada já isolados, o próximo candidato de baixo risco é o **motor de IA/governança**. Antes de movê-lo, deve ser criado um teste de contrato específico para suas APIs/globais e efeitos de inicialização.
+Com Parser, Sample History, Geo Data, Secure Storage, FIR, Rota Processada e motor de IA já isolados, resta um grande núcleo inline: o **IIFE principal do FlightFlow**, com cerca de 5,5 mil linhas e centenas de funções.
 
-Somente depois desse módulo deve começar a decomposição do IIFE principal por domínio (`timeline/`, `navigation/`, `map/`, `flightplan/`, `ats/`, `ui/`).
+Esse núcleo **não deve ser extraído inteiro de uma vez**. O próximo passo é um PR somente de mapeamento/contrato, identificando APIs globais, bridges, eventos, armazenamento, DOM e grupos funcionais. Depois disso, a decomposição deve acontecer por domínio, em cortes pequenos e testados (`timeline/`, `navigation/`, `map/`, `flightplan/`, `ats/`, `ui/`).
