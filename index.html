@@ -5486,6 +5486,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-transport-navigation-controller" src="src/timeline/transport-navigation-controller.js"></script>
 <script id="flightflow-keyboard-navigation-controller" src="src/timeline/keyboard-navigation-controller.js"></script>
 <script id="flightflow-timeline-selection-controller" src="src/timeline/timeline-selection-controller.js"></script>
+<script id="flightflow-control-state-controller" src="src/timeline/control-state-controller.js"></script>
 <script>
 
 (function () {
@@ -8864,20 +8865,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   // O resto do código permanece igual, com as devidas adaptações para usar state.parsed e state.sources.
   // O parser e demais funções continuam funcionando.
 
-  function enableControls(enabled) {
-    ['exportBtn','showProtocolBtn','exactMessageBtn','copySummaryBtn','restartBtn','prevBtn','playBtn','nextBtn','scrubber','speedSelect','soundBtn','fpvToggleBtn','stripToggleBtn']
-      .forEach(id => { els[id].disabled = !enabled; });
-    if (enabled && state.parsed) {
-      const lastIndex = Math.max(0, state.parsed.events.length - 1);
-      els.scrubber.max = String(lastIndex);
-      els.endTimeLabel.textContent = state.parsed.events[state.parsed.events.length - 1].time || '--:--:--';
-      els.prevBtn.disabled = state.index <= 0;
-      els.nextBtn.disabled = state.index >= lastIndex;
-    } else {
-      els.scrubber.max = '0';
-      els.endTimeLabel.textContent = '--:--:--';
-    }
-  }
 
   function currentEvent() {
     return state.parsed && state.parsed.events[state.index] ? state.parsed.events[state.index] : null;
@@ -10076,6 +10063,13 @@ Destinatário(s): ${context.recipients}`;
     state,
     getTimelineList: () => els.timelineList,
     isTimelinePanelActive: () => document.querySelector('[data-panel="timeline"]').classList.contains('active'),
+  });
+
+  const ControlStateController = window.FlightFlowControlStateController;
+  if (!ControlStateController) throw new Error('FlightFlowControlStateController não foi carregado.');
+  const { enableControls } = ControlStateController.create({
+    state,
+    getElements: () => els,
   });
 
 
