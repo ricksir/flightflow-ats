@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1145319;
-const EXPECTED_SHA256 = '9a84b0f527e399cfc6a9a2be1838588bc16b0fc6b05d6cf7ebfd2aa21599c1a9';
-const EXPECTED_LINES = 5499;
+const EXPECTED_BYTES = 1145315;
+const EXPECTED_SHA256 = 'a98a94f86875d5b66c7c3e2859c6d830178e9348d0d4ac935d3c2093a3e8232f';
+const EXPECTED_LINES = 5495;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
