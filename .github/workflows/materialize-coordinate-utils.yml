@@ -1,0 +1,139 @@
+name: Materialize coordinate utils extraction
+
+on:
+  push:
+    branches: [refactor/extract-coordinate-utils]
+    paths:
+      - '.github/workflows/materialize-coordinate-utils.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/extract-coordinate-utils
+      - name: Extract frozen coordinate utilities
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const crypto=require('node:crypto');
+          const htmlPath='index.html';
+          let html=fs.readFileSync(htmlPath,'utf8');
+          const expected={
+            normalizeCoordinateInput:{bytes:196,sha:'25eeb5945c7e4d2b8d6e3fcd17bce4fd78d3eb4c51e779c9f80360a26e75f528'},
+            validAerodromeCoordinate:{bytes:192,sha:'3e113b6ba7a93eb851c5f70ad19a5aff715436c3b1804a36da4335fef87563c5'},
+            formatGeoCoord:{bytes:135,sha:'a7219e2ed5d6939754accd2b96248cecbfc826c43bc905718d082c52ee6f963e'},
+            atsCoordinateLabel:{bytes:141,sha:'541c59f892839907c29cbfeac7ac7256251aca2272180d83c4f3b355ecc532b6'},
+          };
+          const anchor='window.__FlightFlowFirBridge = Object.freeze({';
+          const anchorIndex=html.indexOf(anchor);
+          if(anchorIndex<0) throw new Error('main IIFE anchor missing');
+          const scriptStart=html.lastIndexOf('<script',anchorIndex);
+          const bodyStart=html.indexOf('>',scriptStart)+1;
+          const bodyEnd=html.indexOf('</script>',anchorIndex);
+          const kernel=html.slice(bodyStart,bodyEnd);
+
+          function scanBalanced(source,openIndex,openChar,closeChar){
+            let depth=0,mode='code',quote='',escape=false;
+            for(let i=openIndex;i<source.length;i++){
+              const c=source[i],next=source[i+1]||'';
+              if(mode==='line-comment'){if(c==='\n')mode='code';continue;}
+              if(mode==='block-comment'){if(c==='*'&&next==='/'){mode='code';i++;}continue;}
+              if(mode==='string'){if(escape)escape=false;else if(c==='\\')escape=true;else if(c===quote)mode='code';continue;}
+              if(mode==='template'){if(escape)escape=false;else if(c==='\\')escape=true;else if(c==='`')mode='code';continue;}
+              if(c==='/'&&next==='/'){mode='line-comment';i++;continue;}
+              if(c==='/'&&next==='*'){mode='block-comment';i++;continue;}
+              if(c==='"'||c==="'"){mode='string';quote=c;continue;}
+              if(c==='`'){mode='template';continue;}
+              if(c===openChar)depth++;else if(c===closeChar){depth--;if(depth===0)return i;}
+            }
+            return -1;
+          }
+          function extract(source,name){
+            const re=new RegExp('(^|\\n)([ \\t]*)function\\s+'+name+'\\s*\\(','g');
+            const matches=[...source.matchAll(re)];
+            if(matches.length!==1) throw new Error(`${name}: expected one declaration, got ${matches.length}`);
+            const m=matches[0],start=m.index+(m[1]==='\n'?1:0);
+            const paren=source.indexOf('(',start),parenEnd=scanBalanced(source,paren,'(',')');
+            let brace=parenEnd+1;while(/\s/.test(source[brace]||''))brace++;
+            const end=scanBalanced(source,brace,'{','}');
+            if(end<0)throw new Error(`${name}: unterminated body`);
+            return source.slice(start,end+1);
+          }
+
+          const bodies={};
+          for(const [name,meta] of Object.entries(expected)){
+            const body=extract(kernel,name);
+            const bytes=Buffer.byteLength(body,'utf8');
+            const sha=crypto.createHash('sha256').update(body).digest('hex');
+            if(bytes!==meta.bytes||sha!==meta.sha)throw new Error(`${name}: frozen contract mismatch bytes=${bytes} sha=${sha}`);
+            bodies[name]=body;
+            console.log(`${name}: frozen contract OK bytes=${bytes} sha=${sha}`);
+          }
+
+          const moduleSource=`(function () {\n  'use strict';\n\n${Object.values(bodies).join('\n\n')}\n  window.FlightFlowCoordinateUtils = Object.freeze({\n    normalizeCoordinateInput,\n    validAerodromeCoordinate,\n    formatGeoCoord,\n    atsCoordinateLabel,\n  });\n})();\n`;
+          fs.mkdirSync('src/geo',{recursive:true});
+          fs.writeFileSync('src/geo/coordinate-utils.js',moduleSource);
+
+          for(const body of Object.values(bodies)){
+            const count=html.split(body).length-1;
+            if(count!==1)throw new Error(`body replacement expected once, got ${count}`);
+            html=html.replace(body,'');
+          }
+
+          const loader='<script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>';
+          const coordinateLoader='<script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>';
+          if((html.split(loader).length-1)!==1)throw new Error('operational state loader anchor mismatch');
+          if(html.includes(coordinateLoader))throw new Error('coordinate loader already exists');
+          html=html.replace(loader,`${loader}\n${coordinateLoader}`);
+
+          const aliasAnchor="  const OperationalStateUtils = window.FlightFlowOperationalStateUtils;\n  if (!OperationalStateUtils) throw new Error('FlightFlowOperationalStateUtils não foi carregado.');\n  const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;";
+          const aliasInsert=`${aliasAnchor}\n  const CoordinateUtils = window.FlightFlowCoordinateUtils;\n  if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');\n  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel } = CoordinateUtils;`;
+          if((html.split(aliasAnchor).length-1)!==1)throw new Error('operational state alias anchor mismatch');
+          html=html.replace(aliasAnchor,aliasInsert);
+          fs.writeFileSync(htmlPath,html);
+
+          const newHtml=fs.readFileSync(htmlPath,'utf8');
+          const newAnchorIndex=newHtml.indexOf(anchor);
+          const newScriptStart=newHtml.lastIndexOf('<script',newAnchorIndex);
+          const newBodyStart=newHtml.indexOf('>',newScriptStart)+1;
+          const newBodyEnd=newHtml.indexOf('</script>',newAnchorIndex);
+          const rawKernel=newHtml.slice(newBodyStart,newBodyEnd);
+          const normalizedKernel=rawKernel.replace(/^\n+|\n+$/g,'')+'\n';
+          const moduleBytes=Buffer.byteLength(moduleSource,'utf8');
+          const moduleSha=crypto.createHash('sha256').update(moduleSource).digest('hex');
+          const rawBytes=Buffer.byteLength(rawKernel,'utf8');
+          const rawSha=crypto.createHash('sha256').update(rawKernel).digest('hex');
+          const normBytes=Buffer.byteLength(normalizedKernel,'utf8');
+          const normLines=normalizedKernel.split(/\r?\n/).length-1;
+          const normSha=crypto.createHash('sha256').update(normalizedKernel).digest('hex');
+          const named=[...rawKernel.matchAll(/(^|\n)[ \t]*function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m=>m[2]);
+          console.log(`module.bytes=${moduleBytes}`);
+          console.log(`module.sha256=${moduleSha}`);
+          console.log(`kernel.raw.bytes=${rawBytes}`);
+          console.log(`kernel.raw.sha256=${rawSha}`);
+          console.log(`kernel.normalized.bytes=${normBytes}`);
+          console.log(`kernel.normalized.lines=${normLines}`);
+          console.log(`kernel.normalized.sha256=${normSha}`);
+          console.log(`kernel.namedFunctions=${named.length}`);
+          console.log(`kernel.uniqueNames=${new Set(named).size}`);
+          for(const name of Object.keys(expected)){
+            if(new RegExp(`function\\s+${name}\\s*\\(`).test(rawKernel))throw new Error(`${name} still declared inline`);
+          }
+          NODE
+          node --check src/geo/coordinate-utils.js
+          python3 tools/audit_static.py index.html
+      - name: Commit extracted module
+        shell: bash
+        run: |
+          git config user.name "ricksir"
+          git config user.email "42359465+ricksir@users.noreply.github.com"
+          git add index.html src/geo/coordinate-utils.js
+          git commit -m "refactor: extract coordinate utilities"
+          git push origin HEAD:refactor/extract-coordinate-utils
