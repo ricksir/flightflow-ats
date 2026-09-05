@@ -1,4 +1,4 @@
-name: Materialize polygonGeoCentroid extraction
+name: Materialize polygonGeoCentroid extraction v2
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22
       - name: Materialize extraction
-        run: python3 tools/materialize_polygon_geo_centroid_extraction.py
+        run: python3 tools/run_polygon_geo_centroid_extraction.py
       - name: Install dependencies
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
