@@ -5485,6 +5485,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>
 <script id="flightflow-transport-navigation-controller" src="src/timeline/transport-navigation-controller.js"></script>
 <script id="flightflow-keyboard-navigation-controller" src="src/timeline/keyboard-navigation-controller.js"></script>
+<script id="flightflow-timeline-selection-controller" src="src/timeline/timeline-selection-controller.js"></script>
 <script>
 
 (function () {
@@ -10021,12 +10022,6 @@ Destinatário(s): ${context.recipients}`;
     return 'default';
   }
 
-  function updateTimelineSelection() {
-    const items = els.timelineList.querySelectorAll('.timeline-item');
-    items.forEach(item => item.classList.toggle('active', Number(item.dataset.eventIndex) === state.index));
-    const active = els.timelineList.querySelector('.timeline-item.active');
-    if (active && document.querySelector('[data-panel="timeline"]').classList.contains('active')) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
 
   function activateTab(name) {
     els.tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === name));
@@ -10073,6 +10068,14 @@ Destinatário(s): ${context.recipients}`;
     showExactMessage: () => showExactMessage(),
     toggleFpv: () => toggleFpv(),
     toggleStrip: () => toggleStrip(),
+  });
+
+  const TimelineSelectionController = window.FlightFlowTimelineSelectionController;
+  if (!TimelineSelectionController) throw new Error('FlightFlowTimelineSelectionController não foi carregado.');
+  const { updateTimelineSelection } = TimelineSelectionController.create({
+    state,
+    getTimelineList: () => els.timelineList,
+    isTimelinePanelActive: () => document.querySelector('[data-panel="timeline"]').classList.contains('active'),
   });
 
 
