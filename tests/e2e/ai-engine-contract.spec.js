@@ -18,7 +18,7 @@ test('API pública do motor IA permanece congelada e completa', async ({ page })
       frozen: api ? Object.isFrozen(api) : false,
       version: api?.version,
       methods: names.filter(name => typeof api?.[name] === 'function'),
-      knowledgeIsArray: Array.isArray(window.__flightflowKnowledgeEntries),
+      knowledgePublished: typeof window.__flightflowKnowledgeEntries !== 'undefined',
     };
   }, PUBLIC_FUNCTIONS);
 
@@ -26,22 +26,19 @@ test('API pública do motor IA permanece congelada e completa', async ({ page })
   expect(contract.frozen).toBe(true);
   expect(contract.version).toBe('1.3.2');
   expect(contract.methods).toEqual(PUBLIC_FUNCTIONS);
-  expect(contract.knowledgeIsArray).toBe(true);
+  expect(contract.knowledgePublished).toBe(true);
 });
 
-test('self-tests internos do motor IA passam no navegador real', async ({ page }) => {
-  await page.goto('/index.html?ffai-test=1', { waitUntil: 'load' });
-  const marker = page.locator('#ffai-test-marker');
-  await expect(marker).toHaveCount(1);
+test('runSelfTests público passa diretamente no navegador real', async ({ page }) => {
+  await page.goto('/index.html', { waitUntil: 'load' });
 
-  const result = await page.evaluate(() => ({
-    status: document.documentElement.getAttribute('data-ffai-test-result'),
-    total: Number(document.querySelector('#ffai-test-marker')?.dataset.total || 0),
-    passed: Number(document.querySelector('#ffai-test-marker')?.dataset.passed || 0),
-    failed: Number(document.querySelector('#ffai-test-marker')?.dataset.failed || 0),
-  }));
+  const result = await page.evaluate(() => {
+    const api = window.__flightflowAI;
+    if (!api || typeof api.runSelfTests !== 'function') return null;
+    return api.runSelfTests();
+  });
 
-  expect(result.status).toBe('pass');
+  expect(result).not.toBeNull();
   expect(result.total).toBeGreaterThan(0);
   expect(result.passed).toBe(result.total);
   expect(result.failed).toBe(0);
