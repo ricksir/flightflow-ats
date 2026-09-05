@@ -5509,7 +5509,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
-  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid } = CoordinateUtils;
+  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;
 
   const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;
   if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');
@@ -6611,19 +6611,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     SBBR: { terminalBearing: 20, standDistanceM: 720, apronDistanceM: 560, thresholdDistanceM: 1420, rolloutDistanceM: 920, approachDistanceM: 5600, climbDistanceM: 3400 },
     SBGO: { terminalBearing: 210, standDistanceM: 620, apronDistanceM: 500, thresholdDistanceM: 1180, rolloutDistanceM: 820, approachDistanceM: 4300, climbDistanceM: 2800 }
   });
-
-  function geoOffset(lat, lon, distanceMeters, bearingDegrees) {
-    const R = 6371000;
-    const brng = Number(bearingDegrees || 0) * Math.PI / 180;
-    const dByR = Number(distanceMeters || 0) / R;
-    const lat1 = Number(lat) * Math.PI / 180;
-    const lon1 = Number(lon) * Math.PI / 180;
-    const sinLat1 = Math.sin(lat1), cosLat1 = Math.cos(lat1);
-    const sinD = Math.sin(dByR), cosD = Math.cos(dByR);
-    const lat2 = Math.asin(sinLat1 * cosD + cosLat1 * sinD * Math.cos(brng));
-    const lon2 = lon1 + Math.atan2(Math.sin(brng) * sinD * cosLat1, cosD - sinLat1 * Math.sin(lat2));
-    return { lat: lat2 * 180 / Math.PI, lon: lon2 * 180 / Math.PI };
-  }
 
   function projectOffsetAirportPoint(airport, distanceMeters, bearingDegrees) {
     if (!airport) return null;
