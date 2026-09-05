@@ -7,6 +7,7 @@
     const s=(event&&event.snapshot)||{}; const text=`${s.status||''} ${event?.operation||''} ${s.groundState||''}`.toUpperCase();
     if(/ALERTA|EMERG/.test(text))return'theme-alert'; if(s.rvsm==='X')return'theme-nonrvsm';
     if(/PROPOS/.test(text))return'theme-proposal'; if(/DOADOR/.test(text))return'theme-donor'; if(/RECEPTOR/.test(text))return'theme-receiver';
+    if(/INAT/.test(String(s.status||'').toUpperCase()))return'theme-noncontrolled';
     if(/ARQUIV|TERMIN|CANCEL/.test(text))return'theme-finished'; if(/PRÉ|PRE-ATIVO|PRÉ-ATIVO/.test(text))return s.authorizationState?'theme-pre-dark':'theme-pre-light';
     if(/ATIVO/.test(text))return'theme-controlled'; return'theme-noncontrolled';
   }
