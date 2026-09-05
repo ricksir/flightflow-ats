@@ -5482,6 +5482,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
+<script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>
 <script>
 
 (function () {
@@ -10035,42 +10036,22 @@ Destinatário(s): ${context.recipients}`;
     }
   }
 
-  function togglePlayback() {
-    if (!state.parsed) return;
-    state.playing ? stopPlayback() : startPlayback();
-  }
 
-  function startPlayback() {
-    if (!state.parsed) return;
-    if (state.index >= state.parsed.events.length - 1) goTo(0, { silent: true });
-    state.playing = true;
-    els.playBtn.textContent = 'Ⅱ';
-    els.playBtn.title = 'Pausar (Espaço)';
-    scheduleNext();
-  }
 
-  function stopPlayback() {
-    state.playing = false;
-    if (state.timer) window.clearTimeout(state.timer);
-    state.timer = null;
-    if (els.playBtn) {
-      els.playBtn.textContent = '▶';
-      els.playBtn.title = 'Reproduzir (Espaço)';
-    }
-  }
+  const PlaybackController = window.FlightFlowPlaybackController;
+  if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');
+  const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({
+    state,
+    playBtn: els.playBtn,
+    currentEvent: () => currentEvent(),
+    goTo: (index, options) => goTo(index, options),
+    setTimeout: (fn, delay) => window.setTimeout(fn, delay),
+    clearTimeout: timer => window.clearTimeout(timer),
+  });
 
-  function scheduleNext() {
-    if (state.timer) window.clearTimeout(state.timer);
-    if (!state.playing || !state.parsed) return;
-    const current = currentEvent();
-    const emphasis = current && (/DEP|ARR|CRQ|CRP/.test(current.messageType) || current.changes.length > 5) ? 1.25 : 1;
-    const delay = Math.max(350, Number(state.config.baseIntervalMs || 1850) * emphasis / state.speed);
-    state.timer = window.setTimeout(() => {
-      if (state.index >= state.parsed.events.length - 1) { stopPlayback(); return; }
-      goTo(state.index + 1);
-      scheduleNext();
-    }, delay);
-  }
+
+
+
 
   function toggleSound() {
     state.soundEnabled = !state.soundEnabled;
