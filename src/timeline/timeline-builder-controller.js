@@ -5,18 +5,25 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
+  function getSourceClass(sourceName) {
+    const lower = sourceName.toLowerCase();
+    if (lower.includes('app')) return 'app';
+    if (lower.includes('acc')) return 'acc';
+    if (lower.includes('twr')) return 'twr';
+    if (lower.includes('cpv')) return 'cpv';
+    return 'default';
+  }
+
   const create = (options = {}) => {
     const state = options.state;
     const els = options.els;
     const escapeHtml = options.escapeHtml;
-    const getSourceClass = options.getSourceClass;
     const goTo = options.goTo;
     const stopPlayback = options.stopPlayback;
 
     if (!state) throw new Error('FlightFlowTimelineBuilderController requer state.');
     if (!els) throw new Error('FlightFlowTimelineBuilderController requer els.');
     if (typeof escapeHtml !== 'function') throw new Error('FlightFlowTimelineBuilderController requer escapeHtml().');
-    if (typeof getSourceClass !== 'function') throw new Error('FlightFlowTimelineBuilderController requer getSourceClass().');
     if (typeof goTo !== 'function') throw new Error('FlightFlowTimelineBuilderController requer goTo().');
     if (typeof stopPlayback !== 'function') throw new Error('FlightFlowTimelineBuilderController requer stopPlayback().');
 

@@ -13,8 +13,8 @@ const REFERENCE = '<script id="flightflow-timeline-builder-controller" src="src/
 const ORIGINAL_BYTES = 1681;
 const ORIGINAL_LINES = 20;
 const ORIGINAL_SHA256 = '5c152a66eee7d3a5294f868340725275a705d1432a3351b90733a29fa535c85a';
-const MODULE_BYTES = 2965;
-const MODULE_SHA256 = '5384673695105385d3ceeb29426c2d0a67436cbf121379b55e88586a35694624';
+const MODULE_BYTES = 3078;
+const MODULE_SHA256 = '13fc2e8d0908e3d5028f0a3d922dc4e16836845cda57d907f35b08701be72b93';
 const EXPECTED_STATE_REFS = Object.freeze(["parsed"]);
 const EXPECTED_ELS_REFS = Object.freeze(["timelineHeading", "timelineList"]);
 const EXPECTED_BARE_CALLS = Object.freeze(["Number", "String", "activate", "escapeHtml", "getSourceClass", "goTo", "stopPlayback"]);
@@ -83,11 +83,10 @@ test('buildTimeline preserva a fronteira congelada de state, els e chamadas', ()
 test('fábrica exige explicitamente todas as dependências externas', () => {
   const Controller = require(MODULE);
   const noop = () => {};
-  const base = { state: {}, els: {}, escapeHtml: noop, getSourceClass: noop, goTo: noop, stopPlayback: noop };
+  const base = { state: {}, els: {}, escapeHtml: noop, goTo: noop, stopPlayback: noop };
   assert.throws(() => Controller.create(), /requer state/);
   assert.throws(() => Controller.create({ state: {} }), /requer els/);
   assert.throws(() => Controller.create({ ...base, escapeHtml: null }), /requer escapeHtml/);
-  assert.throws(() => Controller.create({ ...base, getSourceClass: null }), /requer getSourceClass/);
   assert.throws(() => Controller.create({ ...base, goTo: null }), /requer goTo/);
   assert.throws(() => Controller.create({ ...base, stopPlayback: null }), /requer stopPlayback/);
   const api = Controller.create(base);
@@ -107,7 +106,6 @@ test('index carrega timeline-builder antes do IIFE e delega buildTimeline ao mó
     "if (!TimelineBuilderController) throw new Error('FlightFlowTimelineBuilderController não foi carregado.');",
     'const { buildTimeline } = TimelineBuilderController.create({',
     'escapeHtml: (...args) => escapeHtml(...args),',
-    'getSourceClass: (...args) => getSourceClass(...args),',
     'goTo: (...args) => goTo(...args),',
     'stopPlayback: (...args) => stopPlayback(...args),',
   ]) assert.ok(html.includes(token), `integração ausente: ${token}`);
