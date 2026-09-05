@@ -5492,7 +5492,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
   const CoreUtils = window.FlightFlowCoreUtils;
   if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');
-  const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded } = CoreUtils;
+  const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;
 
   const TypographyUtils = window.FlightFlowTypographyUtils;
   if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');
@@ -10906,19 +10906,9 @@ Destinatário(s): ${context.recipients}`;
     return Math.min(Math.max(number, Math.min(lower, upper)), Math.max(lower, upper));
   }
 
-  function getPath(object, path) {
-    return String(path).split('.').reduce((value, key) => value == null ? '' : value[key], object);
-  }
 
-  function setPath(object, path, value) {
-    const parts = String(path).split('.');
-    let cursor = object;
-    parts.slice(0, -1).forEach(part => {
-      if (cursor[part] === undefined) cursor[part] = /^\d+$/.test(parts[parts.indexOf(part) + 1]) ? [] : {};
-      cursor = cursor[part];
-    });
-    cursor[parts[parts.length - 1]] = value;
-  }
+
+
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]);
