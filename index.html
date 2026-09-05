@@ -5483,6 +5483,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
 <script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>
+<script id="flightflow-transport-navigation-controller" src="src/timeline/transport-navigation-controller.js"></script>
 <script>
 
 (function () {
@@ -8136,11 +8137,11 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
       if (file) { selectFile(file); loadFile(file, true); }
     });
 
-    els.restartBtn.addEventListener('click', () => { stopPlayback(); snapMotionTo(0); goTo(0, { silent: true }); });
-    els.prevBtn.addEventListener('click', () => { stopPlayback(); goTo(state.index - 1); });
-    els.nextBtn.addEventListener('click', () => { stopPlayback(); goTo(state.index + 1); });
+    els.restartBtn.addEventListener('click', restartTransport);
+    els.prevBtn.addEventListener('click', previousTransport);
+    els.nextBtn.addEventListener('click', nextTransport);
     els.playBtn.addEventListener('click', togglePlayback);
-    els.scrubber.addEventListener('input', () => { stopPlayback(); goTo(Number(els.scrubber.value)); });
+    els.scrubber.addEventListener('input', scrubTransport);
     els.speedSelect.addEventListener('change', () => {
       state.speed = Number(els.speedSelect.value) || 1;
       if (state.playing) scheduleNext();
@@ -10047,6 +10048,16 @@ Destinatário(s): ${context.recipients}`;
     goTo: (index, options) => goTo(index, options),
     setTimeout: (fn, delay) => window.setTimeout(fn, delay),
     clearTimeout: timer => window.clearTimeout(timer),
+  });
+
+  const TransportNavigationController = window.FlightFlowTransportNavigationController;
+  if (!TransportNavigationController) throw new Error('FlightFlowTransportNavigationController não foi carregado.');
+  const { restartTransport, previousTransport, nextTransport, scrubTransport } = TransportNavigationController.create({
+    state,
+    getScrubber: () => els.scrubber,
+    stopPlayback: () => stopPlayback(),
+    snapMotionTo: progress => snapMotionTo(progress),
+    goTo: (index, options) => goTo(index, options),
   });
 
 
