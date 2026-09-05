@@ -30,6 +30,7 @@ As extrações por domínio não alteram esses totais globais: as declarações 
 | `window.__FLIGHTFLOW_GEO_DATA__` | **externo em `src/data/geo-data.js`** |
 | utilitários puros / `window.FlightFlowCoreUtils` | **externo e expandido em `src/core/core-utils.js`** |
 | tipografia pura / `window.FlightFlowTypographyUtils` | **externo em `src/ui/typography-utils.js`** |
+| estado visual operacional / `window.FlightFlowOperationalStateUtils` | **externo em `src/ui/operational-state-utils.js`** |
 | IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; decomposição continua **por domínio** |
 | motor IA/governança / `window.__flightflowAI` | **externo em `src/ai/ai-engine.js`** |
 | Secure Storage / `window.FlightFlowStorage` | **externo em `src/storage/secure-storage.js`** |
@@ -191,6 +192,33 @@ Contratos após a expansão:
 
 Proteções: `tests/core-utils-contract.test.js`, `tests/deterministic-core-utils-contract.test.js`, `tests/e2e/core-utils-module.spec.js` e `tests/main-kernel-contract.test.js`.
 
+### 12. Quarta extração por domínio: estado visual operacional
+
+O quarto corte priorizou raio de regressão em vez de quantidade de bytes. O mapeamento comparou um cluster de coordenadas com **13 pontos consumidores** e o cluster de estado visual com apenas **4 pontos consumidores**. Foi escolhido o segundo.
+
+Antes da mudança, o PR de contrato congelou tamanho, SHA-256 e comportamento de:
+
+- `themeSwatch` — 330 bytes / SHA-256 `f6a08de7486f9f317f9ae48739bf130d2d3f7f07b45ab5c4f76afa609994ba52`;
+- `stripTheme` — 653 bytes / SHA-256 `2dd09d6f90d269c0441ca63a5022d66a12de606235acbe8d5554ef2bf8c6f2f4`;
+- `statusClass` — 413 bytes / SHA-256 `459acb249e4af18bb6973d305fbd6e43c9c558ec89452b975de71ee4d122f12e`.
+
+As três funções não dependem de estado global, DOM, mapa, rede, armazenamento, `FlightParser` ou timers. Os corpos foram movidos mecanicamente para `src/ui/operational-state-utils.js` e publicados por `window.FlightFlowOperationalStateUtils = Object.freeze(...)`. O IIFE mantém aliases locais com os nomes originais, sem reescrever os quatro consumidores existentes.
+
+Contratos após a extração:
+
+- módulo: **1.554 bytes**;
+- SHA-256 do módulo: `d6620a7d53a24376969e2ae33b20a84f71a02eaaa7f852d98b43416e1af9f778`;
+- corpo bruto do IIFE: **1.145.319 bytes**, SHA-256 `9a84b0f527e399cfc6a9a2be1838588bc16b0fc6b05d6cf7ebfd2aa21599c1a9`;
+- contrato normalizado do núcleo: **1.145.315 bytes** / **5.495 linhas**;
+- SHA-256 normalizado do núcleo: `a98a94f86875d5b66c7c3e2859c6d830178e9348d0d4ac935d3c2093a3e8232f`;
+- núcleo: **361 funções nomeadas / 361 nomes únicos / zero duplicações internas**;
+- inventário global permanece em **722 declarações / 711 nomes únicos / 9 nomes repetidos conhecidos**;
+- `index.html` passa a ter **11 blocos de script**, sendo **10 módulos locais externos**.
+
+A extração preserva deliberadamente todo comportamento existente. Em particular, `stripTheme` atualmente classifica `INATIVO` como `theme-controlled` porque a expressão `/ATIVO/` também casa com `INATIVO`. Esse comportamento foi congelado apenas para garantir equivalência da refatoração; eventual correção pertence a um PR funcional separado.
+
+Proteções: `tests/operational-state-utils-contract.test.js`, `tests/e2e/operational-state-utils-module.spec.js` e `tests/main-kernel-contract.test.js`.
+
 ## Regras para os próximos PRs
 
 1. **Não misturar extração e melhoria funcional.**
@@ -203,6 +231,6 @@ Proteções: `tests/core-utils-contract.test.js`, `tests/deterministic-core-util
 
 ## Próxima etapa
 
-O grande IIFE principal permanece inline, agora com **364 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
+O grande IIFE principal permanece inline, agora com **361 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
 
-Os próximos candidatos devem continuar priorizando funções de baixo alcance. `clamp`/`clamp01` só devem sair depois de um contrato específico que cubra seus muitos consumidores. Timeline, navegação, mapa e o núcleo temporal/espacial da rota e da aeronave permanecem protegidos de refatorações amplas até que suas dependências sejam mapeadas e cobertas por testes dedicados.
+O cluster de coordenadas continua sendo um candidato de baixo acoplamento, mas possui 13 consumidores e deve receber contrato próprio antes de qualquer corte. `clamp`/`clamp01` só devem sair depois de um contrato específico que cubra seus muitos consumidores. Timeline, navegação, mapa e o núcleo temporal/espacial da rota e da aeronave permanecem protegidos de refatorações amplas até que suas dependências sejam mapeadas e cobertas por testes dedicados.

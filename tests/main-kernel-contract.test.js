@@ -6,15 +6,16 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1146463;
-const EXPECTED_SHA256 = '5933449b1c5aebf65f71c46b48f0040ad18117abb113d936ac4d72b68d074c5b';
-const EXPECTED_LINES = 5506;
+const EXPECTED_BYTES = 1145315;
+const EXPECTED_SHA256 = 'a98a94f86875d5b66c7c3e2859c6d830178e9348d0d4ac935d3c2093a3e8232f';
+const EXPECTED_LINES = 5495;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
   'angleDifference', 'hashString', 'seeded'
 ];
 const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 'fontLayoutDescription'];
+const EXTRACTED_OPERATIONAL_STATE_UTILS = ['themeSwatch', 'stripTheme', 'statusClass'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -37,7 +38,7 @@ test('núcleo principal mantém identidade estrutural de baseline', () => {
   assert.match(source, /\}\)\(\);\n$/);
 });
 
-test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUtils e identidade da aplicação', () => {
+test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUtils/OperationalStateUtils e identidade da aplicação', () => {
   const source = kernelSource();
   for (const token of [
     'const Parser = window.FlightParser;',
@@ -48,6 +49,9 @@ test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUt
     'const TypographyUtils = window.FlightFlowTypographyUtils;',
     "if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');",
     'const { normalizeFontScale, fontLayoutForScale, fontLayoutDescription } = TypographyUtils;',
+    'const OperationalStateUtils = window.FlightFlowOperationalStateUtils;',
+    "if (!OperationalStateUtils) throw new Error('FlightFlowOperationalStateUtils não foi carregado.');",
+    'const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;',
     "name: 'FlightFlow ATS - TIOP Cindacta1'",
     "subtitle: 'Histórico animado de Plano de Voo'",
     "version: '7.3.2'"
@@ -89,19 +93,19 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após três extrações por domínio', () => {
+test('inventário interno do núcleo mantém nomes únicos após quatro extrações por domínio', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 364);
-  assert.equal(counts.size, 364);
+  assert.equal(names.length, 361);
+  assert.equal(counts.size, 361);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   assert.equal(counts.get('buildTimeline'), 1);
   assert.equal(counts.get('getSourceClass'), 1);
-  for (const name of [...EXTRACTED_CORE_UTILS, ...EXTRACTED_TYPOGRAPHY_UTILS]) {
+  for (const name of [...EXTRACTED_CORE_UTILS, ...EXTRACTED_TYPOGRAPHY_UTILS, ...EXTRACTED_OPERATIONAL_STATE_UTILS]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
   assert.equal(counts.get('clamp'), 1, 'clamp deve permanecer inline neste corte');

@@ -5480,6 +5480,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
 <script id="flightflow-core-utils" src="src/core/core-utils.js"></script>
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
+<script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script>
 
 (function () {
@@ -5495,6 +5496,9 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const TypographyUtils = window.FlightFlowTypographyUtils;
   if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');
   const { normalizeFontScale, fontLayoutForScale, fontLayoutDescription } = TypographyUtils;
+  const OperationalStateUtils = window.FlightFlowOperationalStateUtils;
+  if (!OperationalStateUtils) throw new Error('FlightFlowOperationalStateUtils não foi carregado.');
+  const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -9734,14 +9738,8 @@ Destinatário(s): ${context.recipients}`;
   function resetFpvPosition(){if(!els.fpvWindow)return;els.fpvWindow.classList.remove('expanded');els.fpvWindow.style.left='42px';els.fpvWindow.style.top='130px';els.fpvWindow.style.width='min(850px, calc(100vw - 84px))';els.fpvWindow.style.height='';}
   function toggleFpvEdit(){state.fpvEditMode=!state.fpvEditMode;if(els.fpvEditBtn)els.fpvEditBtn.textContent=state.fpvEditMode?'✓':'✎';renderFpv(currentEvent());if(state.fpvEditMode){els.fpvCells.forEach(cell=>{const b=cell.querySelector('b');if(b)b.addEventListener('input',()=>{const path=b.dataset.key;(state.fpvOverrides[state.index] ||= {})[path]=b.textContent.trim();},{once:false});});}}
 
-  function stripTheme(event) {
-    const s=(event&&event.snapshot)||{}; const text=`${s.status||''} ${event?.operation||''} ${s.groundState||''}`.toUpperCase();
-    if(/ALERTA|EMERG/.test(text))return'theme-alert'; if(s.rvsm==='X')return'theme-nonrvsm';
-    if(/PROPOS/.test(text))return'theme-proposal'; if(/DOADOR/.test(text))return'theme-donor'; if(/RECEPTOR/.test(text))return'theme-receiver';
-    if(/ARQUIV|TERMIN|CANCEL/.test(text))return'theme-finished'; if(/PRÉ|PRE-ATIVO|PRÉ-ATIVO/.test(text))return s.authorizationState?'theme-pre-dark':'theme-pre-light';
-    if(/ATIVO/.test(text))return'theme-controlled'; return'theme-noncontrolled';
-  }
-  function themeSwatch(theme){return({'theme-pre-light':'#68ff72','theme-pre-dark':'#00b832','theme-noncontrolled':'#d6d6d6','theme-controlled':'#111111','theme-proposal':'#fff000','theme-donor':'#ff9c2e','theme-receiver':'#3f4cff','theme-finished':'#d0d0d0','theme-nonrvsm':'#954a2c','theme-alert':'#c4151d'})[theme]||'#d6d6d6';}
+
+
   function stripCell(code,value,cls='',changed=false){const def=STRIP_FIELD_DEFS[code];return `<button type="button" class="strip-cell ${cls} ${changed?'updated':''}" data-strip-field="${code}" data-strip-value="${escapeHtml(displayValue(value,''))}" data-strip-updated="${changed?'true':'false'}" title="Consultar ${escapeHtml(def?def.label:code)} e o significado da cor"><span class="strip-code">${code}</span><span class="strip-value">${escapeHtml(displayValue(value,''))}</span></button>`;}
 
   function renderStrip(event) {
@@ -10671,15 +10669,7 @@ Destinatário(s): ${context.recipients}`;
     } catch (error) { toast(`Tela cheia indisponível: ${error.message}`, 'error'); }
   }
 
-  function statusClass(status) {
-    const value = String(status || '').toUpperCase();
-    if (value.includes('PRÉ')) return 'status-preactive';
-    if (value.includes('INAT')) return 'status-inactive';
-    if (value.includes('ATIVO')) return 'status-active';
-    if (value.includes('TERMIN')) return 'status-terminated';
-    if (value.includes('ARQUIV')) return 'status-archived';
-    return 'status-empty';
-  }
+
 
 
   /* ==================== LOCALIZADOR DE AERÓDROMOS ==================== */
