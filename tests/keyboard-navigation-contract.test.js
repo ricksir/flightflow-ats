@@ -8,133 +8,205 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 883;
-const EXPECTED_SHA256 = 'f058462894b9f87a35c322eacf64c1047bea1579beac1821d789c25a6016b560';
+const MODULE = path.join(ROOT, 'src', 'timeline', 'keyboard-navigation-controller.js');
+const REFERENCE = '<script id="flightflow-keyboard-navigation-controller" src="src/timeline/keyboard-navigation-controller.js"></script>';
+const MODULE_BYTES = 2755;
+const MODULE_SHA256 = '27def372414b3b4e113649717c127994cb8f11d338fc111d448c7901cefbe0ab';
 const DOCUMENT_BINDING = "document.addEventListener('keydown', handleKeyboard);";
+
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
 
 function htmlSource() {
   return fs.readFileSync(HTML, 'utf8');
 }
 
-function extractNamedFunction(source, name) {
-  const marker = `function ${name}(`;
-  const start = source.indexOf(marker);
-  assert.notEqual(start, -1, `${name} deve existir no IIFE principal`);
-  const brace = source.indexOf('{', start);
-  assert.notEqual(brace, -1, `abertura de ${name} não encontrada`);
-
-  let depth = 0;
-  let mode = 'code';
-  let quote = '';
-  let escaped = false;
-  for (let i = brace; i < source.length; i++) {
-    const c = source[i];
-    const n = source[i + 1] || '';
-    if (mode === 'line') { if (c === '\n') mode = 'code'; continue; }
-    if (mode === 'block') { if (c === '*' && n === '/') { mode = 'code'; i++; } continue; }
-    if (mode === 'string') {
-      if (escaped) escaped = false;
-      else if (c === '\\') escaped = true;
-      else if (c === quote) mode = 'code';
-      continue;
-    }
-    if (mode === 'template') {
-      if (escaped) escaped = false;
-      else if (c === '\\') escaped = true;
-      else if (c === '`') mode = 'code';
-      continue;
-    }
-    if (c === '/' && n === '/') { mode = 'line'; i++; continue; }
-    if (c === '/' && n === '*') { mode = 'block'; i++; continue; }
-    if (c === '"' || c === "'") { mode = 'string'; quote = c; continue; }
-    if (c === '`') { mode = 'template'; continue; }
-    if (c === '{') depth++;
-    if (c === '}') {
-      depth--;
-      if (depth === 0) return source.slice(start, i + 1);
-    }
-  }
-  assert.fail(`fim de ${name} não encontrado`);
+function loadModule() {
+  delete require.cache[require.resolve(MODULE)];
+  return require(MODULE);
 }
 
-function keyboardSource() {
-  return extractNamedFunction(htmlSource(), 'handleKeyboard');
+function harness(overrides = {}) {
+  const KeyboardController = loadModule();
+  const state = Object.assign({
+    parsed: { events: [{}, {}, {}, {}, {}] },
+    index: 2,
+  }, overrides.state || {});
+  const calls = [];
+  const api = KeyboardController.create({
+    state,
+    isTargetEditable: overrides.isTargetEditable || (() => false),
+    hasOpenDialog: overrides.hasOpenDialog || (() => false),
+    togglePlayback: () => calls.push(['togglePlayback']),
+    stopPlayback: () => calls.push(['stopPlayback']),
+    goTo: (...args) => calls.push(['goTo', ...args]),
+    showExactMessage: () => calls.push(['showExactMessage']),
+    toggleFpv: () => calls.push(['toggleFpv']),
+    toggleStrip: () => calls.push(['toggleStrip']),
+  });
+  return { KeyboardController, state, calls, api };
 }
 
-function assertOrdered(source, tokens) {
-  let cursor = -1;
-  for (const token of tokens) {
-    const next = source.indexOf(token);
-    assert.notEqual(next, -1, `trecho ausente: ${token}`);
-    assert.ok(next > cursor, `ordem alterada perto de: ${token}`);
-    cursor = next;
-  }
+function keyboardEvent({ key = '', code = '', target = {}, ...rest } = {}) {
+  let prevented = false;
+  return {
+    key,
+    code,
+    target,
+    preventDefault() { prevented = true; },
+    wasPrevented() { return prevented; },
+    ...rest,
+  };
 }
 
-test('handleKeyboard mantém identidade estrutural exata antes da extração', () => {
-  const source = keyboardSource();
-  assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
-  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
-  assert.match(source, /^function handleKeyboard\(event\) \{/);
+test('módulo de teclado mantém identidade estrutural e API pública mínima', () => {
+  const source = moduleSource();
+  assert.equal(Buffer.byteLength(source, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), MODULE_SHA256);
+  assert.ok(source.startsWith('(function (root, factory) {'));
+  assert.ok(source.includes('root.FlightFlowKeyboardNavigationController = api;'));
+  assert.ok(source.includes('function handleKeyboard(event) {'));
+  const KeyboardController = loadModule();
+  assert.equal(Object.isFrozen(KeyboardController), true);
+  assert.deepEqual(Object.keys(KeyboardController), ['create']);
 });
 
-test('document mantém exatamente um binding global para handleKeyboard', () => {
-  const html = htmlSource();
-  assert.equal(html.split(DOCUMENT_BINDING).length - 1, 1);
+test('fábrica exige somente as dependências explícitas da fronteira', () => {
+  const api = loadModule();
+  assert.throws(() => api.create(), /requer state/);
+  assert.throws(() => api.create({ state: {} }), /requer isTargetEditable/);
+  assert.throws(() => api.create({ state: {}, isTargetEditable() {} }), /requer hasOpenDialog/);
+  assert.throws(() => api.create({ state: {}, isTargetEditable() {}, hasOpenDialog() {} }), /requer togglePlayback/);
+  assert.throws(() => api.create({ state: {}, isTargetEditable() {}, hasOpenDialog() {}, togglePlayback() {} }), /requer stopPlayback/);
+  assert.throws(() => api.create({ state: {}, isTargetEditable() {}, hasOpenDialog() {}, togglePlayback() {}, stopPlayback() {} }), /requer goTo/);
+  assert.throws(() => api.create({ state: {}, isTargetEditable() {}, hasOpenDialog() {}, togglePlayback() {}, stopPlayback() {}, goTo() {} }), /requer showExactMessage/);
+  assert.throws(() => api.create({ state: {}, isTargetEditable() {}, hasOpenDialog() {}, togglePlayback() {}, stopPlayback() {}, goTo() {}, showExactMessage() {} }), /requer toggleFpv/);
+  assert.throws(() => api.create({ state: {}, isTargetEditable() {}, hasOpenDialog() {}, togglePlayback() {}, stopPlayback() {}, goTo() {}, showExactMessage() {}, toggleFpv() {} }), /requer toggleStrip/);
 });
 
-test('teclado ignora campos editáveis e qualquer dialog aberto antes de consultar histórico', () => {
-  const source = keyboardSource();
-  assertOrdered(source, [
-    `event.target.matches('input, textarea, select, [contenteditable="true"]')`,
-    `document.querySelector('dialog[open]')`,
-    'if (!state.parsed) return;',
-  ]);
+test('instância é congelada e expõe somente handleKeyboard', () => {
+  const h = harness();
+  assert.equal(Object.isFrozen(h.api), true);
+  assert.deepEqual(Object.keys(h.api), ['handleKeyboard']);
+  assert.equal(typeof h.api.handleKeyboard, 'function');
 });
 
-test('Space exige histórico, previne default e alterna playback', () => {
-  const source = keyboardSource();
-  assertOrdered(source, [
-    'if (!state.parsed) return;',
-    "if (event.code === 'Space')",
-    'event.preventDefault();',
-    'togglePlayback();',
-  ]);
+test('campo editável e dialog aberto bloqueiam tudo antes de consultar atalhos', () => {
+  const editable = harness({ isTargetEditable: () => true });
+  const e1 = keyboardEvent({ key: 'ArrowRight' });
+  editable.api.handleKeyboard(e1);
+  assert.deepEqual(editable.calls, []);
+  assert.equal(e1.wasPrevented(), false);
+
+  const dialog = harness({ hasOpenDialog: () => true });
+  const e2 = keyboardEvent({ key: 'ArrowRight' });
+  dialog.api.handleKeyboard(e2);
+  assert.deepEqual(dialog.calls, []);
+  assert.equal(e2.wasPrevented(), false);
 });
 
-test('setas preservam stopPlayback antes da navegação relativa', () => {
-  const source = keyboardSource();
-  assert.ok(source.includes("else if (event.key === 'ArrowLeft') { event.preventDefault(); stopPlayback(); goTo(state.index - 1); }"));
-  assert.ok(source.includes("else if (event.key === 'ArrowRight') { event.preventDefault(); stopPlayback(); goTo(state.index + 1); }"));
+test('sem histórico carregado nenhum atalho executa ação', () => {
+  const h = harness({ state: { parsed: null } });
+  const event = keyboardEvent({ code: 'Space', key: ' ' });
+  h.api.handleKeyboard(event);
+  assert.deepEqual(h.calls, []);
+  assert.equal(event.wasPrevented(), false);
 });
 
-test('Home e End preservam limites exatos e interrompem playback', () => {
-  const source = keyboardSource();
-  assert.ok(source.includes("else if (event.key === 'Home') { event.preventDefault(); stopPlayback(); goTo(0); }"));
-  assert.ok(source.includes("else if (event.key === 'End') { event.preventDefault(); stopPlayback(); goTo(state.parsed.events.length - 1); }"));
+test('Space previne default e delega somente ao playback', () => {
+  const h = harness();
+  const event = keyboardEvent({ code: 'Space', key: ' ' });
+  h.api.handleKeyboard(event);
+  assert.equal(event.wasPrevented(), true);
+  assert.deepEqual(h.calls, [['togglePlayback']]);
 });
 
-test('atalhos M, F e S preservam suas ações atuais', () => {
-  const source = keyboardSource();
-  assertOrdered(source, [
-    "else if (event.key.toLowerCase() === 'm') showExactMessage();",
-    "else if (event.key.toLowerCase() === 'f') toggleFpv();",
-    "else if (event.key.toLowerCase() === 's') toggleStrip();",
-  ]);
+test('ArrowLeft e ArrowRight interrompem playback antes de navegar relativamente', () => {
+  const left = harness({ state: { index: 3 } });
+  const leftEvent = keyboardEvent({ key: 'ArrowLeft' });
+  left.api.handleKeyboard(leftEvent);
+  assert.equal(leftEvent.wasPrevented(), true);
+  assert.deepEqual(left.calls, [['stopPlayback'], ['goTo', 2]]);
+
+  const right = harness({ state: { index: 3 } });
+  const rightEvent = keyboardEvent({ key: 'ArrowRight' });
+  right.api.handleKeyboard(rightEvent);
+  assert.equal(rightEvent.wasPrevented(), true);
+  assert.deepEqual(right.calls, [['stopPlayback'], ['goTo', 4]]);
 });
 
-test('baseline atual não filtra Ctrl, Meta, Alt, defaultPrevented nem foco em button', () => {
-  const source = keyboardSource();
-  for (const absent of ['ctrlKey', 'metaKey', 'altKey', 'defaultPrevented', 'button']) {
-    assert.equal(source.includes(absent), false, `baseline não deve ganhar filtro silencioso para ${absent}`);
+test('Home e End interrompem playback e preservam os limites atuais', () => {
+  const home = harness();
+  home.api.handleKeyboard(keyboardEvent({ key: 'Home' }));
+  assert.deepEqual(home.calls, [['stopPlayback'], ['goTo', 0]]);
+
+  const end = harness();
+  end.api.handleKeyboard(keyboardEvent({ key: 'End' }));
+  assert.deepEqual(end.calls, [['stopPlayback'], ['goTo', 4]]);
+});
+
+test('M, F e S preservam exatamente suas ações atuais', () => {
+  const message = harness();
+  message.api.handleKeyboard(keyboardEvent({ key: 'M' }));
+  assert.deepEqual(message.calls, [['showExactMessage']]);
+
+  const fpv = harness();
+  fpv.api.handleKeyboard(keyboardEvent({ key: 'F' }));
+  assert.deepEqual(fpv.calls, [['toggleFpv']]);
+
+  const strip = harness();
+  strip.api.handleKeyboard(keyboardEvent({ key: 'S' }));
+  assert.deepEqual(strip.calls, [['toggleStrip']]);
+});
+
+test('Ctrl+ArrowRight continua navegando porque modificadores não são filtrados', () => {
+  const h = harness({ state: { index: 1 } });
+  const event = keyboardEvent({ key: 'ArrowRight', ctrlKey: true });
+  h.api.handleKeyboard(event);
+  assert.equal(event.wasPrevented(), true);
+  assert.deepEqual(h.calls, [['stopPlayback'], ['goTo', 2]]);
+  for (const absent of ['ctrlKey', 'metaKey', 'altKey', 'defaultPrevented']) {
+    assert.equal(moduleSource().includes(absent), false, `módulo não deve introduzir filtro silencioso para ${absent}`);
   }
 });
 
-test('handleKeyboard permanece desacoplado de rota, mapa, aeronave, storage e parser', () => {
-  const source = keyboardSource();
+test('módulo permanece desacoplado de document, rota, mapa, aeronave, storage e parser', () => {
+  const source = moduleSource();
   for (const forbidden of [
-    'FlightFlowRouteProcessedV7412', 'transitionPlanForEvents', 'transitionDurations',
+    'document.', 'querySelector', 'FlightFlowRouteProcessedV7412', 'transitionPlanForEvents', 'transitionDurations',
     'realMapState', 'google.', 'L.', 'aircraft', 'plane', 'localStorage', 'sessionStorage', 'indexedDB',
     'FlightParser', 'Parser.'
   ]) assert.equal(source.includes(forbidden), false, `acoplamento proibido: ${forbidden}`);
+});
+
+test('index carrega controlador antes do núcleo, injeta guardas atuais e mantém binding global único', () => {
+  const html = htmlSource();
+  assert.equal(html.split(REFERENCE).length - 1, 1, 'referência externa deve ser única');
+  assert.equal(html.split(DOCUMENT_BINDING).length - 1, 1, 'binding global deve permanecer único');
+  const referenceIndex = html.indexOf(REFERENCE);
+  const anchorIndex = html.indexOf('window.__FlightFlowFirBridge = Object.freeze({');
+  const mainScriptStart = html.lastIndexOf('<script', anchorIndex);
+  assert.ok(referenceIndex >= 0 && referenceIndex < mainScriptStart, 'controlador deve carregar antes do IIFE principal');
+
+  for (const token of [
+    'const KeyboardNavigationController = window.FlightFlowKeyboardNavigationController;',
+    "if (!KeyboardNavigationController) throw new Error('FlightFlowKeyboardNavigationController não foi carregado.');",
+    'const { handleKeyboard } = KeyboardNavigationController.create({',
+    `isTargetEditable: target => target.matches('input, textarea, select, [contenteditable="true"]'),`,
+    `hasOpenDialog: () => Boolean(document.querySelector('dialog[open]')),`,
+    'togglePlayback: () => togglePlayback(),',
+    'stopPlayback: () => stopPlayback(),',
+    'goTo: (index, options) => goTo(index, options),',
+    'showExactMessage: () => showExactMessage(),',
+    'toggleFpv: () => toggleFpv(),',
+    'toggleStrip: () => toggleStrip(),',
+  ]) assert.ok(html.includes(token), `integração ausente: ${token}`);
+
+  const anchor = html.indexOf('window.__FlightFlowFirBridge = Object.freeze({');
+  const start = html.lastIndexOf('<script', anchor);
+  const bodyStart = html.indexOf('>', start) + 1;
+  const bodyEnd = html.indexOf('</script>', anchor);
+  const kernel = html.slice(bodyStart, bodyEnd);
+  assert.doesNotMatch(kernel, /function\s+handleKeyboard\s*\(/, 'handleKeyboard não deve continuar inline');
 });
