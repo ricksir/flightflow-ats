@@ -31,6 +31,7 @@ As extrações por domínio não alteram esses totais globais: as declarações 
 | utilitários puros / `window.FlightFlowCoreUtils` | **externo e expandido em `src/core/core-utils.js`** |
 | tipografia pura / `window.FlightFlowTypographyUtils` | **externo em `src/ui/typography-utils.js`** |
 | estado visual operacional / `window.FlightFlowOperationalStateUtils` | **externo em `src/ui/operational-state-utils.js`** |
+| playback/timer / `window.FlightFlowPlaybackController` | **externo em `src/timeline/playback-controller.js`** |
 | IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; decomposição continua **por domínio** |
 | motor IA/governança / `window.__flightflowAI` | **externo em `src/ai/ai-engine.js`** |
 | Secure Storage / `window.FlightFlowStorage` | **externo em `src/storage/secure-storage.js`** |
@@ -231,7 +232,7 @@ Proteções: `tests/operational-state-utils-contract.test.js`, `tests/e2e/operat
 
 ## Próxima etapa
 
-O grande IIFE principal permanece inline, agora com **361 funções nomeadas** e sem duplicações internas. Ele continua protegido por contrato e **não deve ser movido inteiro**.
+O grande IIFE principal permanece inline, agora com **351 funções nomeadas** e sem duplicações internas após a primeira extração do domínio timeline/estado. Ele continua protegido por contrato e **não deve ser movido inteiro**.
 
 O cluster de coordenadas continua sendo um candidato de baixo acoplamento, mas possui 13 consumidores e deve receber contrato próprio antes de qualquer corte. `clamp`/`clamp01` só devem sair depois de um contrato específico que cubra seus muitos consumidores. Timeline, navegação, mapa e o núcleo temporal/espacial da rota e da aeronave permanecem protegidos de refatorações amplas até que suas dependências sejam mapeadas e cobertas por testes dedicados.
 
@@ -280,3 +281,21 @@ Contratos após a extração:
 - **355 funções nomeadas / 355 nomes únicos / zero duplicações internas** no contrato do núcleo.
 
 Proteções: `tests/object-path-utils-contract.test.js`, `tests/core-utils-contract.test.js`, `tests/e2e/core-utils-module.spec.js`, `tests/main-kernel-contract.test.js`, auditoria, inventário, regressão 78→79 e Playwright/Chrome.
+
+
+### 15. Primeira extração de timeline/estado: controlador de playback
+
+O domínio timeline/estado começou pela subfronteira de menor acoplamento. Antes do corte, o PR #31 congelou em Node e Chrome o comportamento de `startPlayback`, `stopPlayback`, `togglePlayback` e `scheduleNext`, incluindo reinício no primeiro evento quando Play é acionado no fim, cancelamento de timer, velocidade/ênfase ATS, piso de 350 ms e término exato no último evento.
+
+A implementação foi movida para `src/timeline/playback-controller.js` e publicada como `window.FlightFlowPlaybackController = Object.freeze({ create })`. A fábrica recebe explicitamente `state`, um resolvedor preguiçoso do botão Play (`getPlayBtn`), `currentEvent`, `goTo`, `setTimeout` e `clearTimeout`; o módulo não importa diretamente rota processada, mapa, aeronave, storage ou parser. `goTo`, `renderCurrent`, `buildTimeline` e `enableControls` permanecem no IIFE.
+
+Contratos após a extração:
+
+- módulo: **2.616 bytes** / SHA-256 `b0d08389e4d333f3f2f885272d962e49544273d94a3ef95e51dcdf8f85fbe965`;
+- corpo bruto do IIFE: **1.143.745 bytes** / SHA-256 `5f8446791dda0477bd7b17da1c9af4a054dd877ce645f73da8993e4c235bffd4`;
+- contrato normalizado do IIFE: **1.143.741 bytes / 5.460 linhas**;
+- SHA-256 normalizado: `2a368c80164933a8c472bac330f51049b0f0f8e87755da67004d3399a7746ceb`;
+- **351 funções nomeadas / 351 nomes únicos / zero duplicações internas** no núcleo;
+- inventário global permanece em **722 declarações / 711 nomes únicos / 9 repetições conhecidas**, pois a fábrica usa expressão arrow e as quatro declarações apenas mudaram de fronteira.
+
+Proteções: `tests/playback-controller-contract.test.js`, `tests/e2e/playback-controller.spec.js`, `tests/e2e/ui-navigation.spec.js`, `tests/main-kernel-contract.test.js`, auditoria, inventário e regressão 78→79.

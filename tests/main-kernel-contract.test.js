@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1144454;
-const EXPECTED_SHA256 = '2bac43822e8a24f573969d61b7b2b7c4f1cd5c5696c03bdbdd4ebcd989df9dd3';
-const EXPECTED_LINES = 5480;
+const EXPECTED_BYTES = 1143741;
+const EXPECTED_SHA256 = '2a368c80164933a8c472bac330f51049b0f0f8e87755da67004d3399a7746ceb';
+const EXPECTED_LINES = 5460;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -19,6 +19,7 @@ const EXTRACTED_OPERATIONAL_STATE_UTILS = ['themeSwatch', 'stripTheme', 'statusC
 const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel'
 ];
+const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -41,7 +42,7 @@ test('núcleo principal mantém identidade estrutural de baseline', () => {
   assert.match(source, /\}\)\(\);\n$/);
 });
 
-test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUtils/OperationalStateUtils/CoordinateUtils e identidade da aplicação', () => {
+test('núcleo mantém dependências explícitas de módulos externos e identidade da aplicação', () => {
   const source = kernelSource();
   for (const token of [
     'const Parser = window.FlightParser;',
@@ -58,6 +59,9 @@ test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUt
     'const CoordinateUtils = window.FlightFlowCoordinateUtils;',
     "if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');",
     'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel } = CoordinateUtils;',
+    'const PlaybackController = window.FlightFlowPlaybackController;',
+    "if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');",
+    'const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({',
     "name: 'FlightFlow ATS - TIOP Cindacta1'",
     "subtitle: 'Histórico animado de Plano de Voo'",
     "version: '7.3.2'"
@@ -99,15 +103,15 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após seis extrações por domínio', () => {
+test('inventário interno do núcleo mantém nomes únicos após seis extrações puras e o primeiro corte de timeline', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 355);
-  assert.equal(counts.size, 355);
+  assert.equal(names.length, 351);
+  assert.equal(counts.size, 351);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   assert.equal(counts.get('buildTimeline'), 1);
   assert.equal(counts.get('getSourceClass'), 1);
@@ -116,9 +120,14 @@ test('inventário interno do núcleo mantém nomes únicos após seis extraçõe
     ...EXTRACTED_TYPOGRAPHY_UTILS,
     ...EXTRACTED_OPERATIONAL_STATE_UTILS,
     ...EXTRACTED_COORDINATE_UTILS,
+    ...EXTRACTED_PLAYBACK,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
+  assert.equal(counts.get('goTo'), 1, 'goTo deve permanecer inline neste corte');
+  assert.equal(counts.get('renderCurrent'), 1, 'renderCurrent deve permanecer inline neste corte');
+  assert.equal(counts.get('buildTimeline'), 1, 'buildTimeline deve permanecer inline neste corte');
+  assert.equal(counts.get('enableControls'), 1, 'enableControls deve permanecer inline neste corte');
   assert.equal(counts.get('clamp'), 1, 'clamp deve permanecer inline neste corte');
   assert.equal(counts.get('clamp01'), 1, 'clamp01 deve permanecer inline neste corte');
   assert.equal(counts.get('repairTypographyLayout'), 1, 'repairTypographyLayout deve permanecer no IIFE');

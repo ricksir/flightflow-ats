@@ -25,6 +25,19 @@ test.beforeEach(async ({ page }) => {
   await loadDemoPaused(page);
 });
 
+test('FlightFlowPlaybackController está disponível como API externa congelada', async ({ page }) => {
+  const contract = await page.evaluate(() => {
+    const api = window.FlightFlowPlaybackController;
+    return {
+      exists: !!api,
+      frozen: api ? Object.isFrozen(api) : false,
+      keys: api ? Object.keys(api) : [],
+      createType: typeof api?.create,
+    };
+  });
+  expect(contract).toEqual({ exists: true, frozen: true, keys: ['create'], createType: 'function' });
+});
+
 test('Play no último evento reinicia no primeiro antes de reproduzir', async ({ page }) => {
   const total = await page.locator('.timeline-item').count();
   await page.keyboard.press('End');
