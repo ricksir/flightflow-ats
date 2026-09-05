@@ -5478,6 +5478,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-sample-history" src="src/data/sample-history.js"></script>
 <script id="flightflow-geo-data" src="src/data/geo-data.js"></script>
 
+<script id="flightflow-core-utils" src="src/core/core-utils.js"></script>
 <script>
 
 (function () {
@@ -5485,6 +5486,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
   const Parser = window.FlightParser;
   if (!Parser) throw new Error('FlightParser não foi carregado.');
+
+  const CoreUtils = window.FlightFlowCoreUtils;
+  if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');
+  const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes } = CoreUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -10912,17 +10917,6 @@ Destinatário(s): ${context.recipients}`;
     currentRouteEndpoints:()=>{if(!state.parsed)return null;const first=state.parsed.events&&state.parsed.events[0],last=state.parsed.events&&state.parsed.events[state.parsed.events.length-1];const dep=normalizeLocalityCode((first&&first.snapshot&&first.snapshot.adep)||state.parsed.meta.adep),arr=normalizeLocalityCode((last&&last.snapshot&&last.snapshot.ades)||state.parsed.meta.ades);return{dep,arr,depAirport:state.geo.airportByCode.get(dep)||null,arrAirport:state.geo.airportByCode.get(arr)||null};}
   });
 
-  function shortMessageType(value) {
-    return String(value || 'ATS').replace(/[^A-Z0-9/]/gi, '').slice(0, 8) || 'ATS';
-  }
-
-  function displayValue(value, empty = '—') {
-    if (value === undefined || value === null || value === '') return empty;
-    if (Array.isArray(value)) return value.map(item => typeof item === 'object' ? Object.values(item).filter(Boolean).join(' · ') : String(item)).join(' | ');
-    if (typeof value === 'object') return JSON.stringify(value);
-    return String(value);
-  }
-
   function updateRadarTagPosition(point) {
     if (!els.radarTag || !point || els.radarTag.hidden) return;
     const x = Number(point.x);
@@ -10941,10 +10935,6 @@ Destinatário(s): ${context.recipients}`;
     return Math.min(Math.max(number, Math.min(lower, upper)), Math.max(lower, upper));
   }
 
-  function cleanDisplay(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
-  function humanize(value) { return String(value || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toUpperCase(); }
-  function clone(value) { return JSON.parse(JSON.stringify(value)); }
-
   function getPath(object, path) {
     return String(path).split('.').reduce((value, key) => value == null ? '' : value[key], object);
   }
@@ -10957,13 +10947,6 @@ Destinatário(s): ${context.recipients}`;
       cursor = cursor[part];
     });
     cursor[parts[parts.length - 1]] = value;
-  }
-
-  function formatBytes(bytes) {
-    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
-    const units = ['B','KB','MB','GB'];
-    const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
-    return `${(bytes / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`;
   }
 
   function escapeHtml(value) {
