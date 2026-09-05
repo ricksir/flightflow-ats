@@ -5481,6 +5481,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-core-utils" src="src/core/core-utils.js"></script>
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
+<script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
 <script>
 
 (function () {
@@ -5499,6 +5500,9 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const OperationalStateUtils = window.FlightFlowOperationalStateUtils;
   if (!OperationalStateUtils) throw new Error('FlightFlowOperationalStateUtils não foi carregado.');
   const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
+  const CoordinateUtils = window.FlightFlowCoordinateUtils;
+  if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
+  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel } = CoordinateUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -6884,7 +6888,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   function zoomMap(factor,center){const v=state.geo.viewBox;const c=center||{x:v.x+v.width/2,y:v.y+v.height/2};const nw=clamp(v.width*factor,220,1600),nh=nw*900/1600;const rx=(c.x-v.x)/v.width,ry=(c.y-v.y)/v.height;setMapViewBox({x:c.x-rx*nw,y:c.y-ry*nh,width:nw,height:nh});}
   function mapPointerToSvg(event){const rect=els.sceneSvg.getBoundingClientRect(),v=state.geo.viewBox;return{x:v.x+(event.clientX-rect.left)/rect.width*v.width,y:v.y+(event.clientY-rect.top)/rect.height*v.height};}
   function bindMapInteractions(){if(!els.sceneSvg)return;els.sceneSvg.addEventListener('wheel',event=>{if(!state.parsed)return;event.preventDefault();zoomMap(event.deltaY>0?1.15:.87,mapPointerToSvg(event));},{passive:false});els.sceneSvg.addEventListener('pointerdown',event=>{if(event.button!==0)return;state.geo.dragging=true;state.geo.dragStart={clientX:event.clientX,clientY:event.clientY,view:{...state.geo.viewBox}};els.dropZone.classList.add('map-dragging');els.sceneSvg.setPointerCapture(event.pointerId);});els.sceneSvg.addEventListener('pointermove',event=>{const p=mapPointerToSvg(event),g=unprojectGeo(p.x,p.y);if(els.mapCoordReadout)els.mapCoordReadout.textContent=`LAT ${formatGeoCoord(g.lat,'NS')} · LONG ${formatGeoCoord(g.lon,'EW')}`;if(!state.geo.dragging)return;const rect=els.sceneSvg.getBoundingClientRect(),s=state.geo.dragStart,v=s.view;setMapViewBox({x:v.x-(event.clientX-s.clientX)/rect.width*v.width,y:v.y-(event.clientY-s.clientY)/rect.height*v.height,width:v.width,height:v.height});});const end=e=>{state.geo.dragging=false;els.dropZone.classList.remove('map-dragging');try{els.sceneSvg.releasePointerCapture(e.pointerId);}catch(_){}};els.sceneSvg.addEventListener('pointerup',end);els.sceneSvg.addEventListener('pointercancel',end);els.sceneSvg.addEventListener('pointerleave',()=>{if(!state.geo.dragging&&els.mapTooltip)els.mapTooltip.hidden=true;});els.sceneSvg.addEventListener('mouseover',handleMapFeatureHover);els.sceneSvg.addEventListener('mousemove',positionMapTooltip);els.sceneSvg.addEventListener('mouseout',event=>{if(event.target.closest('[data-airport-code]')&&els.mapTooltip)els.mapTooltip.hidden=true;});}
-  function formatGeoCoord(value,hemis){const pos=hemis[0],neg=hemis[1],h=value>=0?pos:neg;return`${Math.abs(value).toFixed(4)}°${h}`;}
+
   function handleMapFeatureHover(event){const el=event.target.closest('[data-airport-code]');if(!el||!els.mapTooltip)return;const code=el.dataset.airportCode,airport=state.geo.airportByCode.get(code);if(!airport)return;els.mapTooltip.innerHTML=`<strong>${escapeHtml(code)}</strong><br>LAT ${formatGeoCoord(airport.lat,'NS')}<br>LONG ${formatGeoCoord(airport.lon,'EW')}<br>${airport.app.length?`APP: ${escapeHtml(airport.app.join(', '))}<br>`:''}${airport.twr.length?`TWR: ${escapeHtml(airport.twr.join(', '))}`:''}`;els.mapTooltip.hidden=false;positionMapTooltip(event);}
   function positionMapTooltip(event){if(!els.mapTooltip||els.mapTooltip.hidden)return;const r=els.dropZone.getBoundingClientRect();let x=event.clientX-r.left+14,y=event.clientY-r.top+14;const w=els.mapTooltip.offsetWidth||220,h=els.mapTooltip.offsetHeight||90;if(x+w>r.width-8)x-=w+28;if(y+h>r.height-8)y-=h+28;els.mapTooltip.style.left=`${Math.max(8,x)}px`;els.mapTooltip.style.top=`${Math.max(8,y)}px`;}
 
@@ -7590,9 +7594,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     return count?[lat/count,lng/count]:null;
   }
 
-  function atsCoordinateLabel(lat,lon){
-    return `LAT ${formatGeoCoord(Number(lat),'NS')} · LONG ${formatGeoCoord(Number(lon),'EW')}`;
-  }
+
 
   function collectHistoryAtsLocations(dep,arr){
     const exact=state.geo.historyAddresses||new Set();
@@ -10673,15 +10675,9 @@ Destinatário(s): ${context.recipients}`;
 
 
   /* ==================== LOCALIZADOR DE AERÓDROMOS ==================== */
-  function normalizeCoordinateInput(value){
-    const normalized=String(value??'').trim().replace(',', '.');
-    const number=Number(normalized);
-    return Number.isFinite(number)?number:NaN;
-  }
 
-  function validAerodromeCoordinate(lat,lon){
-    return Number.isFinite(Number(lat))&&Number.isFinite(Number(lon))&&Number(lat)>=-90&&Number(lat)<=90&&Number(lon)>=-180&&Number(lon)<=180;
-  }
+
+
 
   function aerodromeSearchLabel(code){
     const name=lookupLocality(code);

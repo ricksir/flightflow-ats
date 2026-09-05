@@ -6,7 +6,11 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'geo', 'coordinate-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
+const REFERENCE = '<script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>';
+const MODULE_BYTES = 872;
+const MODULE_SHA256 = '426cfdffc6a803275e6432bea2ee28a2e2c71c6464f4e27998e668641fcd44ea';
 
 const EXPECTED = Object.freeze({
   normalizeCoordinateInput: {
@@ -28,11 +32,15 @@ const EXPECTED = Object.freeze({
 });
 
 const FORBIDDEN_COUPLING = [
-  'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
+  'state.', 'els.', 'document.', 'localStorage', 'sessionStorage',
   'indexedDB', 'fetch(', 'realMapState', 'google.', 'L.', 'Parser',
   'setTimeout', 'setInterval', 'requestAnimationFrame', 'navigator.',
   'CustomEvent', 'dispatchEvent', 'addEventListener', 'querySelector', 'getElementById'
 ];
+
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -70,7 +78,7 @@ function scanBalanced(source, openIndex, openChar, closeChar) {
 function extractFunction(source, name) {
   const pattern = new RegExp('(^|\\n)([ \\t]*)function\\s+' + name + '\\s*\\(', 'g');
   const matches = [...source.matchAll(pattern)];
-  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no núcleo`);
+  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no módulo`);
   const match = matches[0];
   const offset = match.index + (match[1] === '\n' ? 1 : 0);
   const paren = source.indexOf('(', offset);
@@ -88,8 +96,17 @@ function compile(source, name) {
   return Function(`${source}; return ${name};`)();
 }
 
-test('quatro utilitários de coordenadas preservam identidade estrutural atual', () => {
-  const source = kernelSource();
+test('módulo coordinate-utils mantém identidade estrutural completa', () => {
+  const source = moduleSource();
+  assert.equal(Buffer.byteLength(source, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), MODULE_SHA256);
+  assert.ok(source.startsWith("(function () {\n  'use strict';"));
+  assert.ok(source.includes('window.FlightFlowCoordinateUtils = Object.freeze({'));
+  assert.ok(source.endsWith('})();\n'));
+});
+
+test('quatro utilitários de coordenadas preservam identidade byte a byte após a extração', () => {
+  const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
     assert.equal(Buffer.byteLength(body, 'utf8'), expected.bytes, `${name}: tamanho mudou`);
@@ -97,8 +114,25 @@ test('quatro utilitários de coordenadas preservam identidade estrutural atual',
   }
 });
 
+test('módulo carrega antes do IIFE e o núcleo usa aliases explícitos sem redeclarar o cluster', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  assert.equal(html.split(REFERENCE).length - 1, 1, 'referência coordinate-utils deve ser única');
+  const referenceIndex = html.indexOf(REFERENCE);
+  const anchorIndex = html.indexOf(ANCHOR);
+  const mainScriptStart = html.lastIndexOf('<script', anchorIndex);
+  assert.ok(referenceIndex >= 0 && referenceIndex < mainScriptStart, 'coordinate-utils deve carregar antes do núcleo principal');
+
+  const kernel = kernelSource();
+  assert.ok(kernel.includes('const CoordinateUtils = window.FlightFlowCoordinateUtils;'));
+  assert.ok(kernel.includes("if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');"));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel } = CoordinateUtils;'));
+  for (const name of Object.keys(EXPECTED)) {
+    assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar declarado inline`);
+  }
+});
+
 test('cluster de coordenadas permanece puro e desacoplado de infraestrutura', () => {
-  const source = kernelSource();
+  const source = moduleSource();
   for (const name of Object.keys(EXPECTED)) {
     const body = extractFunction(source, name);
     for (const token of FORBIDDEN_COUPLING) {
@@ -108,7 +142,7 @@ test('cluster de coordenadas permanece puro e desacoplado de infraestrutura', ()
 });
 
 test('normalizeCoordinateInput preserva vírgula decimal, espaços e comportamento de vazios', () => {
-  const fn = compile(extractFunction(kernelSource(), 'normalizeCoordinateInput'), 'normalizeCoordinateInput');
+  const fn = compile(extractFunction(moduleSource(), 'normalizeCoordinateInput'), 'normalizeCoordinateInput');
   assert.equal(fn(' -15,8692 '), -15.8692);
   assert.equal(fn('-47.9208'), -47.9208);
   assert.equal(fn('0'), 0);
@@ -118,7 +152,7 @@ test('normalizeCoordinateInput preserva vírgula decimal, espaços e comportamen
 });
 
 test('validAerodromeCoordinate preserva limites geográficos inclusivos atuais', () => {
-  const fn = compile(extractFunction(kernelSource(), 'validAerodromeCoordinate'), 'validAerodromeCoordinate');
+  const fn = compile(extractFunction(moduleSource(), 'validAerodromeCoordinate'), 'validAerodromeCoordinate');
   assert.equal(fn(-90, -180), true);
   assert.equal(fn(90, 180), true);
   assert.equal(fn('0', '0'), true);
@@ -130,7 +164,7 @@ test('validAerodromeCoordinate preserva limites geográficos inclusivos atuais',
 });
 
 test('formatGeoCoord preserva quatro casas e hemisférios', () => {
-  const fn = compile(extractFunction(kernelSource(), 'formatGeoCoord'), 'formatGeoCoord');
+  const fn = compile(extractFunction(moduleSource(), 'formatGeoCoord'), 'formatGeoCoord');
   assert.equal(fn(-15.8692, 'NS'), '15.8692°S');
   assert.equal(fn(-47.9208, 'EW'), '47.9208°W');
   assert.equal(fn(12.5, 'NS'), '12.5000°N');
@@ -139,9 +173,9 @@ test('formatGeoCoord preserva quatro casas e hemisférios', () => {
 });
 
 test('atsCoordinateLabel preserva composição LAT/LONG atual', () => {
-  const kernel = kernelSource();
-  const formatBody = extractFunction(kernel, 'formatGeoCoord');
-  const labelBody = extractFunction(kernel, 'atsCoordinateLabel');
+  const source = moduleSource();
+  const formatBody = extractFunction(source, 'formatGeoCoord');
+  const labelBody = extractFunction(source, 'atsCoordinateLabel');
   const api = Function(`${formatBody}; ${labelBody}; return { formatGeoCoord, atsCoordinateLabel };`)();
   assert.equal(api.atsCoordinateLabel(-15.8692, -47.9208), 'LAT 15.8692°S · LONG 47.9208°W');
   assert.equal(api.atsCoordinateLabel(12.5, 45.25), 'LAT 12.5000°N · LONG 45.2500°E');

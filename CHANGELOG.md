@@ -15,3 +15,10 @@
 - checklist de regressão funcional;
 - auditoria estática de JavaScript;
 - nenhuma alteração funcional no FlightFlow nesta fase.
+
+## Engenharia incremental — 2026-09-05
+
+- corrigida a classificação visual de planos `INATIVO` para tema não controlado/cinza, preservando prioridades especiais;
+- extraídos `normalizeCoordinateInput`, `validAerodromeCoordinate`, `formatGeoCoord` e `atsCoordinateLabel` para `src/geo/coordinate-utils.js`;
+- adicionados contratos Node e Chrome para a nova fronteira `FlightFlowCoordinateUtils`;
+- nenhuma lógica de timeline, rota processada, aeronave ou mapa foi reescrita durante a extração.
