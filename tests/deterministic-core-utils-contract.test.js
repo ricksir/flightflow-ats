@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'core', 'core-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const EXPECTED = Object.freeze({
   angleDifference: { bytes: 89, sha256: 'c33f42ad25fa9d352f3d38975f1d054fe026b3924bf1ac37780e11b674c5e4b2' },
@@ -18,6 +19,10 @@ const FORBIDDEN_COUPLING = [
   'indexedDB', 'fetch(', 'realMapState', 'google.', 'L.', 'Parser',
   'setTimeout', 'setInterval', 'requestAnimationFrame'
 ];
+
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -33,7 +38,7 @@ function kernelSource() {
 function extractFunction(source, name) {
   const pattern = new RegExp('(^|\\n)([ \\t]*)function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{', 'g');
   const matches = [...source.matchAll(pattern)];
-  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no núcleo antes da extração`);
+  assert.equal(matches.length, 1, `${name} deve existir exatamente uma vez no CoreUtils`);
   const match = matches[0];
   const offset = match.index + (match[1] === '\n' ? 1 : 0);
   const brace = source.indexOf('{', offset);
@@ -67,25 +72,33 @@ function compile(source, name) {
   return Function(`${source}; return ${name};`)();
 }
 
-test('três utilitários determinísticos mantêm identidade byte a byte antes da extração', () => {
-  const kernel = kernelSource();
+test('três utilitários determinísticos preservam identidade byte a byte após a extração', () => {
+  const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
-    const source = extractFunction(kernel, name);
-    assert.equal(Buffer.byteLength(source, 'utf8'), expected.bytes, `${name}: tamanho mudou`);
-    assert.equal(crypto.createHash('sha256').update(source).digest('hex'), expected.sha256, `${name}: SHA mudou`);
+    const body = extractFunction(source, name);
+    assert.equal(Buffer.byteLength(body, 'utf8'), expected.bytes, `${name}: tamanho mudou`);
+    assert.equal(crypto.createHash('sha256').update(body).digest('hex'), expected.sha256, `${name}: SHA mudou`);
   }
 });
 
 test('cluster permanece desacoplado de estado, DOM, rede, storage, mapa e parser', () => {
-  const kernel = kernelSource();
+  const source = moduleSource();
   for (const name of Object.keys(EXPECTED)) {
-    const source = extractFunction(kernel, name);
-    for (const token of FORBIDDEN_COUPLING) assert.ok(!source.includes(token), `${name} passou a depender de ${token}`);
+    const body = extractFunction(source, name);
+    for (const token of FORBIDDEN_COUPLING) assert.ok(!body.includes(token), `${name} passou a depender de ${token}`);
+  }
+});
+
+test('núcleo usa aliases externos e não redeclara o trio', () => {
+  const kernel = kernelSource();
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded } = CoreUtils;'));
+  for (const name of Object.keys(EXPECTED)) {
+    assert.doesNotMatch(kernel, new RegExp(`function\\s+${name}\\s*\\(`), `${name} não deve retornar ao IIFE`);
   }
 });
 
 test('angleDifference preserva diferença angular mínima atual', () => {
-  const fn = compile(extractFunction(kernelSource(), 'angleDifference'), 'angleDifference');
+  const fn = compile(extractFunction(moduleSource(), 'angleDifference'), 'angleDifference');
   for (const [a, b, expected] of [
     [10, 20, 10], [350, 10, 20], [10, 350, 20],
     [0, 180, 180], [180, 0, 180], [720, 0, 0]
@@ -93,7 +106,7 @@ test('angleDifference preserva diferença angular mínima atual', () => {
 });
 
 test('hashString preserva hash determinístico atual', () => {
-  const fn = compile(extractFunction(kernelSource(), 'hashString'), 'hashString');
+  const fn = compile(extractFunction(moduleSource(), 'hashString'), 'hashString');
   assert.equal(fn(''), 2166136261);
   assert.equal(fn('A'), 3289118412);
   assert.equal(fn('ABC'), 1552166763);
@@ -102,7 +115,7 @@ test('hashString preserva hash determinístico atual', () => {
 });
 
 test('seeded preserva sequência pseudoaleatória determinística atual', () => {
-  const fn = compile(extractFunction(kernelSource(), 'seeded'), 'seeded');
+  const fn = compile(extractFunction(moduleSource(), 'seeded'), 'seeded');
   assert.equal(fn(0, 0), 0.8211895695640123);
   assert.equal(fn(1, 0), 0.6608764301472547);
   assert.equal(fn(1, 1), 0.13576392483810196);
@@ -110,10 +123,10 @@ test('seeded preserva sequência pseudoaleatória determinística atual', () => 
   assert.equal(fn(42, 8), 0.6239928084542044);
 });
 
-test('clamp e clamp01 permanecem fora deste corte por alto alcance de consumidores', () => {
+test('clamp e clamp01 permanecem inline por alto alcance de consumidores', () => {
   const kernel = kernelSource();
   assert.match(kernel, /function\s+clamp\s*\(/);
   assert.match(kernel, /function\s+clamp01\s*\(/);
-  assert.equal(Object.hasOwn(EXPECTED, 'clamp'), false);
-  assert.equal(Object.hasOwn(EXPECTED, 'clamp01'), false);
+  assert.doesNotMatch(moduleSource(), /function\s+clamp\s*\(/);
+  assert.doesNotMatch(moduleSource(), /function\s+clamp01\s*\(/);
 });

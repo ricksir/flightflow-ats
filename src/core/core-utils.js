@@ -25,6 +25,12 @@
     return `${(bytes / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`;
   }
 
+
+  function angleDifference(a,b) { return Math.abs(((Number(a)-Number(b)+540)%360)-180); }
+
+  function hashString(value) { let h=2166136261; for(const ch of String(value)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);} return h>>>0; }
+
+  function seeded(seed,n) { const x=Math.sin((seed+1)*(n+11)*12.9898)*43758.5453; return x-Math.floor(x); }
   window.FlightFlowCoreUtils = Object.freeze({
     shortMessageType,
     displayValue,
@@ -32,5 +38,8 @@
     humanize,
     clone,
     formatBytes,
+    angleDifference,
+    hashString,
+    seeded,
   });
 })();

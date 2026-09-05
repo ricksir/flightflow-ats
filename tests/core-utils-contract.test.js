@@ -9,8 +9,8 @@ const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'core', 'core-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const REFERENCE = '<script id="flightflow-core-utils" src="src/core/core-utils.js"></script>';
-const MODULE_BYTES = 1284;
-const MODULE_SHA256 = '7d1e6b33134764ea46281988e486a55e98f09a6770ab6de06778b99a97a2b289';
+const MODULE_BYTES = 1676;
+const MODULE_SHA256 = '35779c31b4a68a25ea4d79085cbac66625d52ec95c5b051033b79d06a1782193';
 const EXPECTED = Object.freeze({
   shortMessageType: { bytes: 124, sha256: 'c61517a0039c41c02772b7d261d23925ad705fd5ef36dbbd6c47ef01d15b68c3' },
   displayValue: { bytes: 379, sha256: '79d5ccbcaec3caead3749f1defa25434e8d05b6f00cca3ac81fd6da66bbe341b' },
@@ -18,12 +18,15 @@ const EXPECTED = Object.freeze({
   humanize: { bytes: 127, sha256: 'ae83fb699c075c0433d680e992e58456076aa71e650eced83825138f35d10010' },
   clone: { bytes: 69, sha256: 'db7ba8554335e139efc09ba8d33ec21644dd3beaa67883dac4faeef570f3873a' },
   formatBytes: { bytes: 292, sha256: 'e10a2b791e297d5c037cceb25ce9bdd960dd14f72965737fb5e505ef93db2e76' },
+  angleDifference: { bytes: 89, sha256: 'c33f42ad25fa9d352f3d38975f1d054fe026b3924bf1ac37780e11b674c5e4b2' },
+  hashString: { bytes: 141, sha256: '7da6f0aba25a918f031e10e8abbd2fea0c777054758b7b5b7d0edec024555a94' },
+  seeded: { bytes: 107, sha256: 'e8a98352bd15958c19bfa524d389fa7f84ce3ab902bde82439dafee89dacfbc2' },
 });
 
 const FORBIDDEN_COUPLING = [
   'state', 'els.', 'document.', 'localStorage', 'sessionStorage',
   'indexedDB', 'fetch(', 'realMapState', 'google.', 'L.', 'Parser',
-  'setTimeout', 'requestAnimationFrame'
+  'setTimeout', 'setInterval', 'requestAnimationFrame'
 ];
 
 function moduleSource() {
@@ -103,7 +106,7 @@ test('módulo core-utils mantém identidade estrutural completa', () => {
   assert.ok(source.endsWith('})();\n'));
 });
 
-test('seis utilitários preservam identidade byte a byte dentro do módulo', () => {
+test('nove utilitários preservam identidade byte a byte dentro do módulo', () => {
   const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
@@ -123,13 +126,13 @@ test('módulo é carregado antes do IIFE e o núcleo usa aliases explícitos', (
   const kernel = kernelSource();
   assert.ok(kernel.includes('const CoreUtils = window.FlightFlowCoreUtils;'));
   assert.ok(kernel.includes("if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');"));
-  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes } = CoreUtils;'));
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded } = CoreUtils;'));
   for (const name of Object.keys(EXPECTED)) {
     assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar declarado inline`);
   }
 });
 
-test('cluster permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
+test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
   const source = moduleSource();
   for (const name of Object.keys(EXPECTED)) {
     const body = extractFunction(source, name);
@@ -184,4 +187,21 @@ test('formatBytes preserva unidades e arredondamento atuais', () => {
   assert.equal(fn(1024), '1.0 KB');
   assert.equal(fn(1536), '1.5 KB');
   assert.equal(fn(1048576), '1.0 MB');
+});
+
+test('angleDifference preserva diferença angular mínima', () => {
+  const fn = compile(extractFunction(moduleSource(), 'angleDifference'), 'angleDifference');
+  assert.equal(fn(350, 10), 20);
+  assert.equal(fn(10, 350), 20);
+  assert.equal(fn(0, 180), 180);
+});
+
+test('hashString e seeded preservam resultados determinísticos', () => {
+  const source = moduleSource();
+  const hashString = compile(extractFunction(source, 'hashString'), 'hashString');
+  const seeded = compile(extractFunction(source, 'seeded'), 'seeded');
+  assert.equal(hashString('GLO1762'), 2262905143);
+  assert.equal(hashString(12345), 1136836824);
+  assert.equal(seeded(42, 7), 0.04137097423517844);
+  assert.equal(seeded(42, 8), 0.6239928084542044);
 });
