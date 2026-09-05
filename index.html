@@ -5508,7 +5508,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
-  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading } = CoordinateUtils;
+  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode } = CoordinateUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -6652,14 +6652,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     const dy = Number(toPoint.lat) - Number(fromPoint.lat);
     const angle = Math.atan2(dx, dy) * 180 / Math.PI;
     return (angle + 360) % 360;
-  }
-
-  function runwayHeadingFromCode(code, fallbackHeading = 90) {
-    const match = String(code || '').toUpperCase().match(/\b(\d{2})[LCR]?\b/);
-    if (!match) return (Number(fallbackHeading) + 360) % 360;
-    const num = Number(match[1]);
-    if (!Number.isFinite(num)) return (Number(fallbackHeading) + 360) % 360;
-    return ((num % 36) * 10 + 360) % 360;
   }
 
   function airportSurfacePreset(airport) {
