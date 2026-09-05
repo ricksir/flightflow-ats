@@ -6,13 +6,13 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1144919;
-const EXPECTED_SHA256 = '4eba80a6f22abeac32e519ddef51afcd7754ea1e514d5c0e8cec7725fe63a92c';
-const EXPECTED_LINES = 5490;
+const EXPECTED_BYTES = 1144454;
+const EXPECTED_SHA256 = '2bac43822e8a24f573969d61b7b2b7c4f1cd5c5696c03bdbdd4ebcd989df9dd3';
+const EXPECTED_LINES = 5480;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
-  'angleDifference', 'hashString', 'seeded'
+  'angleDifference', 'hashString', 'seeded', 'getPath', 'setPath'
 ];
 const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 'fontLayoutDescription'];
 const EXTRACTED_OPERATIONAL_STATE_UTILS = ['themeSwatch', 'stripTheme', 'statusClass'];
@@ -48,7 +48,7 @@ test('núcleo mantém dependências explícitas de Parser/CoreUtils/TypographyUt
     "if (!Parser) throw new Error('FlightParser não foi carregado.');",
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
-    'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded } = CoreUtils;',
+    'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;',
     'const TypographyUtils = window.FlightFlowTypographyUtils;',
     "if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');",
     'const { normalizeFontScale, fontLayoutForScale, fontLayoutDescription } = TypographyUtils;',
@@ -99,15 +99,15 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após cinco extrações por domínio', () => {
+test('inventário interno do núcleo mantém nomes únicos após seis extrações por domínio', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 357);
-  assert.equal(counts.size, 357);
+  assert.equal(names.length, 355);
+  assert.equal(counts.size, 355);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   assert.equal(counts.get('buildTimeline'), 1);
   assert.equal(counts.get('getSourceClass'), 1);
