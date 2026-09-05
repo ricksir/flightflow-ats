@@ -25,3 +25,4 @@
 
 - movidos `getPath` e `setPath` do IIFE principal para a fronteira existente `FlightFlowCoreUtils`, preservando seus corpos e consumidores;
 - ampliados os contratos Node e Chrome de `CoreUtils` para 11 utilitários e atualizado o baseline estrutural do núcleo.
+- Extraído o controlador de playback (`startPlayback`, `stopPlayback`, `togglePlayback`, `scheduleNext`) para `src/timeline/playback-controller.js`, com fábrica de dependências explícitas e regressões Node/Chrome.
