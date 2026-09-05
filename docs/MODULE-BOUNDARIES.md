@@ -13,7 +13,11 @@ Baseline lógica anterior às extrações:
 - **711 nomes únicos**;
 - **11 nomes repetidos** catalogados.
 
-Esses valores continuam sendo acompanhados mesmo quando uma fronteira sai fisicamente do HTML.
+Após a eliminação das duplicações internas byte-idênticas `buildTimeline` e `getSourceClass`, o inventário global passou para:
+
+- **722 declarações `function nomeada(...)`**;
+- **711 nomes únicos**;
+- **9 nomes repetidos** entre fronteiras/módulos diferentes.
 
 ## Fronteiras atuais
 
@@ -22,7 +26,7 @@ Esses valores continuam sendo acompanhados mesmo quando uma fronteira sai fisica
 | `FlightParser` / `window.FlightParser` | **externo em `src/parser/flight-parser.js`** |
 | `window.__SAMPLE_HISTORY__` | **externo em `src/data/sample-history.js`** |
 | `window.__FLIGHTFLOW_GEO_DATA__` | **externo em `src/data/geo-data.js`** |
-| IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; **último grande alvo** |
+| IIFE principal `FlightFlow ATS - TIOP Cindacta1` | ainda inline; decomposição deve ocorrer **por domínio** |
 | motor IA/governança / `window.__flightflowAI` | **externo em `src/ai/ai-engine.js`** |
 | Secure Storage / `window.FlightFlowStorage` | **externo em `src/storage/secure-storage.js`** |
 | FIR v7.3.5 / `window.renderManualFirLayers` | **externo em `src/map/fir-layers.js`** |
@@ -30,9 +34,9 @@ Esses valores continuam sendo acompanhados mesmo quando uma fronteira sai fisica
 
 ## Repetições catalogadas
 
-`buildTimeline`, `describeEvent`, `escapeHtml`, `exportNormalized`, `getSourceClass`, `init`, `normalizeSearchText`, `openDb`, `parseHistory`, `stageForProgress` e `toast`.
+`describeEvent`, `escapeHtml`, `exportNormalized`, `init`, `normalizeSearchText`, `openDb`, `parseHistory`, `stageForProgress` e `toast`.
 
-O CI falha se surgir um novo nome repetido fora dessa baseline.
+Esses nomes estão repetidos entre fronteiras diferentes e permanecem catalogados. O CI falha se surgir uma nova repetição fora dessa baseline.
 
 ## Extrações concluídas
 
@@ -91,6 +95,21 @@ Contratos preservados:
 
 A primeira extração não altera regras, respostas, heurísticas, base de conhecimento, persistência nem UI do motor.
 
+### 8. Limpeza das duplicações internas do núcleo
+
+Antes de qualquer decomposição por domínio, o contrato do IIFE principal foi congelado em Node e Chrome real. A comparação mostrou que as duas declarações de `buildTimeline` eram byte-idênticas entre si e que as duas declarações de `getSourceClass` também eram byte-idênticas.
+
+Foram removidas somente as primeiras cópias redundantes. O núcleo passou a ter:
+
+- **1.148.151 bytes**;
+- **5.540 linhas**;
+- SHA-256 `09a49e38f076badb3f1e6a72f368de3a5fc330e76b9adc93a1768eb769c7ea9e`;
+- **376 funções nomeadas**;
+- **376 nomes únicos**;
+- **zero duplicações internas de funções nomeadas**.
+
+`tests/main-kernel-contract.test.js` exige que `buildTimeline` e `getSourceClass` existam exatamente uma vez e que nenhuma nova duplicação interna seja introduzida.
+
 ## Regras para os próximos PRs
 
 1. **Não misturar extração e melhoria funcional.**
@@ -103,6 +122,6 @@ A primeira extração não altera regras, respostas, heurísticas, base de conhe
 
 ## Próxima etapa
 
-Com Parser, Sample History, Geo Data, Secure Storage, FIR, Rota Processada e motor de IA já isolados, resta um grande núcleo inline: o **IIFE principal do FlightFlow**, com cerca de 5,5 mil linhas e centenas de funções.
+O grande IIFE principal permanece inline, mas agora está protegido por contrato e sem duplicações internas. Ele **não deve ser movido inteiro**.
 
-Esse núcleo **não deve ser extraído inteiro de uma vez**. O próximo passo é um PR somente de mapeamento/contrato, identificando APIs globais, bridges, eventos, armazenamento, DOM e grupos funcionais. Depois disso, a decomposição deve acontecer por domínio, em cortes pequenos e testados (`timeline/`, `navigation/`, `map/`, `flightplan/`, `ats/`, `ui/`).
+O próximo passo é escolher o primeiro cluster pequeno de baixa dependência, criar um teste de contrato específico para esse cluster e só então extraí-lo. A decomposição continuará por domínio (`timeline/`, `navigation/`, `map/`, `flightplan/`, `ats/`, `ui/`), priorizando fronteiras com menos estado compartilhado antes de tocar no núcleo temporal/espacial da rota e da aeronave.

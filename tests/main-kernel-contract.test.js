@@ -6,10 +6,10 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1150175;
-const EXPECTED_SHA256 = 'b55bf4d7734e8e085c8a04e40f523aa4cad90b20b00be0cbb6a137114ca4911d';
-const EXPECTED_LINES = 5571;
-const EXPECTED_DUPLICATES = ['buildTimeline', 'getSourceClass'];
+const EXPECTED_BYTES = 1148151;
+const EXPECTED_SHA256 = '09a49e38f076badb3f1e6a72f368de3a5fc330e76b9adc93a1768eb769c7ea9e';
+const EXPECTED_LINES = 5540;
+const EXPECTED_DUPLICATES = [];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -78,14 +78,16 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo congela duplicações conhecidas antes da decomposição', () => {
+test('inventário interno do núcleo exige nomes de função únicos antes da decomposição', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 378);
+  assert.equal(names.length, 376);
   assert.equal(counts.size, 376);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
+  assert.equal(counts.get('buildTimeline'), 1);
+  assert.equal(counts.get('getSourceClass'), 1);
 });
