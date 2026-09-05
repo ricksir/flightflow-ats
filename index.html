@@ -5483,6 +5483,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
+<script id="flightflow-communication-context-utils" src="src/timeline/communication-context-utils.js"></script>
 <script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>
 <script id="flightflow-transport-navigation-controller" src="src/timeline/transport-navigation-controller.js"></script>
 <script id="flightflow-keyboard-navigation-controller" src="src/timeline/keyboard-navigation-controller.js"></script>
@@ -5514,6 +5515,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;
   if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');
   const { airportGroundQuery } = AirportGroundQueryModule;
+
+  const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;
+  if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');
+  const { internalTransitionDetails } = CommunicationContextUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -9486,17 +9491,6 @@ Destinatário(s): ${context.recipients}`;
     if (/ZTZX/.test(value)) return value.slice(0,4) === normalizeLocalityCode(currentEvent()?.snapshot?.adep) ? 'twrDep' : 'twrArr';
     if (/ZXCS|ZAZX|ZBZX/.test(value)) return value.slice(0,4) === normalizeLocalityCode(currentEvent()?.snapshot?.adep) ? 'appDep' : 'appArr';
     return fallback;
-  }
-
-  function internalTransitionDetails(event) {
-    const normalize = value => String(value == null ? '' : value).trim();
-    const s = (event && event.snapshot) || {};
-    const raw = String((event && event.rawBlock) || '');
-    const previousMatch = /^Estado anterior:\s*([^\n]+)$/mi.exec(raw);
-    const currentMatch = /^Estado atual:\s*([^\n]+)$/mi.exec(raw);
-    const previous = (previousMatch ? previousMatch[1] : '') || s.previousControlState;
-    const current = (currentMatch ? currentMatch[1] : '') || s.groundState || s.authorizationState;
-    return { previous: normalize(previous), current: normalize(current) };
   }
 
   function inferCommunicationContext(event) {
