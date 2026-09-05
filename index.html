@@ -5508,7 +5508,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
-  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel } = CoordinateUtils;
+  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid } = CoordinateUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -6038,11 +6038,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     return {code,runways,graphWays,aprons,terminals,parking,holding,terminalPoints,loadedAt:Date.now()};
   }
 
-  function groundCentroid(points) {
-    const valid=(points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
-    if(!valid.length)return{lat:0,lon:0};
-    return {lat:valid.reduce((s,p)=>s+p.lat,0)/valid.length,lon:valid.reduce((s,p)=>s+p.lon,0)/valid.length};
-  }
   function groundMidpoint(points) { return groundCentroid(points); }
   function groundDistance(a,b) {
     const R=6371000, p1=Number(a.lat)*Math.PI/180, p2=Number(b.lat)*Math.PI/180;
