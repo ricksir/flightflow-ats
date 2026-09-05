@@ -1,4 +1,4 @@
-name: Materialize runwayHeadingFromCode contract
+name: Materialize runwayHeadingFromCode contract v2
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22
       - name: Materialize contract
-        run: python3 tools/materialize_runway_heading_from_code_contract.py
+        run: python3 tools/run_runway_heading_from_code_contract.py
       - name: Install dependencies
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
