@@ -1,0 +1,41 @@
+name: Validate internalTransitionDetails contract
+
+on:
+  push:
+    branches:
+      - test/freeze-internal-transition-details-contract
+    paths:
+      - .github/workflows/validate-internal-transition-details-contract.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm install --no-audit --no-fund
+      - name: Static audit
+        run: npm run audit
+      - name: Function declaration inventory
+        run: npm run inventory
+      - name: Node regression suite
+        run: npm test
+      - name: Diff sanity
+        run: git diff --check origin/main...HEAD
+      - name: Contract-only diff
+        run: |
+          mapfile -t files < <(git diff --name-only origin/main...HEAD | grep -v '^\.github/workflows/validate-internal-transition-details-contract\.yml$')
+          test "${#files[@]}" -eq 1
+          test "${files[0]}" = "tests/internal-transition-details-contract.test.js"
