@@ -27,7 +27,7 @@ function kernelSource() {
 function functionSource(container, name) {
   const marker = `  function ${name}(`;
   const start = container.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const brace = container.indexOf('{', start);
   let depth = 0;
   let quote = null;
@@ -55,14 +55,14 @@ function bareCalls(source, ownName) {
 
 for (const [name, expected] of [['runwayTokens', RUNWAYTOKENS], ['runwayHeading', RUNWAYHEADING]]) {
   test(`${name} mantém identidade exata antes da extração`, () => {
-    const source = functionSource(kernelSource(), name);
+    const source = functionSource(fs.readFileSync(MODULE, 'utf8'), name);
     assert.equal(Buffer.byteLength(source, 'utf8'), expected.bytes);
     assert.equal(source.split(/\r?\n/).length, expected.lines);
     assert.equal(crypto.createHash('sha256').update(source).digest('hex'), expected.sha);
   });
 
   test(`${name} mantém dependências puras congeladas`, () => {
-    const source = functionSource(kernelSource(), name);
+    const source = functionSource(fs.readFileSync(MODULE, 'utf8'), name);
     for (const forbidden of ['state.','els.','document.','window.','localStorage','sessionStorage','indexedDB','goTo(','renderCurrent(','stopPlayback(','fetch(']) {
       assert.equal(source.includes(forbidden), false, `acoplamento inesperado: ${forbidden}`);
     }
@@ -71,14 +71,28 @@ for (const [name, expected] of [['runwayTokens', RUNWAYTOKENS], ['runwayHeading'
 
   test(`${name} mantém consumidores reais conhecidos`, () => {
     const kernel = kernelSource();
-    const consumers = [...kernel.matchAll(new RegExp(`(?<![\\w$.])${name}\\s*\\(`, 'g'))].length - 1;
-    assert.equal(consumers, expected.consumers);
+    const consumers = [...kernel.matchAll(new RegExp(`(?<![\\w$.])${name}\\s*\\(`, 'g'))].length;
+    const expectedKernelConsumers = name === 'runwayTokens' ? 3 : expected.consumers;
+    assert.equal(consumers, expectedKernelConsumers);
     assert.ok(consumers >= 1);
+    if (name === 'runwayTokens') {
+      const headingSource = functionSource(fs.readFileSync(MODULE, 'utf8'), 'runwayHeading');
+      const internalConsumers = [...headingSource.matchAll(/(?<![\w$.])runwayTokens\s*\(/g)].length;
+      assert.equal(consumers + internalConsumers, expected.consumers);
+    }
   });
 }
 
-test('cluster runway geometry ainda não está no coordinate-utils', () => {
+test('cluster runway geometry foi externalizado sem alterar consumidores', () => {
+  const kernel = kernelSource();
   const module = fs.readFileSync(MODULE, 'utf8');
-  assert.equal(module.includes('runwayTokens'), false);
-  assert.equal(module.includes('runwayHeading'), false);
+  for (const [name, expected] of [['runwayTokens', RUNWAYTOKENS], ['runwayHeading', RUNWAYHEADING]]) {
+    assert.equal(kernel.includes(`function ${name}(`), false);
+    assert.ok(module.includes(`function ${name}(`));
+    assert.ok(module.includes(`    ${name},`));
+    const consumers = [...kernel.matchAll(new RegExp(`(?<![\\w$.])${name}\\s*\\(`, 'g'))].length;
+    assert.equal(consumers, name === 'runwayTokens' ? 3 : expected.consumers);
+  }
+  assert.ok(kernel.includes('function runwayHeadingFromCode('));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading } = CoordinateUtils;'));
 });

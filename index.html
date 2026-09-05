@@ -5508,7 +5508,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
-  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid } = CoordinateUtils;
+  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading } = CoordinateUtils;
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -6112,12 +6112,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     return {nodes,adjacency,runwayKeys,attachPoint};
   }
 
-  function runwayTokens(value) { return String(value||'').toUpperCase().match(/\b\d{2}[LCR]?\b/g)||[]; }
-  function runwayHeading(value,fallback) {
-    const token=runwayTokens(value)[0];
-    if(!token)return((Number(fallback)||90)+360)%360;
-    const n=Number(token.slice(0,2));return Number.isFinite(n)?((n%36)*10)%360:(Number(fallback)||90);
-  }
   function runwayLength(way) { let total=0;for(let i=1;i<(way.points||[]).length;i++)total+=groundDistance(way.points[i-1],way.points[i]);return total; }
 
   function selectGroundRunway(data,requested,fallbackHeading) {
