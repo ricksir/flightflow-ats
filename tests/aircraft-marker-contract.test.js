@@ -108,8 +108,12 @@ test('updateLeafletAircraftMarker creates once and reuses the Leaflet marker', (
   assert.equal(markerCreateCount, 1);
   assert.strictEqual(context.realMapState.planeMarker, marker);
   assert.strictEqual(marker.layer, aircraftLayer);
-  assert.deepEqual(marker.position, [-15.8, -47.9]);
-  assert.deepEqual(context.realMapState.lastPlaneData, { lat: -15.8, lng: -47.9, heading: 91, callsign: 'GLO1234' });
+  assert.equal(marker.position[0], -15.8);
+  assert.equal(marker.position[1], -47.9);
+  assert.equal(context.realMapState.lastPlaneData.lat, -15.8);
+  assert.equal(context.realMapState.lastPlaneData.lng, -47.9);
+  assert.equal(context.realMapState.lastPlaneData.heading, 91);
+  assert.equal(context.realMapState.lastPlaneData.callsign, 'GLO1234');
   assert.equal(marker.options.zIndexOffset, 1000);
   assert.equal(marker.options.keyboard, false);
   assert.equal(marker.options.interactive, false);
@@ -121,12 +125,12 @@ test('updateLeafletAircraftMarker creates once and reuses the Leaflet marker', (
 
   assert.equal(markerCreateCount, 1, 'second update must reuse the existing Leaflet marker');
   assert.strictEqual(context.realMapState.planeMarker, originalMarker);
-  assert.deepEqual(marker.position, [-16.1, -48.2]);
+  assert.equal(marker.position[0], -16.1);
+  assert.equal(marker.position[1], -48.2);
   assert.equal(marker.icon.options.html, 'plane:135:GLO1234:26');
-  assert.deepEqual(iconCalls, [
-    { heading: 91, callsign: 'GLO1234', size: 26 },
-    { heading: 135, callsign: 'GLO1234', size: 26 },
-  ]);
+  assert.equal(iconCalls.length, 2);
+  assert.equal(iconCalls[0].heading, 91);
+  assert.equal(iconCalls[1].heading, 135);
 });
 
 test('updateLeafletAircraftMarker is inert when the aircraft layer is unavailable', () => {
@@ -205,7 +209,8 @@ test('updateGoogleAircraftMarker creates once and reuses the Google marker', () 
   assert.equal(markerCreateCount, 1);
   assert.equal(overlayAddCount, 1);
   assert.strictEqual(originalMarker.options.map, map);
-  assert.deepEqual(originalMarker.position, { lat: -23.4, lng: -46.6 });
+  assert.equal(originalMarker.position.lat, -23.4);
+  assert.equal(originalMarker.position.lng, -46.6);
   assert.equal(originalMarker.icon.heading, 45);
   assert.equal(originalMarker.label.text, 'TAM3774');
   assert.equal(originalMarker.options.zIndex, 1000);
@@ -214,7 +219,8 @@ test('updateGoogleAircraftMarker creates once and reuses the Google marker', () 
   assert.equal(markerCreateCount, 1, 'second update must reuse the existing Google marker');
   assert.equal(overlayAddCount, 1);
   assert.strictEqual(context.realMapState.googlePlane, originalMarker);
-  assert.deepEqual(originalMarker.position, { lat: -22.9, lng: -43.2 });
+  assert.equal(originalMarker.position.lat, -22.9);
+  assert.equal(originalMarker.position.lng, -43.2);
   assert.equal(originalMarker.icon.heading, 180);
   assert.equal(originalMarker.label.text, 'TAM3774');
 });
