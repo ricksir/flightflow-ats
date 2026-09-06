@@ -61,16 +61,15 @@ async function spatialSnapshot(page) {
   });
 }
 
-async function resetToCriticalBaseline(page) {
+async function snapToIndex(page, index) {
   if (await page.locator('#playBtn').getAttribute('title').then(title => /Pausar/.test(title || ''))) {
     await page.locator('#playBtn').click();
     await expect(page.locator('#playBtn')).toHaveAttribute('title', /Reproduzir/);
   }
 
-  // A preparação não deve animar do evento 1 até o 78. Ao marcar o motor como
-  // não inicializado, o próprio renderScene() de produção usa snapMotionTo(target)
-  // para posicionar a aeronave exatamente no baseline. O salto 78 → 79 abaixo
-  // continua usando integralmente o caminho real de navegação e animação.
+  // A preparação não deve introduzir uma animação longa e irrelevante. Ao marcar
+  // o motor como não inicializado, o próprio renderScene() de produção usa
+  // snapMotionTo(target) para posicionar a aeronave exatamente no índice pedido.
   await page.evaluate(() => {
     const state = window.__FlightFlowFirBridge?.state;
     if (!state?.motion) throw new Error('estado de movimento indisponível');
@@ -79,9 +78,9 @@ async function resetToCriticalBaseline(page) {
     state.motion.velocity = 0;
   });
 
-  await setScrubber(page, BASE_INDEX);
-  await expect(page.locator('#scrubber')).toHaveValue(String(BASE_INDEX));
-  await waitForSpatialSettled(page, BASE_INDEX);
+  await setScrubber(page, index);
+  await expect(page.locator('#scrubber')).toHaveValue(String(index));
+  await waitForSpatialSettled(page, index);
 }
 
 async function navigateViaNext(page) {
@@ -112,34 +111,34 @@ async function navigateViaAutoplay(page) {
   await expect(page.locator('#playBtn')).toHaveAttribute('title', /Reproduzir/);
 }
 
-test('Próximo, timeline, scrubber, teclado e autoplay convergem para a mesma posição no trecho crítico 78 → 79', async ({ page }) => {
-  await loadDemoPaused(page);
+const methods = [
+  ['Próximo', navigateViaNext],
+  ['timeline', navigateViaTimeline],
+  ['scrubber', navigateViaScrubber],
+  ['teclado', navigateViaKeyboard],
+  ['autoplay', navigateViaAutoplay],
+];
 
-  const methods = [
-    ['next', navigateViaNext],
-    ['timeline', navigateViaTimeline],
-    ['scrubber', navigateViaScrubber],
-    ['keyboard', navigateViaKeyboard],
-    ['autoplay', navigateViaAutoplay],
-  ];
+for (const [name, navigate] of methods) {
+  test(`${name} converge para a posição espacial canônica no trecho crítico 78 → 79`, async ({ page }) => {
+    await loadDemoPaused(page);
 
-  const snapshots = {};
-  for (const [name, navigate] of methods) {
-    await resetToCriticalBaseline(page);
+    // O target canônico é obtido pelo snap determinístico já existente em produção.
+    // Depois voltamos ao Evento 78 e exercitamos integralmente o caminho real 78 → 79.
+    await snapToIndex(page, TARGET_INDEX);
+    const expected = await spatialSnapshot(page);
+    expect(expected.index).toBe(TARGET_INDEX);
+    expect(expected.transitionActive).toBe(false);
+    expect(expected.currentProgress).toBe(expected.routeTarget);
+    expect(expected.renderedProgress).toBe(expected.routeTarget);
+    expect(expected.plane.progress).toBe(expected.routeTarget);
+
+    await snapToIndex(page, BASE_INDEX);
     await navigate(page);
     await expect(page.locator('#scrubber')).toHaveValue(String(TARGET_INDEX));
     await waitForSpatialSettled(page, TARGET_INDEX);
-    snapshots[name] = await spatialSnapshot(page);
-  }
 
-  const reference = snapshots.next;
-  expect(reference.index).toBe(TARGET_INDEX);
-  expect(reference.transitionActive).toBe(false);
-  expect(reference.currentProgress).toBe(reference.routeTarget);
-  expect(reference.renderedProgress).toBe(reference.routeTarget);
-  expect(reference.plane.progress).toBe(reference.routeTarget);
-
-  for (const [name] of methods.slice(1)) {
-    expect(snapshots[name], `${name} deve convergir para o mesmo estado espacial de Próximo`).toEqual(reference);
-  }
-});
+    const actual = await spatialSnapshot(page);
+    expect(actual, `${name} deve convergir para o mesmo estado espacial canônico`).toEqual(expected);
+  });
+}
