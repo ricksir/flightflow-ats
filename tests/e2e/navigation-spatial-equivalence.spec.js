@@ -66,6 +66,19 @@ async function resetToCriticalBaseline(page) {
     await page.locator('#playBtn').click();
     await expect(page.locator('#playBtn')).toHaveAttribute('title', /Reproduzir/);
   }
+
+  // A preparação não deve animar do evento 1 até o 78. Ao marcar o motor como
+  // não inicializado, o próprio renderScene() de produção usa snapMotionTo(target)
+  // para posicionar a aeronave exatamente no baseline. O salto 78 → 79 abaixo
+  // continua usando integralmente o caminho real de navegação e animação.
+  await page.evaluate(() => {
+    const state = window.__FlightFlowFirBridge?.state;
+    if (!state?.motion) throw new Error('estado de movimento indisponível');
+    state.motion.initialized = false;
+    state.motion.ffrpTransition = null;
+    state.motion.velocity = 0;
+  });
+
   await setScrubber(page, BASE_INDEX);
   await expect(page.locator('#scrubber')).toHaveValue(String(BASE_INDEX));
   await waitForSpatialSettled(page, BASE_INDEX);
