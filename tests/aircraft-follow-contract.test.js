@@ -142,10 +142,14 @@ test('limite de largura 900 ainda permite follow; acima de 900 bloqueia', () => 
 test('index carrega o follow controller antes do motor e remove a declaração inline', () => {
   const tag = '<script src="src/map/aircraft-follow-controller.js"></script>';
   const motionTag = '<script src="src/map/aircraft-motion-controller.js"></script>';
+  const stateDeclaration = HTML.indexOf('  const state = {');
+  const followCreation = HTML.indexOf('const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });');
   assert.equal(HTML.split(tag).length - 1, 1, 'módulo de follow deve ser carregado exatamente uma vez');
   assert.ok(HTML.indexOf(tag) < HTML.indexOf(motionTag), 'follow controller deve carregar antes do motor de movimento');
   assert.equal(/function\s+maybeFollowAircraft\s*\(/.test(HTML), false, 'implementação não deve permanecer inline');
   assert.ok(HTML.includes('const AircraftFollowController = window.FlightFlowAircraftFollowController;'));
   assert.ok(HTML.includes("if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');"));
-  assert.ok(HTML.includes('const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });'));
+  assert.ok(followCreation >= 0, 'criação do follow controller deve existir');
+  assert.ok(stateDeclaration >= 0, 'state deve continuar declarado no núcleo');
+  assert.ok(followCreation > stateDeclaration, 'follow controller só pode ser criado após state para evitar Temporal Dead Zone');
 });
