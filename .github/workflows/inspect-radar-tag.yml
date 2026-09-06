@@ -41,18 +41,42 @@ jobs:
               raise SystemExit(f'unexpected els anchor count: {html.count(els_marker)}')
           html = html.replace(els_marker, radar_init, 1)
 
-          old_function = '''  function updateRadarTagPosition(point) {
-            if (!els.radarTag || !point || els.radarTag.hidden) return;
-            const x = Number(point.x);
-            const y = Number(point.y);
-            if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-            els.radarTag.style.left = `${Math.max(8, Math.min(92, (x / 1600) * 100))}%`;
-            els.radarTag.style.top = `${Math.max(8, Math.min(86, (y / 900) * 100))}%`;
-          }
-'''
-          if html.count(old_function) != 1:
-              raise SystemExit(f'unexpected radar implementation count: {html.count(old_function)}')
-          html = html.replace(old_function, '', 1)
+          name = 'updateRadarTagPosition'
+          match = re.search(r'(?m)^\s*function\s+' + re.escape(name) + r'\s*\(', html)
+          if not match:
+              raise SystemExit(f'{name} implementation not found')
+          start = match.start()
+          brace = html.find('{', match.end())
+          depth = 0
+          quote = None
+          escape = False
+          end = None
+          i = brace
+          while i < len(html):
+              ch = html[i]
+              if quote:
+                  if escape:
+                      escape = False
+                  elif ch == '\\':
+                      escape = True
+                  elif ch == quote:
+                      quote = None
+              else:
+                  if ch in "'\"`":
+                      quote = ch
+                  elif ch == '{':
+                      depth += 1
+                  elif ch == '}':
+                      depth -= 1
+                      if depth == 0:
+                          end = i + 1
+                          break
+              i += 1
+          if end is None:
+              raise SystemExit(f'{name} implementation is unterminated')
+          if end < len(html) and html[end] == '\n':
+              end += 1
+          html = html[:start] + html[end:]
           index_path.write_text(html, encoding='utf-8')
 
           contract_path = Path('tests/main-kernel-contract.test.js')
@@ -81,6 +105,8 @@ jobs:
           if contract.count(spread_anchor) != 1:
               raise SystemExit('extracted spread anchor changed')
           contract = contract.replace(spread_anchor, spread_replacement, 1)
+          if contract.count('assert.equal(names.length, 325);') != 1 or contract.count('assert.equal(counts.size, 325);') != 1:
+              raise SystemExit('kernel function count anchors changed')
           contract = contract.replace('assert.equal(names.length, 325);', 'assert.equal(names.length, 324);', 1)
           contract = contract.replace('assert.equal(counts.size, 325);', 'assert.equal(counts.size, 324);', 1)
 
@@ -99,8 +125,7 @@ jobs:
           contract = re.sub(r'const EXPECTED_LINES = \d+;', f'const EXPECTED_LINES = {expected_lines};', contract, count=1)
           contract_path.write_text(contract, encoding='utf-8')
 
-          workflow = Path('.github/workflows/inspect-radar-tag.yml')
-          workflow.unlink()
+          Path('.github/workflows/inspect-radar-tag.yml').unlink()
 
           print(f'kernel bytes={expected_bytes} lines={expected_lines} sha256={expected_sha}')
           print('radar tag implementation extracted successfully')
