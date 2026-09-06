@@ -1,0 +1,30 @@
+name: One-shot cleanup generated dependencies
+
+on:
+  push:
+    branches:
+      - refactor/extract-aircraft-follow-controller
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove generated dependency files from branch
+        shell: bash
+        run: |
+          git rm -r node_modules package-lock.json
+          rm .github/workflows/cleanup-generated-deps.yml
+      - name: Commit cleanup
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore: remove generated dependency files'
+          git push origin HEAD:refactor/extract-aircraft-follow-controller
