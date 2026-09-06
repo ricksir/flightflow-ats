@@ -5496,6 +5496,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script src="src/map/aircraft-marker-controller.js"></script>
 <script src="src/map/radar-tag-controller.js"></script>
 <script src="src/map/aircraft-follow-controller.js"></script>
+<script src="src/map/real-map-aircraft-controller.js"></script>
 <script src="src/map/aircraft-motion-controller.js"></script>
 <script>
 
@@ -7715,21 +7716,20 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     addGoogleOverlay,
   });
 
-  function updateRealMapAircraft(frame){
-    if(!realMapState.ready||!state.parsed||!frame)return;
-    if(realMapState.engine==='vector'){const g=unprojectGeo(frame.x,frame.y);updateRealMapCoordinateReadout(g.lat,g.lon);return;}
-    const geo=unprojectGeo(frame.x,frame.y);
-    const callsign=(currentEvent()&&currentEvent().snapshot.callsign)||state.parsed.meta.callsign||'ACFT';
-    if(realMapState.engine==='google'){
-      updateGoogleAircraftMarker(geo.lat,geo.lon,frame.heading||0,callsign);
-      updateGoogleCompletedRoute();
-      followRealMapAircraft(geo.lat,geo.lon);
-      return;
-    }
-    updateLeafletAircraftMarker(geo.lat,geo.lon,frame.heading||0,callsign);
-    const route=state.geo.eventRoutes[state.index];if(route)updateLeafletCompletedRoute(route.points,frame.progress||0);
-    followRealMapAircraft(geo.lat,geo.lon);
-  }
+  const RealMapAircraftController = window.FlightFlowRealMapAircraftController;
+  if (!RealMapAircraftController) throw new Error('FlightFlowRealMapAircraftController não foi carregado.');
+  const { updateRealMapAircraft } = RealMapAircraftController.create({
+    realMapState,
+    state,
+    unprojectGeo,
+    updateRealMapCoordinateReadout,
+    currentEvent,
+    updateGoogleAircraftMarker,
+    updateGoogleCompletedRoute,
+    followRealMapAircraft,
+    updateLeafletAircraftMarker,
+    updateLeafletCompletedRoute,
+  });
 
   function followRealMapAircraft(lat,lng){
     if(state.config.followAircraft===false)return;
