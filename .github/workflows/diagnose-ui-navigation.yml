@@ -1,0 +1,73 @@
+name: Diagnose UI navigation source
+
+on:
+  push:
+    branches:
+      - refactor/extract-aircraft-follow-controller
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Snapshot after checkout
+        shell: bash
+        run: |
+          echo '--- checkout ---'
+          wc -l tests/e2e/ui-navigation.spec.js
+          sha256sum tests/e2e/ui-navigation.spec.js
+          grep -n "all manual paths resolve" tests/e2e/ui-navigation.spec.js || true
+          git status --short
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Snapshot after npm install
+        shell: bash
+        run: |
+          echo '--- npm install ---'
+          wc -l tests/e2e/ui-navigation.spec.js
+          sha256sum tests/e2e/ui-navigation.spec.js
+          grep -n "all manual paths resolve" tests/e2e/ui-navigation.spec.js || true
+          git status --short
+      - name: Run static audit
+        run: npm run audit
+      - name: Snapshot after audit
+        shell: bash
+        run: |
+          echo '--- audit ---'
+          wc -l tests/e2e/ui-navigation.spec.js
+          sha256sum tests/e2e/ui-navigation.spec.js
+          grep -n "all manual paths resolve" tests/e2e/ui-navigation.spec.js || true
+          git status --short
+      - name: Run inventory
+        run: npm run inventory
+      - name: Snapshot after inventory
+        shell: bash
+        run: |
+          echo '--- inventory ---'
+          wc -l tests/e2e/ui-navigation.spec.js
+          sha256sum tests/e2e/ui-navigation.spec.js
+          grep -n "all manual paths resolve" tests/e2e/ui-navigation.spec.js || true
+          git status --short
+      - name: Run Node tests
+        run: npm test
+      - name: Snapshot after Node tests
+        shell: bash
+        run: |
+          echo '--- node tests ---'
+          wc -l tests/e2e/ui-navigation.spec.js
+          sha256sum tests/e2e/ui-navigation.spec.js
+          grep -n "all manual paths resolve" tests/e2e/ui-navigation.spec.js || true
+          echo '--- e2e files ---'
+          find tests/e2e -maxdepth 1 -type f -name '*.spec.js' -printf '%f\n' | sort
+          echo '--- playwright list ---'
+          npx playwright test --list
+          git status --short
