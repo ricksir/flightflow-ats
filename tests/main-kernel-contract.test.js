@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1137542;
-const EXPECTED_SHA256 = 'b2a9f21f25ac8aba6e8c6336adf694fc702a0f7e6f24c081380f6c234f339f1f';
-const EXPECTED_LINES = 5371;
+const EXPECTED_BYTES = 1136965;
+const EXPECTED_SHA256 = '34df4995e44017ca764f1175184fdda7a273fff6ecd99a16e291a05fb9750f85';
+const EXPECTED_LINES = 5369;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -31,6 +31,7 @@ const EXTRACTED_CONTROL_STATE = ['enableControls'];
 const EXTRACTED_TIMELINE_BUILDER = ['buildTimeline'];
 const EXTRACTED_SOURCE_CLASS = ['getSourceClass'];
 const EXTRACTED_CONFIG_VALIDATION = ['validateConfig'];
+const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconHtml'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -61,6 +62,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const ConfigValidation = window.FlightFlowConfigValidation;',
     "if (!ConfigValidation) throw new Error('FlightFlowConfigValidation não foi carregado.');",
     'const { validateConfig } = ConfigValidation;',
+    'const AircraftVisualUtils = window.FlightFlowAircraftVisualUtils;',
+    "if (!AircraftVisualUtils) throw new Error('FlightFlowAircraftVisualUtils não foi carregado.');",
+    'const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });',
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
     'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;',
@@ -141,15 +145,15 @@ test('eventos de integração do núcleo permanecem publicados', () => {
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
-test('inventário interno do núcleo mantém nomes únicos após dez extrações puras e sete cortes de timeline', () => {
+test('inventário interno do núcleo mantém nomes únicos após extrações por domínio', () => {
   const source = kernelSource();
   const names = [...source.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const counts = new Map();
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 335);
-  assert.equal(counts.size, 335);
+  assert.equal(names.length, 333);
+  assert.equal(counts.size, 333);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
@@ -167,6 +171,7 @@ test('inventário interno do núcleo mantém nomes únicos após dez extrações
     ...EXTRACTED_TIMELINE_BUILDER,
     ...EXTRACTED_SOURCE_CLASS,
     ...EXTRACTED_CONFIG_VALIDATION,
+    ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
