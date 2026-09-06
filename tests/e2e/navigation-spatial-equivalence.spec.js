@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 const BASE_INDEX = 77; // Evento 78 — antes de PADIL
 const TARGET_INDEX = 78; // Evento 79 — após MASVA
+const TEST_TIMEOUT_MS = 60_000;
 
 async function loadDemoPaused(page) {
   await page.goto('/index.html', { waitUntil: 'load' });
@@ -121,6 +122,11 @@ const methods = [
 
 for (const [name, navigate] of methods) {
   test(`${name} converge para a posição espacial canônica no trecho crítico 78 → 79`, async ({ page }) => {
+    // Este cenário faz dois snaps determinísticos, carregamento da demo e a
+    // transição real 78 → 79. Mantemos cada espera funcional curta e rígida;
+    // ampliamos somente o orçamento total deste teste, sem alterar produção.
+    test.setTimeout(TEST_TIMEOUT_MS);
+
     await loadDemoPaused(page);
 
     // O target canônico é obtido pelo snap determinístico já existente em produção.
