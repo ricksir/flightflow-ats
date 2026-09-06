@@ -131,7 +131,7 @@ test('planeIconHtml preserva tamanho, rotação, modo compacto e escaping por de
   assert.match(regular, /ff-aircraft-icon /);
   assert.doesNotMatch(regular, /ff-aircraft-icon compact/);
   assert.match(regular, /--ff-aircraft-size:30px;transform:rotate\(45\.0deg\)/);
-  assert.match(regular, /ff-aircraft-label" style="transform:rotate\(-45\.0deg\)"/);
+  assert.match(regular, /ff-aircraft-label" style="transform:rotate\(-45deg\)"/);
   assert.ok(regular.includes('ESC(GLO<1>)'));
 
   const compact = planeIconHtml(0, 'TAM3720', 18);
