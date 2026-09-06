@@ -7138,9 +7138,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 const RadarTagController = window.FlightFlowRadarTagController;
 if (!RadarTagController) throw new Error('FlightFlowRadarTagController não foi carregado.');
 const { updateRadarTagPosition } = RadarTagController.create({ els });
-const AircraftFollowController = window.FlightFlowAircraftFollowController;
-if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');
-const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });
   const state = {
     selectedFile: null,
     parsed: null,
@@ -7195,6 +7192,9 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     sources: [],  // array de { id, name, parsed }
     activeSourceId: null,
   };
+const AircraftFollowController = window.FlightFlowAircraftFollowController;
+if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');
+const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });
 
 
 
