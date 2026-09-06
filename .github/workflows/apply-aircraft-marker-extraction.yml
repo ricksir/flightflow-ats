@@ -63,15 +63,17 @@ jobs:
               assert digest == sha_expected, (name, digest)
               found[name] = (start, end, source)
 
-          alias = """  const AircraftMarkerController = window.FlightFlowAircraftMarkerController;
-          if (!AircraftMarkerController) throw new Error('FlightFlowAircraftMarkerController não foi carregado.');
-          const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({
-            realMapState,
-            aircraftPixelSizeForZoom,
-            planeIconHtml,
-            clamp,
-            addGoogleOverlay,
-          });"""
+          alias = '\n'.join([
+              '  const AircraftMarkerController = window.FlightFlowAircraftMarkerController;',
+              "  if (!AircraftMarkerController) throw new Error('FlightFlowAircraftMarkerController não foi carregado.');",
+              '  const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',
+              '    realMapState,',
+              '    aircraftPixelSizeForZoom,',
+              '    planeIconHtml,',
+              '    clamp,',
+              '    addGoogleOverlay,',
+              '  });',
+          ])
 
           for name in ('updateGoogleAircraftMarker', 'googlePlaneSymbol'):
               start, end, _ = found[name]
@@ -85,7 +87,6 @@ jobs:
           assert count == 1, 'aircraft visual module tag not found'
           index_path.write_text(index, encoding='utf-8')
 
-          # Marker contract now reads the exact frozen functions from the extracted module.
           marker_path = Path('tests/aircraft-marker-contract.test.js')
           marker = marker_path.read_text(encoding='utf-8')
           anchor = "const indexHtml = fs.readFileSync('index.html', 'utf8');"
@@ -145,7 +146,6 @@ jobs:
           '''
           marker_path.write_text(marker, encoding='utf-8')
 
-          # Visual helpers remain pure; direct calls leave the kernel and become controller dependencies.
           visual_path = Path('tests/aircraft-visual-utils-contract.test.js')
           visual = visual_path.read_text(encoding='utf-8')
           visual_line_1 = "  assert.equal([...kernel.matchAll(/(?<![\\w$.])aircraftPixelSizeForZoom\\s*\\(/g)].length, 1);"
@@ -161,7 +161,6 @@ jobs:
           visual = visual.replace(visual_line_2, visual_line_2[:-3] + '0);' + '\n' + visual_extra, 1)
           visual_path.write_text(visual, encoding='utf-8')
 
-          # Compute and prove the exact intended kernel delta before updating its frozen baseline.
           anchor_text = 'window.__FlightFlowFirBridge = Object.freeze({'
           anchor_index = index.index(anchor_text)
           script_open = index.rfind('<script', 0, anchor_index)
@@ -172,7 +171,7 @@ jobs:
           kernel_lines = len(kernel.splitlines())
           kernel_sha = hashlib.sha256(kernel.encode('utf-8')).hexdigest()
           kernel_names = re.findall(r'function\s+([A-Za-z_$][\w$]*)\s*\(', kernel)
-          assert kernel_bytes == 1135467, (kernel_bytes, kernel_sha)
+          assert kernel_bytes == 1135483, (kernel_bytes, kernel_sha)
           assert kernel_lines == 5366, (kernel_lines, kernel_sha)
           assert len(kernel_names) == 330, len(kernel_names)
           assert len(set(kernel_names)) == 330, 'kernel must retain unique named functions'
