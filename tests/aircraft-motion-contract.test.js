@@ -9,6 +9,7 @@ const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const MOTION_MODULE = fs.readFileSync(path.join(ROOT, 'src', 'map', 'aircraft-motion-controller.js'), 'utf8');
 const EXPECTED = Object.freeze({
   resetMotionController: {
     bytes: 497,
@@ -37,16 +38,21 @@ const EXPECTED = Object.freeze({
   },
 });
 
+function sourceContainer(name) {
+  return Object.prototype.hasOwnProperty.call(EXPECTED, name) ? MOTION_MODULE : HTML;
+}
+
 function functionSource(name) {
+  const source = sourceContainer(name);
   const marker = `  function ${name}(`;
-  const start = HTML.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer declarado no kernel neste corte`);
-  let i = HTML.indexOf('(', start);
+  const start = source.indexOf(marker);
+  assert.ok(start >= 0, `${name} deve existir na fronteira esperada`);
+  let i = source.indexOf('(', start);
   let depth = 0;
   let quote = null;
   let escaped = false;
-  for (; i < HTML.length; i += 1) {
-    const ch = HTML[i];
+  for (; i < source.length; i += 1) {
+    const ch = source[i];
     if (quote) {
       if (escaped) escaped = false;
       else if (ch === '\\') escaped = true;
@@ -61,13 +67,13 @@ function functionSource(name) {
     }
   }
   let brace = i + 1;
-  while (/\s/.test(HTML[brace])) brace += 1;
-  assert.equal(HTML[brace], '{', `${name} deve possuir corpo`);
+  while (/\s/.test(source[brace])) brace += 1;
+  assert.equal(source[brace], '{', `${name} deve possuir corpo`);
   depth = 0;
   quote = null;
   escaped = false;
-  for (i = brace; i < HTML.length; i += 1) {
-    const ch = HTML[i];
+  for (i = brace; i < source.length; i += 1) {
+    const ch = source[i];
     if (quote) {
       if (escaped) escaped = false;
       else if (ch === '\\') escaped = true;
@@ -78,7 +84,7 @@ function functionSource(name) {
     if (ch === '{') depth += 1;
     else if (ch === '}') {
       depth -= 1;
-      if (depth === 0) return HTML.slice(start, i + 1);
+      if (depth === 0) return source.slice(start, i + 1);
     }
   }
   assert.fail(`fim de ${name} não encontrado`);
@@ -290,4 +296,55 @@ test('renderCurrent e Rota Processada permanecem fora deste corte de congelament
   const combined = Object.keys(EXPECTED).map(functionSource).join('\n');
   assert.equal(combined.includes('function renderCurrent('), false);
   assert.equal(combined.includes('function goTo('), false);
+});
+
+
+test('aircraft motion controller é carregado antes do kernel e remove as cinco declarações inline', () => {
+  const tag = '<script src="src/map/aircraft-motion-controller.js"></script>';
+  const tagIndex = HTML.indexOf(tag);
+  const kernelIndex = HTML.indexOf('const Parser = window.FlightParser;');
+  assert.notEqual(tagIndex, -1);
+  assert.notEqual(kernelIndex, -1);
+  assert.ok(tagIndex < kernelIndex, 'motion controller deve carregar antes do kernel');
+  for (const name of Object.keys(EXPECTED)) {
+    assert.equal(HTML.includes(`  function ${name}(`), false, `${name} não deve continuar inline`);
+  }
+  assert.ok(HTML.includes('const AircraftMotionController = window.FlightFlowAircraftMotionController;'));
+  assert.ok(HTML.includes('const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, startMotionLoop } = AircraftMotionController.create({'));
+});
+
+test('aircraft motion controller expõe somente as cinco operações congeladas', () => {
+  const context = { window: {} };
+  vm.createContext(context);
+  vm.runInContext(MOTION_MODULE, context, { filename: 'aircraft-motion-controller.js' });
+  const factory = context.window.FlightFlowAircraftMotionController;
+  assert.ok(factory);
+  assert.equal(Object.isFrozen(factory), true);
+  assert.deepEqual(Array.from(Object.keys(factory)), ['create']);
+  const noop = () => {};
+  const controller = factory.create({
+    state: { motion: {} },
+    els: {},
+    pointAlongPolyline: noop,
+    clamp01: value => value,
+    getCurrentMapSymbolScale: () => 1,
+    smoothPath: () => '',
+    slicePolyline: noop,
+    updateRadarTagPosition: noop,
+    maybeFollowAircraft: noop,
+    updateRealMapAircraft: noop,
+    clamp: value => value,
+  });
+  assert.equal(Object.isFrozen(controller), true);
+  assert.deepEqual(Array.from(Object.keys(controller)), [
+    'resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'
+  ]);
+});
+
+test('motion controller não absorve planejamento de navegação nem renderCurrent', () => {
+  assert.equal(MOTION_MODULE.includes('transitionPlanForEvents'), false);
+  assert.equal(MOTION_MODULE.includes('transitionDurations'), false);
+  assert.equal(MOTION_MODULE.includes('function goTo('), false);
+  assert.equal(MOTION_MODULE.includes('function renderCurrent('), false);
+  assert.ok(MOTION_MODULE.includes("new CustomEvent('flightflow:route-fix-crossed'"));
 });
