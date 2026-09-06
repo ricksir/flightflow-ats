@@ -1,0 +1,413 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import hashlib
+import re
+
+HTML = Path('index.html')
+MODULE = Path('src/map/aircraft-visual-utils.js')
+CONTRACT = Path('tests/aircraft-visual-utils-contract.test.js')
+E2E = Path('tests/e2e/aircraft-visual-utils-module.spec.js')
+KERNEL_TEST = Path('tests/main-kernel-contract.test.js')
+
+
+def function_span(container: str, name: str):
+    marker = f'  function {name}('
+    start = container.index(marker)
+    i = container.index('(', start)
+    depth = 0
+    quote = None
+    escaped = False
+    while i < len(container):
+        ch = container[i]
+        if quote:
+            if escaped:
+                escaped = False
+            elif ch == '\\':
+                escaped = True
+            elif ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in "'\"`":
+            quote = ch
+        elif ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    brace = i + 1
+    while brace < len(container) and container[brace].isspace():
+        brace += 1
+    if container[brace] != '{':
+        raise RuntimeError(f'{name}: opening brace not found')
+    i = brace
+    depth = 0
+    quote = None
+    escaped = False
+    while i < len(container):
+        ch = container[i]
+        if quote:
+            if escaped:
+                escaped = False
+            elif ch == '\\':
+                escaped = True
+            elif ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in "'\"`":
+            quote = ch
+        elif ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                return start, i + 1, container[start:i + 1]
+        i += 1
+    raise RuntimeError(f'{name}: closing brace not found')
+
+
+def kernel_source(html: str):
+    anchor = 'window.__FlightFlowFirBridge = Object.freeze({'
+    anchor_index = html.index(anchor)
+    script_start = html.rfind('<script', 0, anchor_index)
+    body_start = html.index('>', script_start) + 1
+    body_end = html.index('</script>', anchor_index)
+    return html[body_start:body_end].strip('\n') + '\n'
+
+
+def main():
+    html = HTML.read_text(encoding='utf-8')
+    dependency_marker = '  const AircraftVisualUtils = window.FlightFlowAircraftVisualUtils;'
+    if MODULE.exists() and dependency_marker in html:
+        print('Aircraft visual extraction already applied; verification-only run.')
+        return
+
+    expected = {
+        'aircraftPixelSizeForZoom': (156, '20aa9c98a5d48b25893a8741eaefa60ec0f920d348bd188a7cbe294abdb647a7'),
+        'planeIconHtml': (693, '9e7709914d527334d2c91c38c1204e6c54e563cfa90f5053c2f852f46a2f53bf'),
+    }
+    spans = {}
+    for name, (expected_bytes, expected_sha) in expected.items():
+        start, end, source = function_span(html, name)
+        actual_bytes = len(source.encode('utf-8'))
+        actual_sha = hashlib.sha256(source.encode('utf-8')).hexdigest()
+        if (actual_bytes, actual_sha) != (expected_bytes, expected_sha):
+            raise RuntimeError(f'{name}: frozen identity changed: {actual_bytes} / {actual_sha}')
+        spans[name] = (start, end, source)
+
+    aircraft_source = spans['aircraftPixelSizeForZoom'][2]
+    icon_source = spans['planeIconHtml'][2]
+
+    MODULE.parent.mkdir(parents=True, exist_ok=True)
+    module_source = (
+        "(function () {\n"
+        "  'use strict';\n\n"
+        "  const create = ({ clamp, escapeHtml }) => {\n"
+        "    if (typeof clamp !== 'function') throw new TypeError('clamp deve ser função.');\n"
+        "    if (typeof escapeHtml !== 'function') throw new TypeError('escapeHtml deve ser função.');\n\n"
+        + aircraft_source + "\n\n"
+        + icon_source + "\n\n"
+        "    return Object.freeze({ aircraftPixelSizeForZoom, planeIconHtml });\n"
+        "  };\n\n"
+        "  window.FlightFlowAircraftVisualUtils = Object.freeze({ create });\n"
+        "})();\n"
+    )
+    MODULE.write_text(module_source, encoding='utf-8')
+
+    for start, end, _ in sorted(spans.values(), key=lambda item: item[0], reverse=True):
+        html = html[:start] + html[end:]
+
+    script_anchor = '<script id="flightflow-config-validation" src="src/config/config-validation.js"></script>\n'
+    module_tag = '<script id="flightflow-aircraft-visual-utils" src="src/map/aircraft-visual-utils.js"></script>\n'
+    if script_anchor not in html:
+        raise RuntimeError('config-validation script anchor not found')
+    html = html.replace(script_anchor, script_anchor + module_tag, 1)
+
+    alias_anchor = '  const { validateConfig } = ConfigValidation;\n'
+    alias_block = (
+        "\n  const AircraftVisualUtils = window.FlightFlowAircraftVisualUtils;\n"
+        "  if (!AircraftVisualUtils) throw new Error('FlightFlowAircraftVisualUtils não foi carregado.');\n"
+        "  const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });\n"
+    )
+    if alias_anchor not in html:
+        raise RuntimeError('validateConfig alias anchor not found')
+    html = html.replace(alias_anchor, alias_anchor + alias_block, 1)
+    HTML.write_text(html, encoding='utf-8')
+
+    module_bytes = len(module_source.encode('utf-8'))
+    module_sha = hashlib.sha256(module_source.encode('utf-8')).hexdigest()
+
+    contract_source = """'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const vm = require('node:vm');
+
+const ROOT = path.resolve(__dirname, '..');
+const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'map', 'aircraft-visual-utils.js');
+const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
+const EXPECTED_MODULE_BYTES = __MODULE_BYTES__;
+const EXPECTED_MODULE_SHA256 = '__MODULE_SHA__';
+const EXPECTED = Object.freeze({
+  aircraftPixelSizeForZoom: {
+    bytes: 156,
+    sha256: '20aa9c98a5d48b25893a8741eaefa60ec0f920d348bd188a7cbe294abdb647a7',
+  },
+  planeIconHtml: {
+    bytes: 693,
+    sha256: '9e7709914d527334d2c91c38c1204e6c54e563cfa90f5053c2f852f46a2f53bf',
+  },
+});
+
+function kernelSource() {
+  const html = fs.readFileSync(HTML, 'utf8');
+  const anchorIndex = html.indexOf(ANCHOR);
+  assert.ok(anchorIndex >= 0, 'núcleo principal deve manter a ponte FIR usada como âncora');
+  const scriptStart = html.lastIndexOf('<script', anchorIndex);
+  const bodyStart = html.indexOf('>', scriptStart) + 1;
+  const bodyEnd = html.indexOf('</script>', anchorIndex);
+  assert.ok(scriptStart >= 0 && bodyStart > scriptStart && bodyEnd > bodyStart);
+  return html.slice(bodyStart, bodyEnd);
+}
+
+function functionSource(container, name) {
+  const marker = `  function ${name}(`;
+  const start = container.indexOf(marker);
+  assert.ok(start >= 0, `${name} deve existir no módulo`);
+  let i = container.indexOf('(', start);
+  let depth = 0;
+  let quote = null;
+  let escaped = false;
+  for (; i < container.length; i += 1) {
+    const ch = container[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === '\\\\') escaped = true;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') { quote = ch; continue; }
+    if (ch === '(') depth += 1;
+    else if (ch === ')') {
+      depth -= 1;
+      if (depth === 0) break;
+    }
+  }
+  let brace = i + 1;
+  while (/\\s/.test(container[brace])) brace += 1;
+  assert.equal(container[brace], '{', `${name} deve possuir corpo`);
+  depth = 0;
+  quote = null;
+  escaped = false;
+  for (i = brace; i < container.length; i += 1) {
+    const ch = container[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === '\\\\') escaped = true;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') { quote = ch; continue; }
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return container.slice(start, i + 1);
+    }
+  }
+  assert.fail(`fim de ${name} não encontrado`);
+}
+
+function sha256(text) {
+  return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+function loadApi() {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const context = { window: {} };
+  vm.runInNewContext(source, context, { filename: MODULE });
+  const factory = context.window.FlightFlowAircraftVisualUtils;
+  const clamp = (value, min, max) => Math.max(Number(min), Math.min(Number(max), Number(value)));
+  const escapeHtml = value => `ESC(${String(value)})`;
+  const api = factory.create({ clamp, escapeHtml });
+  return { factory, api };
+}
+
+test('módulo visual da aeronave mantém identidade estrutural congelada', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_MODULE_BYTES);
+  assert.equal(sha256(source), EXPECTED_MODULE_SHA256);
+  assert.match(source, /^\\(function \\(\\) \\{\\n\\s*'use strict';/);
+  assert.match(source, /window\\.FlightFlowAircraftVisualUtils = Object\\.freeze\\(\\{ create \\}\\);/);
+  assert.match(source, /\\}\\)\\(\\);\\n$/);
+});
+
+test('dois helpers preservam exatamente as identidades congeladas', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  for (const [name, expected] of Object.entries(EXPECTED)) {
+    const body = functionSource(source, name);
+    assert.equal(Buffer.byteLength(body, 'utf8'), expected.bytes, `${name}: bytes`);
+    assert.equal(sha256(body), expected.sha256, `${name}: SHA-256`);
+  }
+});
+
+test('fábrica pública é congelada, exige dependências e expõe somente os dois helpers', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const context = { window: {} };
+  vm.runInNewContext(source, context, { filename: MODULE });
+  const factory = context.window.FlightFlowAircraftVisualUtils;
+  assert.ok(Object.isFrozen(factory));
+  assert.deepEqual(Array.from(Object.keys(factory)), ['create']);
+  assert.throws(() => factory.create({ clamp: null, escapeHtml: () => '' }), /clamp deve ser função/);
+  assert.throws(() => factory.create({ clamp: () => 0, escapeHtml: null }), /escapeHtml deve ser função/);
+  const { api } = loadApi();
+  assert.ok(Object.isFrozen(api));
+  assert.deepEqual(Array.from(Object.keys(api)), ['aircraftPixelSizeForZoom', 'planeIconHtml']);
+});
+
+test('aircraftPixelSizeForZoom preserva fallback, escala, arredondamento e limites', () => {
+  const { api } = loadApi();
+  assert.equal(api.aircraftPixelSizeForZoom(undefined), 18);
+  assert.equal(api.aircraftPixelSizeForZoom(null), 12);
+  assert.equal(api.aircraftPixelSizeForZoom(5), 12);
+  assert.equal(api.aircraftPixelSizeForZoom('10'), 21);
+  assert.equal(api.aircraftPixelSizeForZoom(18), 36);
+  assert.equal(api.aircraftPixelSizeForZoom(100), 36);
+  assert.equal(api.aircraftPixelSizeForZoom(-10), 12);
+  assert.equal(api.aircraftPixelSizeForZoom('abc'), 18);
+});
+
+test('planeIconHtml preserva tamanho, rotação, modo compacto e escaping por dependência', () => {
+  const { api } = loadApi();
+  const regular = api.planeIconHtml(45, 'GLO<1>', 30);
+  assert.match(regular, /ff-aircraft-icon /);
+  assert.doesNotMatch(regular, /ff-aircraft-icon compact/);
+  assert.match(regular, /--ff-aircraft-size:30px;transform:rotate\\(45\\.0deg\\)/);
+  assert.match(regular, /ff-aircraft-label" style="transform:rotate\\(-45deg\\)"/);
+  assert.ok(regular.includes('ESC(GLO<1>)'));
+  const compact = api.planeIconHtml(0, 'TAM3720', 18);
+  assert.match(compact, /ff-aircraft-icon compact/);
+  assert.match(compact, /--ff-aircraft-size:18px;transform:rotate\\(0\\.0deg\\)/);
+  const fallback = api.planeIconHtml(undefined, 'PSFBU');
+  assert.match(fallback, /--ff-aircraft-size:30px;transform:rotate\\(0\\.0deg\\)/);
+});
+
+test('index carrega o módulo antes do IIFE e kernel usa alias explícito sem redeclarar helpers', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  const tag = '<script id="flightflow-aircraft-visual-utils" src="src/map/aircraft-visual-utils.js"></script>';
+  assert.equal(html.split(tag).length - 1, 1);
+  assert.ok(html.indexOf(tag) < html.indexOf('(function () {'));
+  const kernel = kernelSource();
+  assert.ok(kernel.includes('const AircraftVisualUtils = window.FlightFlowAircraftVisualUtils;'));
+  assert.ok(kernel.includes("if (!AircraftVisualUtils) throw new Error('FlightFlowAircraftVisualUtils não foi carregado.');"));
+  assert.ok(kernel.includes('const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });'));
+  assert.equal(kernel.includes('function aircraftPixelSizeForZoom('), false);
+  assert.equal(kernel.includes('function planeIconHtml('), false);
+  assert.equal([...kernel.matchAll(/(?<![\\w$.])aircraftPixelSizeForZoom\\s*\\(/g)].length, 1);
+  assert.equal([...kernel.matchAll(/(?<![\\w$.])planeIconHtml\\s*\\(/g)].length, 1);
+});
+
+test('fronteira visual permanece sem estado, DOM, storage, rota ou movimento', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const combined = [functionSource(source, 'aircraftPixelSizeForZoom'), functionSource(source, 'planeIconHtml')].join('\\n');
+  for (const token of [
+    'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
+    'FlightParser', 'FlightFlowRouteProcessedV7412', 'goTo(', 'renderCurrent(', 'realMapState', 'motion.'
+  ]) assert.equal(combined.includes(token), false, `acoplamento proibido: ${token}`);
+  assert.ok(functionSource(source, 'aircraftPixelSizeForZoom').includes('clamp('));
+  assert.ok(functionSource(source, 'planeIconHtml').includes('escapeHtml(callsign)'));
+});
+"""
+    contract_source = contract_source.replace('__MODULE_BYTES__', str(module_bytes)).replace('__MODULE_SHA__', module_sha)
+    CONTRACT.write_text(contract_source, encoding='utf-8')
+
+    e2e_source = """const { test, expect } = require('@playwright/test');
+
+test('módulo visual da aeronave carrega e preserva contrato no Chrome real', async ({ page }) => {
+  await page.goto('/index.html', { waitUntil: 'load' });
+  const result = await page.evaluate(() => {
+    const factory = window.FlightFlowAircraftVisualUtils;
+    const api = factory?.create?.({
+      clamp: (value, min, max) => Math.max(Number(min), Math.min(Number(max), Number(value))),
+      escapeHtml: value => `ESC(${String(value)})`,
+    });
+    return {
+      factoryExists: !!factory,
+      factoryFrozen: factory ? Object.isFrozen(factory) : false,
+      factoryKeys: factory ? Object.keys(factory) : [],
+      apiFrozen: api ? Object.isFrozen(api) : false,
+      apiKeys: api ? Object.keys(api) : [],
+      size10: api?.aircraftPixelSizeForZoom?.(10),
+      regular: api?.planeIconHtml?.(45, 'GLO<1>', 30),
+      compact: api?.planeIconHtml?.(0, 'TAM3720', 18),
+    };
+  });
+  expect(result.factoryExists).toBe(true);
+  expect(result.factoryFrozen).toBe(true);
+  expect(result.factoryKeys).toEqual(['create']);
+  expect(result.apiFrozen).toBe(true);
+  expect(result.apiKeys).toEqual(['aircraftPixelSizeForZoom', 'planeIconHtml']);
+  expect(result.size10).toBe(21);
+  expect(result.regular).toContain('--ff-aircraft-size:30px;transform:rotate(45.0deg)');
+  expect(result.regular).toContain('ESC(GLO<1>)');
+  expect(result.compact).toContain('ff-aircraft-icon compact');
+});
+"""
+    E2E.write_text(e2e_source, encoding='utf-8')
+
+    kernel = kernel_source(html)
+    kernel_bytes = len(kernel.encode('utf-8'))
+    kernel_sha = hashlib.sha256(kernel.encode('utf-8')).hexdigest()
+    kernel_lines = kernel.count('\n')
+    names = re.findall(r'function\s+([A-Za-z_$][\w$]*)\s*\(', kernel)
+    unique_names = len(set(names))
+
+    kt = KERNEL_TEST.read_text(encoding='utf-8')
+    kt = re.sub(r'const EXPECTED_BYTES = \d+;', f'const EXPECTED_BYTES = {kernel_bytes};', kt, count=1)
+    kt = re.sub(r"const EXPECTED_SHA256 = '[0-9a-f]+';", f"const EXPECTED_SHA256 = '{kernel_sha}';", kt, count=1)
+    kt = re.sub(r'const EXPECTED_LINES = \d+;', f'const EXPECTED_LINES = {kernel_lines};', kt, count=1)
+
+    config_list = "const EXTRACTED_CONFIG_VALIDATION = ['validateConfig'];\n"
+    aircraft_list = "const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconHtml'];\n"
+    if aircraft_list not in kt:
+        kt = kt.replace(config_list, config_list + aircraft_list, 1)
+
+    validation_token = "    'const { validateConfig } = ConfigValidation;',\n"
+    aircraft_tokens = (
+        "    'const AircraftVisualUtils = window.FlightFlowAircraftVisualUtils;',\n"
+        "    \"if (!AircraftVisualUtils) throw new Error('FlightFlowAircraftVisualUtils não foi carregado.');\",\n"
+        "    'const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });',\n"
+    )
+    if 'FlightFlowAircraftVisualUtils não foi carregado.' not in kt:
+        kt = kt.replace(validation_token, validation_token + aircraft_tokens, 1)
+
+    extracted_anchor = '    ...EXTRACTED_CONFIG_VALIDATION,\n'
+    if '    ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,\n' not in kt:
+        kt = kt.replace(extracted_anchor, extracted_anchor + '    ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,\n', 1)
+
+    kt = re.sub(
+        r"test\('inventário interno do núcleo mantém nomes únicos após[^']*'",
+        "test('inventário interno do núcleo mantém nomes únicos após extrações por domínio'",
+        kt,
+        count=1,
+    )
+    kt = re.sub(r'assert\.equal\(names\.length, \d+\);', f'assert.equal(names.length, {len(names)});', kt, count=1)
+    kt = re.sub(r'assert\.equal\(counts\.size, \d+\);', f'assert.equal(counts.size, {unique_names});', kt, count=1)
+    KERNEL_TEST.write_text(kt, encoding='utf-8')
+
+    print('module bytes:', module_bytes)
+    print('module sha256:', module_sha)
+    print('kernel bytes:', kernel_bytes)
+    print('kernel sha256:', kernel_sha)
+    print('kernel lines:', kernel_lines)
+    print('kernel named functions:', len(names), 'unique:', unique_names)
+
+
+if __name__ == '__main__':
+    main()
