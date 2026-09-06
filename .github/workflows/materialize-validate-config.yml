@@ -1,0 +1,39 @@
+name: Materialize validateConfig extraction
+
+on:
+  push:
+    branches:
+      - refactor/extract-validate-config-final3
+    paths:
+      - tools/materialize_validate_config.py
+      - .github/workflows/materialize-validate-config.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install --no-audit --no-fund
+      - name: Materialize exact extraction and validate
+        run: python3 tools/materialize_validate_config.py
+      - name: Commit generated production and contracts
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html src/config/config-validation.js tests/main-kernel-contract.test.js tests/validate-config-contract.test.js
+          git diff --cached --check
+          git commit -m 'refactor: extract validateConfig module'
+          git push
