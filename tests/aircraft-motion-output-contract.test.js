@@ -22,6 +22,10 @@ function loadModule() {
   return sandbox.window.FlightFlowAircraftMotionController;
 }
 
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function baseDeps(overrides = {}) {
   const state = {
     index: 0,
@@ -54,7 +58,7 @@ test('radar tag, follow/camera and real-map adapters remain mandatory motion out
     deps[name] = null;
     assert.throws(
       () => api.create(deps),
-      error => error instanceof TypeError && error.message === `${name} deve ser função.`,
+      error => error && error.name === 'TypeError' && error.message === `${name} deve ser função.`,
       `${name} deve permanecer uma dependência explícita do motor`,
     );
   }
@@ -105,7 +109,7 @@ test('all output adapters observe the state already committed for the current fr
   controller.applyMotionFrame(.75, true);
 
   assert.equal(deps.state.renderedProgress, .75);
-  assert.deepEqual(deps.state.lastPlane, { x: 250, y: 175 });
+  assert.deepEqual(plain(deps.state.lastPlane), { x: 250, y: 175 });
   assert.equal(deps.state.renderedPlane.x, 250);
   assert.equal(deps.state.renderedPlane.y, 175);
   assert.equal(deps.state.renderedPlane.progress, .75);
@@ -114,7 +118,7 @@ test('all output adapters observe the state already committed for the current fr
   for (const observation of observations) {
     assert.equal(observation.renderedProgress, .75, `${observation.kind} deve observar o progresso já atualizado`);
     assert.strictEqual(observation.renderedPlane, deps.state.renderedPlane, `${observation.kind} deve observar o frame atual`);
-    assert.deepEqual(observation.lastPlane, { x: 250, y: 175 }, `${observation.kind} deve observar lastPlane atual`);
+    assert.deepEqual(plain(observation.lastPlane), { x: 250, y: 175 }, `${observation.kind} deve observar lastPlane atual`);
   }
   assert.strictEqual(observations[0].payload, point);
   assert.strictEqual(observations[1].payload, point);
