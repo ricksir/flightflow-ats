@@ -138,8 +138,8 @@ function createHarness(options = {}) {
 
 test('goTo mantém o bloco de planejamento por fixos antes de qualquer extração', () => {
   for (const token of [
-    'api.transitionPlanForEvents(state.index,nextIndex)',
-    'api.transitionDurations(plan,state.speed,state.playing)',
+    'api.transitionPlanForEvents(state.index, nextIndex)',
+    'api.transitionDurations(plan, state.speed, state.playing)',
     "mode:'waypoints'",
     'steps:waypointPlan.steps',
     'stepIndex:0',
