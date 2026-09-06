@@ -4,6 +4,7 @@ import re
 
 INDEX = Path('index.html')
 KERNEL_TEST = Path('tests/main-kernel-contract.test.js')
+MOTION_CONTRACT = Path('tests/aircraft-motion-contract.test.js')
 MODULE = Path('src/map/motion-transition-planner.js')
 
 
@@ -195,6 +196,43 @@ kernel = re.sub(r"const EXPECTED_SHA256 = '[0-9a-f]{64}';", f"const EXPECTED_SHA
 kernel = re.sub(r'const EXPECTED_LINES = \d+;', f'const EXPECTED_LINES = {line_count};', kernel, count=1)
 KERNEL_TEST.write_text(kernel, encoding='utf-8')
 
+# Migrate the stale architecture guard: planning moved out of goTo into the planner;
+# the aircraft motion controller remains execution-only.
+motion_contract = MOTION_CONTRACT.read_text(encoding='utf-8')
+old_test = '''test('goTo continua responsável por montar a transição por fixos; motor apenas a executa', () => {
+  const source = functionSource('goTo');
+  assert.ok(source.includes("mode:'waypoints'"));
+  assert.ok(source.includes('transitionPlanForEvents'));
+  assert.ok(source.includes('transitionDurations'));
+  assert.ok(source.includes('state.motion.ffrpTransition'));
+  const motionLoop = functionSource('startMotionLoop');
+  assert.equal(motionLoop.includes('transitionPlanForEvents'), false);
+  assert.equal(motionLoop.includes('transitionDurations'), false);
+});'''
+new_test = '''test('goTo delega o planejamento; planner monta a transição e motor apenas a executa', () => {
+  const source = functionSource('goTo');
+  assert.ok(source.includes('planMotionTransition(nextIndex)'));
+  assert.equal(source.includes("mode:'waypoints'"), false);
+  assert.equal(source.includes('transitionPlanForEvents'), false);
+  assert.equal(source.includes('transitionDurations'), false);
+  assert.equal(source.includes('state.motion.ffrpTransition'), false);
+
+  const plannerSource = fs.readFileSync(path.join(ROOT, 'src', 'map', 'motion-transition-planner.js'), 'utf8');
+  assert.ok(plannerSource.includes("mode:'waypoints'"));
+  assert.ok(plannerSource.includes('transitionPlanForEvents'));
+  assert.ok(plannerSource.includes('transitionDurations'));
+  assert.ok(plannerSource.includes('state.motion.ffrpTransition'));
+
+  const motionLoop = functionSource('startMotionLoop');
+  assert.equal(motionLoop.includes('transitionPlanForEvents'), false);
+  assert.equal(motionLoop.includes('transitionDurations'), false);
+});'''
+if motion_contract.count(old_test) != 1:
+    raise SystemExit('stale aircraft-motion architecture contract not found exactly once')
+motion_contract = motion_contract.replace(old_test, new_test, 1)
+MOTION_CONTRACT.write_text(motion_contract, encoding='utf-8')
+
 print('MotionTransitionPlanner extraction applied')
 print(f'goTo before={len(old_go.encode("utf-8"))} bytes after={len(new_go.encode("utf-8"))} bytes')
 print(f'kernel bytes={byte_count} lines={line_count} sha256={source_sha}')
+print('aircraft-motion architecture guard migrated')
