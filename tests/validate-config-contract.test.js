@@ -8,6 +8,10 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'config', 'config-validation.js');
+const REFERENCE = '<script id="flightflow-config-validation" src="src/config/config-validation.js"></script>';
+const MODULE_BYTES = 1574;
+const MODULE_SHA256 = 'cbf56ceab9d1e3a76ab152d2d50dca5a1444f7b866e61f1c7d9fe9ec5b12e08b';
 const EXPECTED_BYTES = 1259;
 const EXPECTED_LINES = 10;
 const EXPECTED_SHA256 = '296244487d56d1852f29fca12881857b6c84f8615c22c7f8893d56e37441162e';
@@ -72,8 +76,8 @@ function functionSource(container, name) {
 }
 
 function loadValidateConfig() {
-  const source = functionSource(kernelSource(), 'validateConfig');
-  return Function(`${source}\nreturn validateConfig;`)();
+  delete require.cache[require.resolve(MODULE)];
+  return require(MODULE).validateConfig;
 }
 
 function throwsMessage(fn, pattern) {
@@ -81,16 +85,37 @@ function throwsMessage(fn, pattern) {
 }
 
 test('validateConfig mantém identidade exata antes da extração', () => {
-  const source = functionSource(kernelSource(), 'validateConfig');
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'validateConfig');
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(source.split(/\r?\n/).length, EXPECTED_LINES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+  assert.equal(Buffer.byteLength(moduleSource, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(moduleSource).digest('hex'), MODULE_SHA256);
+  const api = require(MODULE);
+  assert.equal(Object.isFrozen(api), true);
+  assert.deepEqual(Object.keys(api), ['validateConfig']);
+});
+
+
+
+test('index carrega validação externa antes do núcleo e remove declaração inline', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  assert.equal(html.split(REFERENCE).length - 1, 1);
+  const anchor = html.indexOf('window.__FlightFlowFirBridge = Object.freeze({');
+  const mainScript = html.lastIndexOf('<script', anchor);
+  assert.ok(html.indexOf(REFERENCE) < mainScript);
+  const kernel = kernelSource();
+  assert.ok(kernel.includes('const ConfigValidation = window.FlightFlowConfigValidation;'));
+  assert.ok(kernel.includes("if (!ConfigValidation) throw new Error('FlightFlowConfigValidation não foi carregado.');"));
+  assert.ok(kernel.includes('const { validateConfig } = ConfigValidation;'));
+  assert.doesNotMatch(kernel, /function\s+validateConfig\s*\(/);
 });
 
 test('validateConfig mantém fronteira pura e exatamente um consumidor', () => {
   const kernel = kernelSource();
-  const source = functionSource(kernel, 'validateConfig');
-  assert.equal([...kernel.matchAll(/(?<![\w$.])validateConfig\s*\(/g)].length - 1, 1);
+  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'validateConfig');
+  assert.equal([...kernel.matchAll(/(?<![\w$.])validateConfig\s*\(/g)].length, 1);
   assert.match(kernel, /validateConfig\(input\);\s*state\.config = mergeConfig\(input\);/);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',

@@ -5491,6 +5491,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-timeline-selection-controller" src="src/timeline/timeline-selection-controller.js"></script>
 <script id="flightflow-control-state-controller" src="src/timeline/control-state-controller.js"></script>
 <script id="flightflow-timeline-builder-controller" src="src/timeline/timeline-builder-controller.js"></script>
+<script id="flightflow-config-validation" src="src/config/config-validation.js"></script>
 <script>
 
 (function () {
@@ -5498,6 +5499,9 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
   const Parser = window.FlightParser;
   if (!Parser) throw new Error('FlightParser não foi carregado.');
+  const ConfigValidation = window.FlightFlowConfigValidation;
+  if (!ConfigValidation) throw new Error('FlightFlowConfigValidation não foi carregado.');
+  const { validateConfig } = ConfigValidation;
 
   const CoreUtils = window.FlightFlowCoreUtils;
   if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');
@@ -10450,16 +10454,7 @@ Destinatário(s): ${context.recipients}`;
 
   function syncAdvancedConfig() { if (els.advancedConfig) els.advancedConfig.value = JSON.stringify(state.config, null, 2); }
 
-  function validateConfig(config) {
-    if (!config || typeof config !== 'object') throw new Error('o conteúdo deve ser um objeto JSON.');
-    if (config.theme !== undefined && !['dark','light'].includes(config.theme)) throw new Error("theme deve ser 'dark' ou 'light'.");
-    if (config.fontScale !== undefined && (Number(config.fontScale) < .9 || Number(config.fontScale) > 1.6)) throw new Error('fontScale deve ficar entre 0.9 e 1.6.');
-    if (config.visibleFields && !Array.isArray(config.visibleFields)) throw new Error('visibleFields deve ser uma lista.');
-    if (config.addressPatterns && !Array.isArray(config.addressPatterns)) throw new Error('addressPatterns deve ser uma lista.');
-    if (config.baseIntervalMs !== undefined && Number(config.baseIntervalMs) < 300) throw new Error('baseIntervalMs deve ser igual ou superior a 300.');
-    if (config.fpvShowFromProgress !== undefined && (Number(config.fpvShowFromProgress) < 0 || Number(config.fpvShowFromProgress) > 1)) throw new Error('fpvShowFromProgress deve ficar entre 0 e 1.');
-    if (config.stripShowFromProgress !== undefined && (Number(config.stripShowFromProgress) < 0 || Number(config.stripShowFromProgress) > 1)) throw new Error('stripShowFromProgress deve ficar entre 0 e 1.');
-  }
+
 
   function loadConfig() {
     try {
