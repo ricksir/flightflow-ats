@@ -188,7 +188,7 @@ jobs:
           }
 
           function sha256'''
-          motion_test, count = function_pattern.subn(function_replacement, motion_test, count=1)
+          motion_test, count = function_pattern.subn(lambda _match: function_replacement, motion_test, count=1)
           assert count == 1, 'functionSource do contrato de movimento não encontrado'
           motion_test += r'''
 
