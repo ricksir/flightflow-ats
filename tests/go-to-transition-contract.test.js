@@ -9,10 +9,15 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
 function extractNamedFunction(source, name) {
-  const match = new RegExp(`^\\s*function\\s+${name}\\s*\\(`, 'm').exec(source);
+  const match = new RegExp(`^[ \\t]*function[ \\t]+${name}[ \\t]*\\(`, 'm').exec(source);
   assert.ok(match, `${name} deve continuar inline neste corte`);
   const start = match.index;
-  const brace = source.indexOf('{', match.index + match[0].length);
+  const openParen = source.indexOf('(', match.index);
+  const closeParen = source.indexOf(')', openParen + 1);
+  assert.ok(openParen >= 0 && closeParen > openParen, `${name} deve manter assinatura válida`);
+  const brace = source.indexOf('{', closeParen + 1);
+  assert.ok(brace > closeParen, `${name} deve manter corpo delimitado`);
+
   let depth = 0;
   let quote = null;
   let escaped = false;
@@ -133,8 +138,8 @@ function createHarness(options = {}) {
 
 test('goTo mantém o bloco de planejamento por fixos antes de qualquer extração', () => {
   for (const token of [
-    "api.transitionPlanForEvents(state.index, nextIndex)",
-    "api.transitionDurations(plan, state.speed, state.playing)",
+    'api.transitionPlanForEvents(state.index,nextIndex)',
+    'api.transitionDurations(plan,state.speed,state.playing)',
     "mode:'waypoints'",
     'steps:waypointPlan.steps',
     'stepIndex:0',
