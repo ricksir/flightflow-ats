@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 const EXPECTED_FIXES = ['PADIL', 'IRISO', 'LIBEC', 'EGDOD', 'IBGAM', 'PMS', 'ILVES', 'MASVA'];
 
-function installCriticalFixtureInBrowser() {
+async function runCriticalSpatialRegression(expectedFixes) {
   const api = window.FlightFlowRouteProcessedV7412;
   const Motion = window.FlightFlowAircraftMotionController;
   if (!api) throw new Error('FlightFlowRouteProcessedV7412 não carregado');
@@ -184,50 +184,46 @@ function installCriticalFixtureInBrowser() {
     clamp,
   });
 
-  return { controller, motionState, plan, steps, expectedByIdent, planeGroup, svg };
+  const crossed = [];
+  const onCrossed = event => {
+    const ident = event.detail?.ident || '';
+    if (!expectedFixes.includes(ident)) return;
+    const expected = expectedByIdent[ident];
+    const transform = planeGroup.getAttribute('transform') || '';
+    const match = transform.match(/translate\(([-\d.]+) ([-\d.]+)\)/);
+    crossed.push({
+      ident,
+      progress: event.detail.progress,
+      eventIndex: event.detail.eventIndex,
+      rendered: { x: motionState.renderedPlane.x, y: motionState.renderedPlane.y },
+      expected: { x: expected.x, y: expected.y },
+      transform: match ? { x: Number(match[1]), y: Number(match[2]) } : null,
+    });
+  };
+  window.addEventListener('flightflow:route-fix-crossed', onCrossed);
+  controller.startMotionLoop();
+
+  const deadline = performance.now() + 8_000;
+  while (crossed.length < expectedFixes.length && performance.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+  if (motionState.motion.raf) cancelAnimationFrame(motionState.motion.raf);
+  window.removeEventListener('flightflow:route-fix-crossed', onCrossed);
+  svg.remove();
+
+  return {
+    crossed,
+    planFixes: plan.checkpoints.map(cp => cp.ident),
+    fromProgress: plan.fromProgress,
+    toProgress: plan.toProgress,
+  };
 }
 
 test('78 → 79 renderiza a aeronave exatamente em PADIL..MASVA, sem pular fixos', async ({ page }) => {
   await page.goto('/index.html', { waitUntil: 'load' });
   await expect.poll(() => page.evaluate(() => Boolean(window.FlightFlowRouteProcessedV7412 && window.FlightFlowAircraftMotionController))).toBe(true);
 
-  const result = await page.evaluate(async ({ expectedFixes }) => {
-    const { controller, motionState, plan, expectedByIdent, planeGroup, svg } = installCriticalFixtureInBrowser();
-    const crossed = [];
-
-    const onCrossed = event => {
-      const ident = event.detail?.ident || '';
-      if (!expectedFixes.includes(ident)) return;
-      const expected = expectedByIdent[ident];
-      const transform = planeGroup.getAttribute('transform') || '';
-      const match = transform.match(/translate\(([-\d.]+) ([-\d.]+)\)/);
-      crossed.push({
-        ident,
-        progress: event.detail.progress,
-        eventIndex: event.detail.eventIndex,
-        rendered: { x: motionState.renderedPlane.x, y: motionState.renderedPlane.y },
-        expected: { x: expected.x, y: expected.y },
-        transform: match ? { x: Number(match[1]), y: Number(match[2]) } : null,
-      });
-    };
-    window.addEventListener('flightflow:route-fix-crossed', onCrossed);
-    controller.startMotionLoop();
-
-    const deadline = performance.now() + 8_000;
-    while (crossed.length < expectedFixes.length && performance.now() < deadline) {
-      await new Promise(resolve => setTimeout(resolve, 25));
-    }
-    if (motionState.motion.raf) cancelAnimationFrame(motionState.motion.raf);
-    window.removeEventListener('flightflow:route-fix-crossed', onCrossed);
-    svg.remove();
-
-    return {
-      crossed,
-      planFixes: plan.checkpoints.map(cp => cp.ident),
-      fromProgress: plan.fromProgress,
-      toProgress: plan.toProgress,
-    };
-  }, { expectedFixes: EXPECTED_FIXES });
+  const result = await page.evaluate(runCriticalSpatialRegression, EXPECTED_FIXES);
 
   expect(result.planFixes).toEqual(EXPECTED_FIXES);
   expect(result.crossed.map(item => item.ident)).toEqual(EXPECTED_FIXES);
