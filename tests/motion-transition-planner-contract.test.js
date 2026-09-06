@@ -4,18 +4,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const MODULE = path.join(ROOT, 'src', 'map', 'motion-transition-planner.js');
 const SOURCE = fs.readFileSync(MODULE, 'utf8');
 
 function loadApi() {
-  const sandbox = {};
-  sandbox.window = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(SOURCE, sandbox, { filename: MODULE });
-  return sandbox.FlightFlowMotionTransitionPlanner;
+  const windowObject = {};
+  return new Function('window', `${SOURCE}\nreturn window.FlightFlowMotionTransitionPlanner;`)(windowObject);
 }
 
 function baseState(overrides = {}) {
