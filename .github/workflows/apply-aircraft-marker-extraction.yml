@@ -1,0 +1,168 @@
+name: Apply aircraft marker extraction
+
+on:
+  push:
+    branches: [refactor/extract-aircraft-marker-controller]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Move frozen marker functions out of the kernel
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+
+          index_path = Path('index.html')
+          index = index_path.read_text(encoding='utf-8')
+
+          expected = {
+              'updateLeafletAircraftMarker': (658, 8, 'd1530498f06199260f9fc8ef6357760751b84b102b8e59f81b0b73377e8ecc92'),
+              'googlePlaneSymbol': (646, 1, '8731f82b12e9dea69f8d67d7c2545705500598fffae3a7a8508cc9309bafede0'),
+              'updateGoogleAircraftMarker': (592, 5, '8c8bdc76f4eca1f7e4dd9888d697ee12d556b7873004c3cae172d23c90682e6d'),
+          }
+
+          def extract_function(source, name):
+              marker = f'function {name}('
+              marker_index = source.index(marker)
+              start = source.rfind('\n', 0, marker_index) + 1
+              open_index = source.index('{', marker_index)
+              depth = 0
+              for pos in range(open_index, len(source)):
+                  char = source[pos]
+                  if char == '{':
+                      depth += 1
+                  elif char == '}':
+                      depth -= 1
+                      if depth == 0:
+                          return start, pos + 1, source[start:pos + 1]
+              raise RuntimeError(f'unbalanced function {name}')
+
+          found = {}
+          for name, (bytes_expected, lines_expected, sha_expected) in expected.items():
+              start, end, source = extract_function(index, name)
+              digest = hashlib.sha256(source.encode()).hexdigest()
+              assert len(source.encode()) == bytes_expected, (name, len(source.encode()), digest)
+              assert len(source.splitlines()) == lines_expected, (name, len(source.splitlines()), digest)
+              assert digest == sha_expected, (name, digest)
+              found[name] = (start, end, source)
+
+          alias = """  const AircraftMarkerController = window.FlightFlowAircraftMarkerController;
+          if (!AircraftMarkerController) throw new Error('FlightFlowAircraftMarkerController não foi carregado.');
+          const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({
+            realMapState,
+            aircraftPixelSizeForZoom,
+            planeIconHtml,
+            clamp,
+            addGoogleOverlay,
+          });"""
+
+          for name in ('updateGoogleAircraftMarker', 'googlePlaneSymbol'):
+              start, end, _ = found[name]
+              index = index[:start] + index[end:]
+
+          start, end, _ = found['updateLeafletAircraftMarker']
+          index = index[:start] + alias + index[end:]
+
+          module_tag = '<script src="src/map/aircraft-marker-controller.js"></script>'
+          if module_tag not in index:
+              pattern = re.compile(r'(<script[^>]+src=["\']src/map/aircraft-visual-utils\.js["\'][^>]*></script>)')
+              index, count = pattern.subn(r'\1\n' + module_tag, index, count=1)
+              assert count == 1, 'aircraft visual module tag not found'
+
+          index_path.write_text(index, encoding='utf-8')
+
+          test_path = Path('tests/aircraft-marker-contract.test.js')
+          test_text = test_path.read_text(encoding='utf-8')
+          anchor = "const indexHtml = fs.readFileSync('index.html', 'utf8');"
+          replacement = anchor + "\nconst markerModule = fs.readFileSync('src/map/aircraft-marker-controller.js', 'utf8');"
+          assert anchor in test_text
+          test_text = test_text.replace(anchor, replacement, 1)
+          test_text = test_text.replace('indexHtml.indexOf(marker)', 'markerModule.indexOf(marker)')
+          test_text = test_text.replace("indexHtml.lastIndexOf('\\n', markerIndex)", "markerModule.lastIndexOf('\\n', markerIndex)")
+          test_text = test_text.replace("indexHtml.indexOf('{', markerIndex)", "markerModule.indexOf('{', markerIndex)")
+          test_text = test_text.replace('i < indexHtml.length', 'i < markerModule.length')
+          test_text = test_text.replace('const char = indexHtml[i]', 'const char = markerModule[i]')
+          test_text = test_text.replace('return indexHtml.slice(start, i + 1)', 'return markerModule.slice(start, i + 1)')
+          test_text = test_text.replace('source identity is frozen before extraction', 'preserves frozen source identity after extraction')
+
+          test_text += r'''
+
+          test('aircraft marker controller module is loaded before the kernel and removes inline declarations', () => {
+            const tag = '<script src="src/map/aircraft-marker-controller.js"></script>';
+            const tagIndex = indexHtml.indexOf(tag);
+            const kernelIndex = indexHtml.indexOf('const Parser = window.FlightParser;');
+            assert.notEqual(tagIndex, -1);
+            assert.notEqual(kernelIndex, -1);
+            assert.ok(tagIndex < kernelIndex, 'marker controller must load before the main kernel');
+            for (const name of Object.keys(frozenSources)) {
+              assert.equal(indexHtml.includes(`function ${name}(`), false, `${name} must no longer be declared inline`);
+            }
+            assert.match(indexHtml, /FlightFlowAircraftMarkerController/);
+            assert.match(indexHtml, /AircraftMarkerController\.create\(\{/);
+          });
+
+          test('aircraft marker controller exposes only the frozen marker operations', () => {
+            const context = { window: {}, console };
+            vm.createContext(context);
+            vm.runInContext(markerModule, context);
+            const api = context.window.FlightFlowAircraftMarkerController;
+            assert.ok(api);
+            assert.deepEqual(Object.keys(api), ['create']);
+            const controller = api.create({
+              realMapState: { engine: 'leaflet', map: null, layers: { aircraft: null } },
+              aircraftPixelSizeForZoom: () => 24,
+              planeIconHtml: () => 'plane',
+              clamp: (value, min, max) => Math.min(max, Math.max(min, value)),
+              addGoogleOverlay: () => {},
+            });
+            assert.deepEqual(Array.from(Object.keys(controller)), [
+              'updateLeafletAircraftMarker',
+              'googlePlaneSymbol',
+              'updateGoogleAircraftMarker',
+            ]);
+            assert.equal(Object.isFrozen(controller), true);
+          });
+
+          test('aircraft marker controller stays outside route, timeline and movement orchestration', () => {
+            for (const forbidden of ['goTo(', 'renderCurrent(', 'updateRealMapAircraft(', 'pointAlongPolyline(', 'state.motion']) {
+              assert.equal(markerModule.includes(forbidden), false, `module must not absorb ${forbidden}`);
+            }
+          });
+          '''
+          test_path.write_text(test_text, encoding='utf-8')
+          PY
+
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Full quality gate
+        run: npm run check
+
+      - name: Commit extraction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-aircraft-marker-extraction.yml
+          git add index.html tests/aircraft-marker-contract.test.js src/map/aircraft-marker-controller.js
+          git commit -m "refactor: extract aircraft marker controller"
+          git push origin HEAD:refactor/extract-aircraft-marker-controller
