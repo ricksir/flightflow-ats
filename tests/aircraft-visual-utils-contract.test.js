@@ -167,8 +167,11 @@ test('index carrega o módulo antes do IIFE e kernel usa alias explícito sem re
   assert.ok(kernel.includes('const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });'));
   assert.equal(kernel.includes('function aircraftPixelSizeForZoom('), false);
   assert.equal(kernel.includes('function planeIconHtml('), false);
-  assert.equal([...kernel.matchAll(/(?<![\w$.])aircraftPixelSizeForZoom\s*\(/g)].length, 1);
-  assert.equal([...kernel.matchAll(/(?<![\w$.])planeIconHtml\s*\(/g)].length, 1);
+  assert.equal([...kernel.matchAll(/(?<![\w$.])aircraftPixelSizeForZoom\s*\(/g)].length, 0);
+  assert.equal([...kernel.matchAll(/(?<![\w$.])planeIconHtml\s*\(/g)].length, 0);
+  assert.ok(kernel.includes('const AircraftMarkerController = window.FlightFlowAircraftMarkerController;'));
+  assert.ok(kernel.includes('const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({'));
+  assert.ok(kernel.includes('    aircraftPixelSizeForZoom,\n    planeIconHtml,\n    clamp,\n    addGoogleOverlay,'));
 });
 
 test('fronteira visual permanece sem estado, DOM, storage, rota ou movimento', () => {

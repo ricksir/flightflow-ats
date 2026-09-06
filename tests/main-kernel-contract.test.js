@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1136965;
-const EXPECTED_SHA256 = '34df4995e44017ca764f1175184fdda7a273fff6ecd99a16e291a05fb9750f85';
-const EXPECTED_LINES = 5369;
+const EXPECTED_BYTES = 1135483;
+const EXPECTED_SHA256 = '0390c0c829f500f57919d3fa9172fc72f7670c9afa6ca2d0fd58f7a92fe3ed5d';
+const EXPECTED_LINES = 5366;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -32,6 +32,7 @@ const EXTRACTED_TIMELINE_BUILDER = ['buildTimeline'];
 const EXTRACTED_SOURCE_CLASS = ['getSourceClass'];
 const EXTRACTED_CONFIG_VALIDATION = ['validateConfig'];
 const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconHtml'];
+const EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -65,6 +66,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const AircraftVisualUtils = window.FlightFlowAircraftVisualUtils;',
     "if (!AircraftVisualUtils) throw new Error('FlightFlowAircraftVisualUtils não foi carregado.');",
     'const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });',
+    'const AircraftMarkerController = window.FlightFlowAircraftMarkerController;',
+    "if (!AircraftMarkerController) throw new Error('FlightFlowAircraftMarkerController não foi carregado.');",
+    'const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
     'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;',
@@ -152,8 +156,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 333);
-  assert.equal(counts.size, 333);
+  assert.equal(names.length, 330);
+  assert.equal(counts.size, 330);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
@@ -172,6 +176,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_SOURCE_CLASS,
     ...EXTRACTED_CONFIG_VALIDATION,
     ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,
+    ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
