@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1129241;
-const EXPECTED_SHA256 = 'eda36146cf0abc681358e083f175b3b8e2031396693139f65ec86aa49c270361';
-const EXPECTED_LINES = 5271;
+const EXPECTED_BYTES = 1127998;
+const EXPECTED_SHA256 = '6d3969d2c9687d1249400cf47a6993c1a34d1d4d61dbf1be396e45b0097b7089';
+const EXPECTED_LINES = 5253;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -34,6 +34,7 @@ const EXTRACTED_CONFIG_VALIDATION = ['validateConfig'];
 const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconHtml'];
 const EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker'];
 const EXTRACTED_AIRCRAFT_MOTION_CONTROLLER = ['resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'];
+const EXTRACTED_MOTION_TRANSITION_PLANNER = ['planMotionTransition'];
 const EXTRACTED_RADAR_TAG_CONTROLLER = ['updateRadarTagPosition'];
 const EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER = ['maybeFollowAircraft'];
 const EXTRACTED_REAL_MAP_AIRCRAFT_CONTROLLER = ['updateRealMapAircraft'];
@@ -85,6 +86,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const AircraftMotionController = window.FlightFlowAircraftMotionController;',
     "if (!AircraftMotionController) throw new Error('FlightFlowAircraftMotionController não foi carregado.');",
     'const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, startMotionLoop } = AircraftMotionController.create({',
+    'const MotionTransitionPlanner = window.FlightFlowMotionTransitionPlanner;',
+    "if (!MotionTransitionPlanner) throw new Error('FlightFlowMotionTransitionPlanner não foi carregado.');",
+    'const { planMotionTransition } = MotionTransitionPlanner.create({',
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
     'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;',
@@ -198,6 +202,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER,
     ...EXTRACTED_REAL_MAP_AIRCRAFT_CONTROLLER,
     ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,
+    ...EXTRACTED_MOTION_TRANSITION_PLANNER,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }

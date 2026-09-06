@@ -5497,6 +5497,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script src="src/map/radar-tag-controller.js"></script>
 <script src="src/map/aircraft-follow-controller.js"></script>
 <script src="src/map/real-map-aircraft-controller.js"></script>
+<script src="src/map/motion-transition-planner.js"></script>
 <script src="src/map/aircraft-motion-controller.js"></script>
 <script>
 
@@ -8824,39 +8825,21 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     return state.parsed && state.parsed.events[state.index] ? state.parsed.events[state.index] : null;
   }
 
+  const MotionTransitionPlanner = window.FlightFlowMotionTransitionPlanner;
+  if (!MotionTransitionPlanner) throw new Error('FlightFlowMotionTransitionPlanner não foi carregado.');
+  const { planMotionTransition } = MotionTransitionPlanner.create({
+    state,
+    getRouteProcessedApi: () => window.FlightFlowRouteProcessedV7412,
+    now: () => performance.now(),
+    warn: (...args) => console.warn(...args),
+  });
   function goTo(index, options = {}) {
     if (!state.parsed) return;
     const max = state.parsed.events.length - 1;
     const nextIndex = Math.max(0, Math.min(max, Number(index) || 0));
     // v7.4.12: transição orientada pelos fixos/ETIM. Se o intervalo entre dois eventos
     // cruza vários pontos (ex.: 78 → 79), cada ponto vira uma etapa obrigatória da animação.
-    if (state.motion) {
-      const route = state.geo && state.geo.eventRoutes && state.geo.eventRoutes[nextIndex];
-      const target = Number(route && route.target);
-      const current = Number.isFinite(Number(state.motion.currentProgress)) ? Number(state.motion.currentProgress) : target;
-      if (Number.isFinite(target) && Number.isFinite(current) && state.motion.initialized) {
-        let waypointPlan = null;
-        try {
-          const api = window.FlightFlowRouteProcessedV7412;
-          const plan = api && typeof api.transitionPlanForEvents === 'function' ? api.transitionPlanForEvents(state.index, nextIndex) : null;
-          const steps = plan && typeof api.transitionDurations === 'function' ? api.transitionDurations(plan, state.speed, state.playing) : [];
-          if (plan && Array.isArray(steps) && steps.length) waypointPlan = {plan,steps};
-        } catch (err) { console.warn('[FlightFlow] plano de transição por fixos:', err); }
-        if (waypointPlan) {
-          state.motion.ffrpTransition = {
-            mode:'waypoints', from:current, to:target,
-            steps:waypointPlan.steps, stepIndex:0, stepFrom:current,
-            stepStart:performance.now(), plan:waypointPlan.plan
-          };
-        } else {
-          const delta = Math.abs(target - current);
-          const speedFactor = state.playing ? Math.max(.75, Math.sqrt(Math.max(.25, Number(state.speed) || 1))) : 1;
-          const duration = Math.max(650, Math.min(1450, 700 + delta * 2200)) / speedFactor;
-          state.motion.ffrpTransition = { from: current, to: target, start: performance.now(), duration };
-        }
-      } else state.motion.ffrpTransition = null;
-      state.motion.velocity = 0;
-    }
+    if (state.motion) planMotionTransition(nextIndex);
     state.index = nextIndex;
     renderCurrent(options);
   }
