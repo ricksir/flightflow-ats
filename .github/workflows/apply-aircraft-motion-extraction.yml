@@ -1,0 +1,321 @@
+name: Apply aircraft motion extraction
+
+on:
+  push:
+    branches: [refactor/extract-aircraft-motion-controller]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Move frozen motion functions out of the kernel
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+
+          INDEX = Path('index.html')
+          MODULE = Path('src/map/aircraft-motion-controller.js')
+          MOTION_TEST = Path('tests/aircraft-motion-contract.test.js')
+          MAIN_TEST = Path('tests/main-kernel-contract.test.js')
+
+          expected = {
+              'resetMotionController': (497, 15, '62e4cc8842cddeade958648cf9c512aedc7a8255cc9b9911c24e23758d565b54'),
+              'motionRoute': (273, 5, '54e89c6440959f7ba8aaf0b6b679ebe1491b43608c01275702241ec291d26297'),
+              'applyMotionFrame': (1590, 25, '79ac80d9e27df513f2c319caccf72fa578c9f401182435fef59ff53114fafdac'),
+              'snapMotionTo': (302, 9, 'e17236857c343cdb7ee183bb741cc72e432f476d46989c282a56062c24fb8857'),
+              'startMotionLoop': (3442, 55, '314642962044d602d68ceded1adae4a3846828a8a33ae19627287db00cbbcbf8'),
+          }
+
+          def extract_function(source, name):
+              marker = f'  function {name}('
+              start = source.index(marker)
+              i = source.index('(', start)
+              depth = 0
+              quote = None
+              escaped = False
+              while i < len(source):
+                  ch = source[i]
+                  if quote:
+                      if escaped: escaped = False
+                      elif ch == '\\': escaped = True
+                      elif ch == quote: quote = None
+                  else:
+                      if ch in "'\"`": quote = ch
+                      elif ch == '(': depth += 1
+                      elif ch == ')':
+                          depth -= 1
+                          if depth == 0: break
+                  i += 1
+              brace = i + 1
+              while source[brace].isspace(): brace += 1
+              assert source[brace] == '{', name
+              depth = 0
+              quote = None
+              escaped = False
+              i = brace
+              while i < len(source):
+                  ch = source[i]
+                  if quote:
+                      if escaped: escaped = False
+                      elif ch == '\\': escaped = True
+                      elif ch == quote: quote = None
+                  else:
+                      if ch in "'\"`": quote = ch
+                      elif ch == '{': depth += 1
+                      elif ch == '}':
+                          depth -= 1
+                          if depth == 0: return start, i + 1, source[start:i + 1]
+                  i += 1
+              raise RuntimeError(f'fim de {name} não encontrado')
+
+          index = INDEX.read_text(encoding='utf-8')
+          module = MODULE.read_text(encoding='utf-8')
+          found = {}
+          for name, (bytes_expected, lines_expected, sha_expected) in expected.items():
+              start, end, source = extract_function(index, name)
+              _, _, module_source = extract_function(module, name)
+              actual = (len(source.encode()), len(source.splitlines()), hashlib.sha256(source.encode()).hexdigest())
+              assert actual == (bytes_expected, lines_expected, sha_expected), (name, actual)
+              assert module_source == source, f'{name}: módulo deve preservar o corpo congelado byte a byte'
+              found[name] = (start, end, source)
+
+          alias = """  const AircraftMotionController = window.FlightFlowAircraftMotionController;
+          if (!AircraftMotionController) throw new Error('FlightFlowAircraftMotionController não foi carregado.');
+          const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, startMotionLoop } = AircraftMotionController.create({
+            state,
+            els,
+            pointAlongPolyline,
+            clamp01,
+            getCurrentMapSymbolScale,
+            smoothPath,
+            slicePolyline,
+            updateRadarTagPosition,
+            maybeFollowAircraft,
+            updateRealMapAircraft,
+            clamp,
+          });"""
+
+          for name, (start, end, _) in sorted(found.items(), key=lambda item: item[1][0], reverse=True):
+              replacement = alias if name == 'resetMotionController' else ''
+              index = index[:start] + replacement + index[end:]
+
+          marker_tag = '<script src="src/map/aircraft-marker-controller.js"></script>'
+          module_tag = '<script src="src/map/aircraft-motion-controller.js"></script>'
+          assert marker_tag in index, 'aircraft marker controller tag ausente'
+          assert module_tag not in index, 'motion controller não deve estar duplicado'
+          index = index.replace(marker_tag, marker_tag + '\n' + module_tag, 1)
+          INDEX.write_text(index, encoding='utf-8')
+
+          # O contrato do #71 passa a ler as cinco implementações do módulo extraído.
+          motion_test = MOTION_TEST.read_text(encoding='utf-8')
+          html_decl = "const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');"
+          assert html_decl in motion_test
+          motion_test = motion_test.replace(
+              html_decl,
+              html_decl + "\nconst MOTION_MODULE = fs.readFileSync(path.join(ROOT, 'src', 'map', 'aircraft-motion-controller.js'), 'utf8');",
+              1,
+          )
+          function_pattern = re.compile(r"function functionSource\(name\) \{[\s\S]*?\n\}\n\nfunction sha256")
+          function_replacement = r'''function sourceContainer(name) {
+            return Object.prototype.hasOwnProperty.call(EXPECTED, name) ? MOTION_MODULE : HTML;
+          }
+
+          function functionSource(name) {
+            const source = sourceContainer(name);
+            const marker = `  function ${name}(`;
+            const start = source.indexOf(marker);
+            assert.ok(start >= 0, `${name} deve existir na fronteira esperada`);
+            let i = source.indexOf('(', start);
+            let depth = 0;
+            let quote = null;
+            let escaped = false;
+            for (; i < source.length; i += 1) {
+              const ch = source[i];
+              if (quote) {
+                if (escaped) escaped = false;
+                else if (ch === '\\') escaped = true;
+                else if (ch === quote) quote = null;
+                continue;
+              }
+              if (ch === "'" || ch === '"' || ch === '`') { quote = ch; continue; }
+              if (ch === '(') depth += 1;
+              else if (ch === ')') {
+                depth -= 1;
+                if (depth === 0) break;
+              }
+            }
+            let brace = i + 1;
+            while (/\s/.test(source[brace])) brace += 1;
+            assert.equal(source[brace], '{', `${name} deve possuir corpo`);
+            depth = 0;
+            quote = null;
+            escaped = false;
+            for (i = brace; i < source.length; i += 1) {
+              const ch = source[i];
+              if (quote) {
+                if (escaped) escaped = false;
+                else if (ch === '\\') escaped = true;
+                else if (ch === quote) quote = null;
+                continue;
+              }
+              if (ch === "'" || ch === '"' || ch === '`') { quote = ch; continue; }
+              if (ch === '{') depth += 1;
+              else if (ch === '}') {
+                depth -= 1;
+                if (depth === 0) return source.slice(start, i + 1);
+              }
+            }
+            assert.fail(`fim de ${name} não encontrado`);
+          }
+
+          function sha256'''
+          motion_test, count = function_pattern.subn(function_replacement, motion_test, count=1)
+          assert count == 1, 'functionSource do contrato de movimento não encontrado'
+          motion_test += r'''
+
+          test('aircraft motion controller é carregado antes do kernel e remove as cinco declarações inline', () => {
+            const tag = '<script src="src/map/aircraft-motion-controller.js"></script>';
+            const tagIndex = HTML.indexOf(tag);
+            const kernelIndex = HTML.indexOf('const Parser = window.FlightParser;');
+            assert.notEqual(tagIndex, -1);
+            assert.notEqual(kernelIndex, -1);
+            assert.ok(tagIndex < kernelIndex, 'motion controller deve carregar antes do kernel');
+            for (const name of Object.keys(EXPECTED)) {
+              assert.equal(HTML.includes(`  function ${name}(`), false, `${name} não deve continuar inline`);
+            }
+            assert.ok(HTML.includes('const AircraftMotionController = window.FlightFlowAircraftMotionController;'));
+            assert.ok(HTML.includes('const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, startMotionLoop } = AircraftMotionController.create({'));
+          });
+
+          test('aircraft motion controller expõe somente as cinco operações congeladas', () => {
+            const context = { window: {} };
+            vm.createContext(context);
+            vm.runInContext(MOTION_MODULE, context, { filename: 'aircraft-motion-controller.js' });
+            const factory = context.window.FlightFlowAircraftMotionController;
+            assert.ok(factory);
+            assert.equal(Object.isFrozen(factory), true);
+            assert.deepEqual(Array.from(Object.keys(factory)), ['create']);
+            const noop = () => {};
+            const controller = factory.create({
+              state: { motion: {} },
+              els: {},
+              pointAlongPolyline: noop,
+              clamp01: value => value,
+              getCurrentMapSymbolScale: () => 1,
+              smoothPath: () => '',
+              slicePolyline: noop,
+              updateRadarTagPosition: noop,
+              maybeFollowAircraft: noop,
+              updateRealMapAircraft: noop,
+              clamp: value => value,
+            });
+            assert.equal(Object.isFrozen(controller), true);
+            assert.deepEqual(Array.from(Object.keys(controller)), [
+              'resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'
+            ]);
+          });
+
+          test('motion controller não absorve planejamento de navegação nem renderCurrent', () => {
+            assert.equal(MOTION_MODULE.includes('transitionPlanForEvents'), false);
+            assert.equal(MOTION_MODULE.includes('transitionDurations'), false);
+            assert.equal(MOTION_MODULE.includes('function goTo('), false);
+            assert.equal(MOTION_MODULE.includes('function renderCurrent('), false);
+            assert.ok(MOTION_MODULE.includes("new CustomEvent('flightflow:route-fix-crossed'"));
+          });
+          '''
+          MOTION_TEST.write_text(motion_test, encoding='utf-8')
+
+          # Rebaseline do kernel somente após provar que as cinco funções congeladas saíram.
+          anchor_text = 'window.__FlightFlowFirBridge = Object.freeze({'
+          anchor_index = index.index(anchor_text)
+          script_open = index.rfind('<script', 0, anchor_index)
+          body_start = index.index('>', script_open) + 1
+          body_end = index.index('</script>', anchor_index)
+          kernel = index[body_start:body_end].strip('\n') + '\n'
+          kernel_bytes = len(kernel.encode('utf-8'))
+          kernel_lines = len(kernel.splitlines())
+          kernel_sha = hashlib.sha256(kernel.encode('utf-8')).hexdigest()
+          kernel_names = re.findall(r'function\s+([A-Za-z_$][\w$]*)\s*\(', kernel)
+          assert len(kernel_names) == 325, len(kernel_names)
+          assert len(set(kernel_names)) == 325, 'kernel deve continuar sem nomes internos duplicados'
+          for name in expected:
+              assert name not in kernel_names, name
+          assert kernel_names.count('goTo') == 1
+          assert kernel_names.count('renderCurrent') == 1
+
+          main = MAIN_TEST.read_text(encoding='utf-8')
+          old_bytes = 'const EXPECTED_BYTES = 1135483;'
+          old_sha = "const EXPECTED_SHA256 = '0390c0c829f500f57919d3fa9172fc72f7670c9afa6ca2d0fd58f7a92fe3ed5d';"
+          old_lines = 'const EXPECTED_LINES = 5366;'
+          assert old_bytes in main and old_sha in main and old_lines in main, 'baseline anterior do kernel ausente'
+          main = main.replace(old_bytes, f'const EXPECTED_BYTES = {kernel_bytes};', 1)
+          main = main.replace(old_sha, f"const EXPECTED_SHA256 = '{kernel_sha}';", 1)
+          main = main.replace(old_lines, f'const EXPECTED_LINES = {kernel_lines};', 1)
+
+          marker_const = "const EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker'];"
+          motion_const = "const EXTRACTED_AIRCRAFT_MOTION_CONTROLLER = ['resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'];"
+          assert marker_const in main
+          main = main.replace(marker_const, marker_const + '\n' + motion_const, 1)
+
+          marker_dep = "    'const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',"
+          assert marker_dep in main
+          motion_deps = "\n".join([
+              "    'const AircraftMotionController = window.FlightFlowAircraftMotionController;',",
+              "    \"if (!AircraftMotionController) throw new Error('FlightFlowAircraftMotionController não foi carregado.');\",",
+              "    'const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, startMotionLoop } = AircraftMotionController.create({',",
+          ])
+          main = main.replace(marker_dep, marker_dep + '\n' + motion_deps, 1)
+
+          assert 'assert.equal(names.length, 330);' in main
+          assert 'assert.equal(counts.size, 330);' in main
+          main = main.replace('assert.equal(names.length, 330);', 'assert.equal(names.length, 325);', 1)
+          main = main.replace('assert.equal(counts.size, 330);', 'assert.equal(counts.size, 325);', 1)
+          spread = '    ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,\n'
+          assert spread in main
+          main = main.replace(spread, spread + '    ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,\n', 1)
+
+          route_event_assert = '  assert.ok(source.includes("new CustomEvent(\'flightflow:route-fix-crossed\'"));'
+          assert route_event_assert in main
+          route_event_replacement = "\n".join([
+              "  const motionSource = fs.readFileSync(path.join(ROOT, 'src', 'map', 'aircraft-motion-controller.js'), 'utf8');",
+              "  assert.ok(motionSource.includes(\"new CustomEvent('flightflow:route-fix-crossed'\"));",
+          ])
+          main = main.replace(route_event_assert, route_event_replacement, 1)
+          MAIN_TEST.write_text(main, encoding='utf-8')
+
+          print(f'New kernel baseline: bytes={kernel_bytes} lines={kernel_lines} sha256={kernel_sha} functions={len(kernel_names)}')
+          PY
+
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Full quality gate
+        run: npm run check
+
+      - name: Commit extraction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-aircraft-motion-extraction.yml
+          git add index.html src/map/aircraft-motion-controller.js tests/aircraft-motion-contract.test.js tests/main-kernel-contract.test.js
+          git commit -m "refactor: extract aircraft motion controller"
+          git push origin HEAD:refactor/extract-aircraft-motion-controller
