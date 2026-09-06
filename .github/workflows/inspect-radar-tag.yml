@@ -1,4 +1,4 @@
-name: Inspect radar tag boundary
+name: Apply radar tag extraction
 
 on:
   push:
@@ -6,70 +6,112 @@ on:
       - refactor/extract-radar-tag-controller
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect implementation and consumer contexts
+      - name: Apply deterministic extraction
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import hashlib
           import re
 
-          lines = Path('index.html').read_text(encoding='utf-8').splitlines()
-          text = '\n'.join(lines)
-          name = 'updateRadarTagPosition'
-          match = re.search(r'(?m)^\s*function\s+' + re.escape(name) + r'\s*\(', text)
-          if not match:
-              raise SystemExit(f'{name} not found')
-          start = match.start()
-          brace = text.find('{', match.end())
-          depth = 0
-          quote = None
-          escape = False
-          i = brace
-          while i < len(text):
-              ch = text[i]
-              if quote:
-                  if escape:
-                      escape = False
-                  elif ch == '\\':
-                      escape = True
-                  elif ch == quote:
-                      quote = None
-              else:
-                  if ch in "'\"`":
-                      quote = ch
-                  elif ch == '{':
-                      depth += 1
-                  elif ch == '}':
-                      depth -= 1
-                      if depth == 0:
-                          end = i + 1
-                          break
-              i += 1
-          function_line = text.count('\n', 0, start) + 1
-          function = text[start:end]
-          print(f'FUNCTION_LINE={function_line}')
-          print(f'FUNCTION_BYTES={len(function.encode())}')
-          print('---FUNCTION---')
-          print(function)
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
 
-          occurrences = [n for n, line in enumerate(lines, 1) if name in line]
-          print('---CONTEXTS---')
-          for n in occurrences:
-              print(f'### around line {n}')
-              lo = max(1, n - 8)
-              hi = min(len(lines), n + 8)
-              for k in range(lo, hi + 1):
-                  print(f'{k}: {lines[k-1]}')
+          marker_script = '<script src="src/map/aircraft-marker-controller.js"></script>\n<script src="src/map/aircraft-motion-controller.js"></script>'
+          replacement_scripts = '<script src="src/map/aircraft-marker-controller.js"></script>\n<script src="src/map/radar-tag-controller.js"></script>\n<script src="src/map/aircraft-motion-controller.js"></script>'
+          if html.count(marker_script) != 1:
+              raise SystemExit(f'unexpected aircraft script anchor count: {html.count(marker_script)}')
+          html = html.replace(marker_script, replacement_scripts, 1)
 
-          print('---ELS DECLARATIONS / CACHE---')
-          for n, line in enumerate(lines, 1):
-              if re.search(r'\b(const|let|var)\s+els\b|function\s+cacheElements\b', line):
-                  print(f'{n}: {line.strip()}')
+          els_marker = 'const els = {};\n'
+          radar_init = (
+              'const els = {};\n'
+              'const RadarTagController = window.FlightFlowRadarTagController;\n'
+              "if (!RadarTagController) throw new Error('FlightFlowRadarTagController não foi carregado.');\n"
+              'const { updateRadarTagPosition } = RadarTagController.create({ els });\n'
+          )
+          if html.count(els_marker) != 1:
+              raise SystemExit(f'unexpected els anchor count: {html.count(els_marker)}')
+          html = html.replace(els_marker, radar_init, 1)
+
+          old_function = '''  function updateRadarTagPosition(point) {
+            if (!els.radarTag || !point || els.radarTag.hidden) return;
+            const x = Number(point.x);
+            const y = Number(point.y);
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+            els.radarTag.style.left = `${Math.max(8, Math.min(92, (x / 1600) * 100))}%`;
+            els.radarTag.style.top = `${Math.max(8, Math.min(86, (y / 900) * 100))}%`;
+          }
+'''
+          if html.count(old_function) != 1:
+              raise SystemExit(f'unexpected radar implementation count: {html.count(old_function)}')
+          html = html.replace(old_function, '', 1)
+          index_path.write_text(html, encoding='utf-8')
+
+          contract_path = Path('tests/main-kernel-contract.test.js')
+          contract = contract_path.read_text(encoding='utf-8')
+
+          motion_decl = "const EXTRACTED_AIRCRAFT_MOTION_CONTROLLER = ['resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'];\n"
+          radar_decl = "const EXTRACTED_RADAR_TAG_CONTROLLER = ['updateRadarTagPosition'];\n"
+          if contract.count(motion_decl) != 1:
+              raise SystemExit('aircraft motion extracted declaration anchor changed')
+          contract = contract.replace(motion_decl, motion_decl + radar_decl, 1)
+
+          marker_dep = "    'const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',\n    'const AircraftMotionController = window.FlightFlowAircraftMotionController;',"
+          radar_dep = (
+              "    'const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',\n"
+              "    'const RadarTagController = window.FlightFlowRadarTagController;',\n"
+              "    \"if (!RadarTagController) throw new Error('FlightFlowRadarTagController não foi carregado.');\",\n"
+              "    'const { updateRadarTagPosition } = RadarTagController.create({ els });',\n"
+              "    'const AircraftMotionController = window.FlightFlowAircraftMotionController;',"
+          )
+          if contract.count(marker_dep) != 1:
+              raise SystemExit('aircraft marker dependency anchor changed')
+          contract = contract.replace(marker_dep, radar_dep, 1)
+
+          spread_anchor = '    ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,\n    ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,\n'
+          spread_replacement = '    ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,\n    ...EXTRACTED_RADAR_TAG_CONTROLLER,\n    ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,\n'
+          if contract.count(spread_anchor) != 1:
+              raise SystemExit('extracted spread anchor changed')
+          contract = contract.replace(spread_anchor, spread_replacement, 1)
+          contract = contract.replace('assert.equal(names.length, 325);', 'assert.equal(names.length, 324);', 1)
+          contract = contract.replace('assert.equal(counts.size, 325);', 'assert.equal(counts.size, 324);', 1)
+
+          anchor = 'window.__FlightFlowFirBridge = Object.freeze({'
+          anchor_index = html.index(anchor)
+          open_index = html.rfind('<script', 0, anchor_index)
+          body_start = html.index('>', open_index) + 1
+          close_index = html.index('</script>', anchor_index)
+          source = html[body_start:close_index].strip('\n') + '\n'
+          expected_bytes = len(source.encode('utf-8'))
+          expected_lines = source.count('\n')
+          expected_sha = hashlib.sha256(source.encode('utf-8')).hexdigest()
+
+          contract = re.sub(r'const EXPECTED_BYTES = \d+;', f'const EXPECTED_BYTES = {expected_bytes};', contract, count=1)
+          contract = re.sub(r"const EXPECTED_SHA256 = '[0-9a-f]+';", f"const EXPECTED_SHA256 = '{expected_sha}';", contract, count=1)
+          contract = re.sub(r'const EXPECTED_LINES = \d+;', f'const EXPECTED_LINES = {expected_lines};', contract, count=1)
+          contract_path.write_text(contract, encoding='utf-8')
+
+          workflow = Path('.github/workflows/inspect-radar-tag.yml')
+          workflow.unlink()
+
+          print(f'kernel bytes={expected_bytes} lines={expected_lines} sha256={expected_sha}')
+          print('radar tag implementation extracted successfully')
           PY
+      - name: Run Node regression suite
+        run: npm test
+      - name: Commit extraction
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html tests/main-kernel-contract.test.js .github/workflows/inspect-radar-tag.yml
+          git commit -m "refactor: wire radar tag controller"
+          git push
