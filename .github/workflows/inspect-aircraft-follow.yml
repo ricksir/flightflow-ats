@@ -1,4 +1,4 @@
-name: Inspect aircraft follow boundary
+name: Validate aircraft follow contract
 
 on:
   push:
@@ -6,71 +6,21 @@ on:
       - test/freeze-aircraft-follow-contract
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect implementation and consumers
+      - name: Run focused contract test
+        run: node --test tests/aircraft-follow-contract.test.js
+      - name: Remove temporary workflow
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          lines = Path('index.html').read_text(encoding='utf-8').splitlines()
-          text = '\n'.join(lines)
-          name = 'maybeFollowAircraft'
-          match = re.search(r'(?m)^\s*function\s+' + re.escape(name) + r'\s*\(', text)
-          if not match:
-              raise SystemExit(f'{name} not found')
-          start = match.start()
-          brace = text.find('{', match.end())
-          depth = 0
-          quote = None
-          escape = False
-          end = None
-          i = brace
-          while i < len(text):
-              ch = text[i]
-              if quote:
-                  if escape:
-                      escape = False
-                  elif ch == '\\':
-                      escape = True
-                  elif ch == quote:
-                      quote = None
-              else:
-                  if ch in "'\"`":
-                      quote = ch
-                  elif ch == '{':
-                      depth += 1
-                  elif ch == '}':
-                      depth -= 1
-                      if depth == 0:
-                          end = i + 1
-                          break
-              i += 1
-          if end is None:
-              raise SystemExit('unterminated function')
-          function = text[start:end]
-          line = text.count('\n', 0, start) + 1
-          print(f'FUNCTION_LINE={line}')
-          print(f'FUNCTION_BYTES={len(function.encode())}')
-          print(f'FUNCTION_LINES={function.count(chr(10))+1}')
-          print('---FUNCTION---')
-          print(function)
-          print('---CONSUMER CONTEXTS---')
-          for n, source_line in enumerate(lines, 1):
-              if name in source_line:
-                  lo=max(1,n-8); hi=min(len(lines),n+8)
-                  print(f'### around {n}')
-                  for k in range(lo,hi+1):
-                      print(f'{k}: {lines[k-1]}')
-          print('---LIKELY RELATED SYMBOLS---')
-          for symbol in ['config.followAircraft','state.viewBox','setMapViewBox','MAP_BASE','clamp','state.renderedPlane','state.lastPlane']:
-              hits=[n for n,l in enumerate(lines,1) if symbol in l]
-              print(symbol, hits[:30])
-          PY
+          rm .github/workflows/inspect-aircraft-follow.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/inspect-aircraft-follow.yml
+          git commit -m "chore: remove aircraft follow inspection workflow"
+          git push
