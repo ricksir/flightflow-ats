@@ -5494,6 +5494,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-config-validation" src="src/config/config-validation.js"></script>
 <script id="flightflow-aircraft-visual-utils" src="src/map/aircraft-visual-utils.js"></script>
 <script src="src/map/aircraft-marker-controller.js"></script>
+<script src="src/map/radar-tag-controller.js"></script>
 <script src="src/map/aircraft-motion-controller.js"></script>
 <script>
 
@@ -7134,6 +7135,9 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   });
 
   const els = {};
+const RadarTagController = window.FlightFlowRadarTagController;
+if (!RadarTagController) throw new Error('FlightFlowRadarTagController não foi carregado.');
+const { updateRadarTagPosition } = RadarTagController.create({ els });
   const state = {
     selectedFile: null,
     parsed: null,
@@ -10696,15 +10700,6 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
     list:()=>clone(state.customAerodromes||{}),
     currentRouteEndpoints:()=>{if(!state.parsed)return null;const first=state.parsed.events&&state.parsed.events[0],last=state.parsed.events&&state.parsed.events[state.parsed.events.length-1];const dep=normalizeLocalityCode((first&&first.snapshot&&first.snapshot.adep)||state.parsed.meta.adep),arr=normalizeLocalityCode((last&&last.snapshot&&last.snapshot.ades)||state.parsed.meta.ades);return{dep,arr,depAirport:state.geo.airportByCode.get(dep)||null,arrAirport:state.geo.airportByCode.get(arr)||null};}
   });
-
-  function updateRadarTagPosition(point) {
-    if (!els.radarTag || !point || els.radarTag.hidden) return;
-    const x = Number(point.x);
-    const y = Number(point.y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-    els.radarTag.style.left = `${Math.max(8, Math.min(92, (x / 1600) * 100))}%`;
-    els.radarTag.style.top = `${Math.max(8, Math.min(86, (y / 900) * 100))}%`;
-  }
 
   function clamp(value, min, max) {
     const number = Number(value);
