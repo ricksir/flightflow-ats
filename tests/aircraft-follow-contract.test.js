@@ -9,10 +9,12 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const MODULE_PATH = path.join(ROOT, 'src', 'map', 'aircraft-follow-controller.js');
+const MODULE_SOURCE = fs.readFileSync(MODULE_PATH, 'utf8');
 
 function extractNamedFunction(source, name) {
   const match = new RegExp(`^\\s*function\\s+${name}\\s*\\(`, 'm').exec(source);
-  assert.ok(match, `${name} deve continuar inline enquanto o contrato é congelado`);
+  assert.ok(match, `${name} deve existir no controlador externo`);
   const start = match.index;
   const brace = source.indexOf('{', match.index + match[0].length);
   let depth = 0;
@@ -36,7 +38,16 @@ function extractNamedFunction(source, name) {
   throw new Error(`${name} não terminou corretamente`);
 }
 
-const SOURCE = extractNamedFunction(HTML, 'maybeFollowAircraft');
+const FUNCTION_SOURCE = extractNamedFunction(MODULE_SOURCE, 'maybeFollowAircraft');
+
+function loadModule() {
+  const sandbox = {};
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(MODULE_SOURCE, sandbox, { filename: MODULE_PATH });
+  assert.ok(sandbox.FlightFlowAircraftFollowController, 'controlador externo deve publicar API global');
+  return sandbox.FlightFlowAircraftFollowController;
+}
 
 function createHarness(overrides = {}) {
   const calls = [];
@@ -51,21 +62,27 @@ function createHarness(overrides = {}) {
   };
   if (overrides.geo) state.geo = { ...state.geo, ...overrides.geo };
   if (overrides.config) state.config = { ...state.config, ...overrides.config };
-  const sandbox = {
-    state,
-    setMapViewBox: value => calls.push(value),
-  };
-  vm.createContext(sandbox);
-  vm.runInContext(`${SOURCE}; this.maybeFollowAircraft = maybeFollowAircraft;`, sandbox);
-  return { state, calls, follow: sandbox.maybeFollowAircraft };
+  const controller = loadModule();
+  const api = controller.create({ state, setMapViewBox: value => calls.push(value) });
+  return { state, calls, follow: api.maybeFollowAircraft, api, controller };
 }
 
-test('maybeFollowAircraft mantém a implementação congelada antes da extração', () => {
-  assert.equal(Buffer.byteLength(SOURCE), 431);
+test('maybeFollowAircraft preserva a implementação congelada após a extração', () => {
+  assert.equal(Buffer.byteLength(FUNCTION_SOURCE), 431);
   assert.equal(
-    crypto.createHash('sha256').update(SOURCE).digest('hex'),
+    crypto.createHash('sha256').update(FUNCTION_SOURCE).digest('hex'),
     '2d0e631e72c90ffcfb2be50dc19c49847f7ff38400faf39429007dd4d446ccb6',
   );
+});
+
+test('controlador exige dependências explícitas e expõe somente maybeFollowAircraft', () => {
+  const controller = loadModule();
+  assert.equal(Object.isFrozen(controller), true);
+  assert.throws(() => controller.create({}), error => error && error.name === 'TypeError');
+  assert.throws(() => controller.create({ state: {} }), error => error && error.name === 'TypeError');
+  const { api } = createHarness();
+  assert.equal(Object.isFrozen(api), true);
+  assert.deepEqual(Object.keys(api), ['maybeFollowAircraft']);
 });
 
 test('follow não move a câmera sem plano, com follow desligado, durante arraste ou em visão ampla', () => {
@@ -120,4 +137,15 @@ test('limite de largura 900 ainda permite follow; acima de 900 bloqueia', () => 
   const aboveLimit = createHarness({ geo: { viewBox: { x: 0, y: 0, width: 900.0001, height: 500 } } });
   aboveLimit.follow({ x: -1, y: 250 });
   assert.equal(aboveLimit.calls.length, 0);
+});
+
+test('index carrega o follow controller antes do motor e remove a declaração inline', () => {
+  const tag = '<script src="src/map/aircraft-follow-controller.js"></script>';
+  const motionTag = '<script src="src/map/aircraft-motion-controller.js"></script>';
+  assert.equal(HTML.split(tag).length - 1, 1, 'módulo de follow deve ser carregado exatamente uma vez');
+  assert.ok(HTML.indexOf(tag) < HTML.indexOf(motionTag), 'follow controller deve carregar antes do motor de movimento');
+  assert.equal(/function\s+maybeFollowAircraft\s*\(/.test(HTML), false, 'implementação não deve permanecer inline');
+  assert.ok(HTML.includes('const AircraftFollowController = window.FlightFlowAircraftFollowController;'));
+  assert.ok(HTML.includes("if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');"));
+  assert.ok(HTML.includes('const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });'));
 });
