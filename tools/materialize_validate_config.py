@@ -3,6 +3,7 @@ import hashlib
 import re
 import subprocess
 
+# One-shot materializer. Remove after the generated production commit is validated.
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / 'index.html'
 MODULE = ROOT / 'src' / 'config' / 'config-validation.js'
@@ -107,16 +108,12 @@ MODULE.write_text(module)
 module_bytes = len(module.encode())
 module_sha = sha(module)
 
-# remove exactly the frozen inline function from kernel
 new_kernel = kernel[:start] + kernel[end:]
-
-# inject module alias at the top, immediately after FlightParser contract
 if PARSER_BLOCK not in new_kernel:
     raise SystemExit('bloco Parser não encontrado')
 config_alias = PARSER_BLOCK + "\n  const ConfigValidation = window.FlightFlowConfigValidation;\n  if (!ConfigValidation) throw new Error('FlightFlowConfigValidation não foi carregado.');\n  const { validateConfig } = ConfigValidation;"
 new_kernel = new_kernel.replace(PARSER_BLOCK, config_alias, 1)
 
-# rebuild HTML and insert external script immediately before the main IIFE script tag
 html = html[:body_start] + new_kernel + html[script_end:]
 anchor_index = html.find(ANCHOR)
 script_start = html.rfind('<script', 0, anchor_index)
@@ -124,7 +121,6 @@ if REFERENCE not in html:
     html = html[:script_start] + REFERENCE + '\n' + html[script_start:]
 HTML.write_text(html)
 
-# update main kernel structural contract
 normalized = new_kernel.strip('\n') + '\n'
 new_bytes = len(normalized.encode())
 new_sha = sha(normalized)
@@ -145,7 +141,6 @@ mt = mt.replace('assert.equal(names.length, 336);', 'assert.equal(names.length, 
 mt = mt.replace('assert.equal(counts.size, 336);', 'assert.equal(counts.size, 335);', 1)
 MAIN_TEST.write_text(mt)
 
-# migrate validateConfig contract from inline source to the external module
 ct = CONFIG_TEST.read_text()
 if "const MODULE =" not in ct:
     ct = ct.replace("const HTML = path.join(ROOT, 'index.html');", "const HTML = path.join(ROOT, 'index.html');\nconst MODULE = path.join(ROOT, 'src', 'config', 'config-validation.js');\nconst REFERENCE = '<script id=\"flightflow-config-validation\" src=\"src/config/config-validation.js\"></script>';\nconst MODULE_BYTES = %d;\nconst MODULE_SHA256 = '%s';" % (module_bytes, module_sha), 1)
@@ -153,11 +148,9 @@ ct = ct.replace("  const source = functionSource(kernelSource(), 'validateConfig
 ct = ct.replace("  const source = functionSource(kernelSource(), 'validateConfig');", "  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'validateConfig');", 1)
 ct = ct.replace("  const source = functionSource(kernel, 'validateConfig');", "  const source = functionSource(fs.readFileSync(MODULE, 'utf8'), 'validateConfig');", 1)
 ct = ct.replace("assert.equal([...kernel.matchAll(/(?<![\\w$.])validateConfig\\s*\\(/g)].length - 1, 1);", "assert.equal([...kernel.matchAll(/(?<![\\w$.])validateConfig\\s*\\(/g)].length, 1);", 1)
-# strengthen module/wiring assertions in the first identity test
 needle = "  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);\n});"
 replacement = "  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);\n  const moduleSource = fs.readFileSync(MODULE, 'utf8');\n  assert.equal(Buffer.byteLength(moduleSource, 'utf8'), MODULE_BYTES);\n  assert.equal(crypto.createHash('sha256').update(moduleSource).digest('hex'), MODULE_SHA256);\n  const api = require(MODULE);\n  assert.equal(Object.isFrozen(api), true);\n  assert.deepEqual(Object.keys(api), ['validateConfig']);\n});"
 ct = ct.replace(needle, replacement, 1)
-# add integration test once
 if "index carrega validação externa" not in ct:
     insertion = """
 
