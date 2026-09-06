@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1135483;
-const EXPECTED_SHA256 = '0390c0c829f500f57919d3fa9172fc72f7670c9afa6ca2d0fd58f7a92fe3ed5d';
-const EXPECTED_LINES = 5366;
+const EXPECTED_BYTES = 1129887;
+const EXPECTED_SHA256 = '0cc527d59e125e91335222677bc5d4a903fba7d30f5b0575a824f098baafec23';
+const EXPECTED_LINES = 5276;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -33,6 +33,7 @@ const EXTRACTED_SOURCE_CLASS = ['getSourceClass'];
 const EXTRACTED_CONFIG_VALIDATION = ['validateConfig'];
 const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconHtml'];
 const EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker'];
+const EXTRACTED_AIRCRAFT_MOTION_CONTROLLER = ['resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -69,6 +70,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const AircraftMarkerController = window.FlightFlowAircraftMarkerController;',
     "if (!AircraftMarkerController) throw new Error('FlightFlowAircraftMarkerController não foi carregado.');",
     'const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',
+    'const AircraftMotionController = window.FlightFlowAircraftMotionController;',
+    "if (!AircraftMotionController) throw new Error('FlightFlowAircraftMotionController não foi carregado.');",
+    'const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, startMotionLoop } = AircraftMotionController.create({',
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
     'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;',
@@ -145,7 +149,8 @@ test('núcleo publica contratos externos de conhecimento, geografia e FIR', () =
 test('eventos de integração do núcleo permanecem publicados', () => {
   const source = kernelSource();
   assert.ok(source.includes("new CustomEvent('flightflow:history-session-reset'"));
-  assert.ok(source.includes("new CustomEvent('flightflow:route-fix-crossed'"));
+  const motionSource = fs.readFileSync(path.join(ROOT, 'src', 'map', 'aircraft-motion-controller.js'), 'utf8');
+  assert.ok(motionSource.includes("new CustomEvent('flightflow:route-fix-crossed'"));
   assert.ok(source.includes('window.gm_authFailure='));
 });
 
@@ -156,8 +161,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 330);
-  assert.equal(counts.size, 330);
+  assert.equal(names.length, 325);
+  assert.equal(counts.size, 325);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
@@ -177,6 +182,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_CONFIG_VALIDATION,
     ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,
     ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,
+    ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
