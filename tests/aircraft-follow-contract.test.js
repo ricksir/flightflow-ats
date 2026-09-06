@@ -139,7 +139,7 @@ test('limite de largura 900 ainda permite follow; acima de 900 bloqueia', () => 
   assert.equal(aboveLimit.calls.length, 0);
 });
 
-test('index carrega o follow controller antes do motor e remove a declaração inline', () => {
+test('index inicializa state antes do follow controller, carrega o módulo antes do motor e remove a declaração inline', () => {
   const tag = '<script src="src/map/aircraft-follow-controller.js"></script>';
   const motionTag = '<script src="src/map/aircraft-motion-controller.js"></script>';
   const stateDeclaration = HTML.indexOf('  const state = {');
