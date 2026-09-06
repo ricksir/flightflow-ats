@@ -1,0 +1,151 @@
+name: Apply aircraft follow extraction
+
+on:
+  push:
+    branches:
+      - refactor/extract-aircraft-follow-controller
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply deterministic extraction
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
+
+          script_anchor = '<script src="src/map/radar-tag-controller.js"></script>\n<script src="src/map/aircraft-motion-controller.js"></script>'
+          script_replacement = '<script src="src/map/radar-tag-controller.js"></script>\n<script src="src/map/aircraft-follow-controller.js"></script>\n<script src="src/map/aircraft-motion-controller.js"></script>'
+          if html.count(script_anchor) != 1:
+              raise SystemExit(f'unexpected aircraft script anchor count: {html.count(script_anchor)}')
+          html = html.replace(script_anchor, script_replacement, 1)
+
+          radar_anchor = (
+              'const RadarTagController = window.FlightFlowRadarTagController;\n'
+              "if (!RadarTagController) throw new Error('FlightFlowRadarTagController não foi carregado.');\n"
+              'const { updateRadarTagPosition } = RadarTagController.create({ els });\n'
+          )
+          follow_wiring = radar_anchor + (
+              'const AircraftFollowController = window.FlightFlowAircraftFollowController;\n'
+              "if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');\n"
+              'const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });\n'
+          )
+          if html.count(radar_anchor) != 1:
+              raise SystemExit(f'unexpected radar wiring anchor count: {html.count(radar_anchor)}')
+          html = html.replace(radar_anchor, follow_wiring, 1)
+
+          name = 'maybeFollowAircraft'
+          match = re.search(r'(?m)^\s*function\s+' + re.escape(name) + r'\s*\(', html)
+          if not match:
+              raise SystemExit(f'{name} implementation not found')
+          start = match.start()
+          brace = html.find('{', match.end())
+          depth = 0
+          quote = None
+          escape = False
+          end = None
+          i = brace
+          while i < len(html):
+              ch = html[i]
+              if quote:
+                  if escape:
+                      escape = False
+                  elif ch == '\\':
+                      escape = True
+                  elif ch == quote:
+                      quote = None
+              else:
+                  if ch in "'\"`":
+                      quote = ch
+                  elif ch == '{':
+                      depth += 1
+                  elif ch == '}':
+                      depth -= 1
+                      if depth == 0:
+                          end = i + 1
+                          break
+              i += 1
+          if end is None:
+              raise SystemExit(f'{name} implementation is unterminated')
+          if end < len(html) and html[end] == '\n':
+              end += 1
+          html = html[:start] + html[end:]
+          index_path.write_text(html, encoding='utf-8')
+
+          contract_path = Path('tests/main-kernel-contract.test.js')
+          contract = contract_path.read_text(encoding='utf-8')
+
+          radar_decl = "const EXTRACTED_RADAR_TAG_CONTROLLER = ['updateRadarTagPosition'];\n"
+          follow_decl = "const EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER = ['maybeFollowAircraft'];\n"
+          if contract.count(radar_decl) != 1:
+              raise SystemExit('radar tag extracted declaration anchor changed')
+          contract = contract.replace(radar_decl, radar_decl + follow_decl, 1)
+
+          dependency_anchor = (
+              "    'const { updateRadarTagPosition } = RadarTagController.create({ els });',\n"
+              "    'const AircraftMotionController = window.FlightFlowAircraftMotionController;',"
+          )
+          dependency_replacement = (
+              "    'const { updateRadarTagPosition } = RadarTagController.create({ els });',\n"
+              "    'const AircraftFollowController = window.FlightFlowAircraftFollowController;',\n"
+              "    \"if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');\",\n"
+              "    'const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });',\n"
+              "    'const AircraftMotionController = window.FlightFlowAircraftMotionController;',"
+          )
+          if contract.count(dependency_anchor) != 1:
+              raise SystemExit('aircraft follow dependency anchor changed')
+          contract = contract.replace(dependency_anchor, dependency_replacement, 1)
+
+          spread_anchor = '    ...EXTRACTED_RADAR_TAG_CONTROLLER,\n    ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,\n'
+          spread_replacement = '    ...EXTRACTED_RADAR_TAG_CONTROLLER,\n    ...EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER,\n    ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,\n'
+          if contract.count(spread_anchor) != 1:
+              raise SystemExit('extracted spread anchor changed')
+          contract = contract.replace(spread_anchor, spread_replacement, 1)
+
+          if contract.count('assert.equal(names.length, 324);') != 1 or contract.count('assert.equal(counts.size, 324);') != 1:
+              raise SystemExit('kernel function count anchors changed')
+          contract = contract.replace('assert.equal(names.length, 324);', 'assert.equal(names.length, 323);', 1)
+          contract = contract.replace('assert.equal(counts.size, 324);', 'assert.equal(counts.size, 323);', 1)
+
+          anchor = 'window.__FlightFlowFirBridge = Object.freeze({'
+          anchor_index = html.index(anchor)
+          open_index = html.rfind('<script', 0, anchor_index)
+          body_start = html.index('>', open_index) + 1
+          close_index = html.index('</script>', anchor_index)
+          source = html[body_start:close_index].strip('\n') + '\n'
+          expected_bytes = len(source.encode('utf-8'))
+          expected_lines = source.count('\n')
+          expected_sha = hashlib.sha256(source.encode('utf-8')).hexdigest()
+
+          contract = re.sub(r'const EXPECTED_BYTES = \d+;', f'const EXPECTED_BYTES = {expected_bytes};', contract, count=1)
+          contract = re.sub(r"const EXPECTED_SHA256 = '[0-9a-f]+';", f"const EXPECTED_SHA256 = '{expected_sha}';", contract, count=1)
+          contract = re.sub(r'const EXPECTED_LINES = \d+;', f'const EXPECTED_LINES = {expected_lines};', contract, count=1)
+          contract_path.write_text(contract, encoding='utf-8')
+
+          Path('.github/workflows/apply-aircraft-follow.yml').unlink()
+
+          print(f'kernel bytes={expected_bytes} lines={expected_lines} sha256={expected_sha}')
+          print('aircraft follow implementation extracted successfully')
+          PY
+      - name: Run Node regression suite
+        run: npm test
+      - name: Commit extraction
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html tests/main-kernel-contract.test.js .github/workflows/apply-aircraft-follow.yml
+          git commit -m "refactor: wire aircraft follow controller"
+          git push
