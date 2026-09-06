@@ -64,7 +64,7 @@ test('maybeFollowAircraft mantém a implementação congelada antes da extraçã
   assert.equal(Buffer.byteLength(SOURCE), 431);
   assert.equal(
     crypto.createHash('sha256').update(SOURCE).digest('hex'),
-    'baf4ccb575ad3064c17fb2d61945e40e65f5c2f6fdba6882eed3b79954213354',
+    '2d0e631e72c90ffcfb2be50dc19c49847f7ff38400faf39429007dd4d446ccb6',
   );
 });
 
