@@ -279,12 +279,20 @@ test('startMotionLoop mantém os três regimes temporais: waypoint, smoothstep e
   ]) assert.ok(source.includes(token), `contrato temporal ausente: ${token}`);
 });
 
-test('goTo continua responsável por montar a transição por fixos; motor apenas a executa', () => {
+test('goTo delega o planejamento; planner monta a transição e motor apenas a executa', () => {
   const source = functionSource('goTo');
-  assert.ok(source.includes("mode:'waypoints'"));
-  assert.ok(source.includes('transitionPlanForEvents'));
-  assert.ok(source.includes('transitionDurations'));
-  assert.ok(source.includes('state.motion.ffrpTransition'));
+  assert.ok(source.includes('planMotionTransition(nextIndex)'));
+  assert.equal(source.includes("mode:'waypoints'"), false);
+  assert.equal(source.includes('transitionPlanForEvents'), false);
+  assert.equal(source.includes('transitionDurations'), false);
+  assert.equal(source.includes('state.motion.ffrpTransition'), false);
+
+  const plannerSource = fs.readFileSync(path.join(ROOT, 'src', 'map', 'motion-transition-planner.js'), 'utf8');
+  assert.ok(plannerSource.includes("mode:'waypoints'"));
+  assert.ok(plannerSource.includes('transitionPlanForEvents'));
+  assert.ok(plannerSource.includes('transitionDurations'));
+  assert.ok(plannerSource.includes('state.motion.ffrpTransition'));
+
   const motionLoop = functionSource('startMotionLoop');
   assert.equal(motionLoop.includes('transitionPlanForEvents'), false);
   assert.equal(motionLoop.includes('transitionDurations'), false);
