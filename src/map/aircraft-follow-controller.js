@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  function create(deps = {}) {
+  function createAircraftFollow(deps = {}) {
     const state = deps.state;
     const setMapViewBox = deps.setMapViewBox;
     if (!state || typeof state !== 'object') throw new TypeError('state deve ser objeto.');
@@ -12,5 +12,5 @@
     return Object.freeze({ maybeFollowAircraft });
   }
 
-  window.FlightFlowAircraftFollowController = Object.freeze({ create });
+  window.FlightFlowAircraftFollowController = Object.freeze({ create: createAircraftFollow });
 })();
