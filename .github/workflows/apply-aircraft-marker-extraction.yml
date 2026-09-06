@@ -91,21 +91,22 @@ jobs:
 
           index_path.write_text(index, encoding='utf-8')
 
-          test_path = Path('tests/aircraft-marker-contract.test.js')
-          test_text = test_path.read_text(encoding='utf-8')
+          # Freeze marker tests against the new module rather than the kernel.
+          marker_test_path = Path('tests/aircraft-marker-contract.test.js')
+          marker_test = marker_test_path.read_text(encoding='utf-8')
           anchor = "const indexHtml = fs.readFileSync('index.html', 'utf8');"
           replacement = anchor + "\nconst markerModule = fs.readFileSync('src/map/aircraft-marker-controller.js', 'utf8');"
-          assert anchor in test_text
-          test_text = test_text.replace(anchor, replacement, 1)
-          test_text = test_text.replace('indexHtml.indexOf(marker)', 'markerModule.indexOf(marker)')
-          test_text = test_text.replace("indexHtml.lastIndexOf('\\n', markerIndex)", "markerModule.lastIndexOf('\\n', markerIndex)")
-          test_text = test_text.replace("indexHtml.indexOf('{', markerIndex)", "markerModule.indexOf('{', markerIndex)")
-          test_text = test_text.replace('i < indexHtml.length', 'i < markerModule.length')
-          test_text = test_text.replace('const char = indexHtml[i]', 'const char = markerModule[i]')
-          test_text = test_text.replace('return indexHtml.slice(start, i + 1)', 'return markerModule.slice(start, i + 1)')
-          test_text = test_text.replace('source identity is frozen before extraction', 'preserves frozen source identity after extraction')
+          assert anchor in marker_test
+          marker_test = marker_test.replace(anchor, replacement, 1)
+          marker_test = marker_test.replace('indexHtml.indexOf(marker)', 'markerModule.indexOf(marker)')
+          marker_test = marker_test.replace("indexHtml.lastIndexOf('\\n', markerIndex)", "markerModule.lastIndexOf('\\n', markerIndex)")
+          marker_test = marker_test.replace("indexHtml.indexOf('{', markerIndex)", "markerModule.indexOf('{', markerIndex)")
+          marker_test = marker_test.replace('i < indexHtml.length', 'i < markerModule.length')
+          marker_test = marker_test.replace('const char = indexHtml[i]', 'const char = markerModule[i]')
+          marker_test = marker_test.replace('return indexHtml.slice(start, i + 1)', 'return markerModule.slice(start, i + 1)')
+          marker_test = marker_test.replace('source identity is frozen before extraction', 'preserves frozen source identity after extraction')
 
-          test_text += r'''
+          marker_test += r'''
 
           test('aircraft marker controller module is loaded before the kernel and removes inline declarations', () => {
             const tag = '<script src="src/map/aircraft-marker-controller.js"></script>';
@@ -149,7 +150,67 @@ jobs:
             }
           });
           '''
-          test_path.write_text(test_text, encoding='utf-8')
+          marker_test_path.write_text(marker_test, encoding='utf-8')
+
+          # The visual helper boundary is still pure; its only runtime consumer moved to the marker controller.
+          visual_path = Path('tests/aircraft-visual-utils-contract.test.js')
+          visual = visual_path.read_text(encoding='utf-8')
+          old_visual_tail = """  assert.equal([...kernel.matchAll(/(?<![\\w$.])aircraftPixelSizeForZoom\\s*\\(/g)].length, 1);
+          assert.equal([...kernel.matchAll(/(?<![\\w$.])planeIconHtml\\s*\\(/g)].length, 1);"""
+          new_visual_tail = """  assert.equal([...kernel.matchAll(/(?<![\\w$.])aircraftPixelSizeForZoom\\s*\\(/g)].length, 0);
+          assert.equal([...kernel.matchAll(/(?<![\\w$.])planeIconHtml\\s*\\(/g)].length, 0);
+          assert.ok(kernel.includes('const AircraftMarkerController = window.FlightFlowAircraftMarkerController;'));
+          assert.ok(kernel.includes('const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({'));
+          assert.ok(kernel.includes('    aircraftPixelSizeForZoom,\\n    planeIconHtml,\\n    clamp,\\n    addGoogleOverlay,'));"""
+          assert old_visual_tail in visual
+          visual = visual.replace(old_visual_tail, new_visual_tail, 1)
+          visual_path.write_text(visual, encoding='utf-8')
+
+          # Re-baseline the main kernel only after proving the exact intended structural delta.
+          anchor_text = 'window.__FlightFlowFirBridge = Object.freeze({'
+          anchor_index = index.index(anchor_text)
+          script_open = index.rfind('<script', 0, anchor_index)
+          body_start = index.index('>', script_open) + 1
+          body_end = index.index('</script>', anchor_index)
+          kernel = index[body_start:body_end].strip('\n') + '\n'
+          kernel_bytes = len(kernel.encode('utf-8'))
+          kernel_lines = len(kernel.splitlines())
+          kernel_sha = hashlib.sha256(kernel.encode('utf-8')).hexdigest()
+          kernel_names = re.findall(r'function\s+([A-Za-z_$][\w$]*)\s*\(', kernel)
+          assert kernel_bytes == 1135467, (kernel_bytes, kernel_sha)
+          assert kernel_lines == 5366, (kernel_lines, kernel_sha)
+          assert len(kernel_names) == 330, len(kernel_names)
+          assert len(set(kernel_names)) == 330, 'kernel must retain unique named functions'
+          for moved in expected:
+              assert moved not in kernel_names, moved
+          assert kernel_names.count('goTo') == 1
+          assert kernel_names.count('renderCurrent') == 1
+
+          main_path = Path('tests/main-kernel-contract.test.js')
+          main_test = main_path.read_text(encoding='utf-8')
+          assert 'const EXPECTED_BYTES = 1136965;' in main_test
+          assert "const EXPECTED_SHA256 = '34df4995e44017ca764f1175184fdda7a273fff6ecd99a16e291a05fb9750f85';" in main_test
+          assert 'const EXPECTED_LINES = 5369;' in main_test
+          main_test = main_test.replace('const EXPECTED_BYTES = 1136965;', f'const EXPECTED_BYTES = {kernel_bytes};', 1)
+          main_test = main_test.replace("const EXPECTED_SHA256 = '34df4995e44017ca764f1175184fdda7a273fff6ecd99a16e291a05fb9750f85';", f"const EXPECTED_SHA256 = '{kernel_sha}';", 1)
+          main_test = main_test.replace('const EXPECTED_LINES = 5369;', f'const EXPECTED_LINES = {kernel_lines};', 1)
+          marker_const_anchor = "const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconHtml'];"
+          assert marker_const_anchor in main_test
+          main_test = main_test.replace(marker_const_anchor, marker_const_anchor + "\nconst EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker'];", 1)
+          visual_dependency = "    'const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });',"
+          assert visual_dependency in main_test
+          controller_dependencies = """    'const AircraftMarkerController = window.FlightFlowAircraftMarkerController;',
+              \"if (!AircraftMarkerController) throw new Error('FlightFlowAircraftMarkerController não foi carregado.');\",
+              'const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',"""
+          main_test = main_test.replace(visual_dependency, visual_dependency + '\n' + controller_dependencies, 1)
+          main_test = main_test.replace('assert.equal(names.length, 333);', 'assert.equal(names.length, 330);', 1)
+          main_test = main_test.replace('assert.equal(counts.size, 333);', 'assert.equal(counts.size, 330);', 1)
+          spread_anchor = '    ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,\n'
+          assert spread_anchor in main_test
+          main_test = main_test.replace(spread_anchor, spread_anchor + '    ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,\n', 1)
+          main_path.write_text(main_test, encoding='utf-8')
+
+          print(f'New kernel baseline: bytes={kernel_bytes} lines={kernel_lines} sha256={kernel_sha} functions={len(kernel_names)}')
           PY
 
       - name: Install test dependencies
@@ -163,6 +224,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/apply-aircraft-marker-extraction.yml
-          git add index.html tests/aircraft-marker-contract.test.js src/map/aircraft-marker-controller.js
+          git add index.html src/map/aircraft-marker-controller.js tests/aircraft-marker-contract.test.js tests/aircraft-visual-utils-contract.test.js tests/main-kernel-contract.test.js
           git commit -m "refactor: extract aircraft marker controller"
           git push origin HEAD:refactor/extract-aircraft-marker-controller
