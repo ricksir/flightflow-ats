@@ -5495,6 +5495,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-aircraft-visual-utils" src="src/map/aircraft-visual-utils.js"></script>
 <script src="src/map/aircraft-marker-controller.js"></script>
 <script src="src/map/radar-tag-controller.js"></script>
+<script src="src/map/aircraft-follow-controller.js"></script>
 <script src="src/map/aircraft-motion-controller.js"></script>
 <script>
 
@@ -6858,7 +6859,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   function updateOperationalAreaVisibility(){const show=state.config.showOperationalAreas!==false;[els.accAreaLayer,els.appAreaLayer].forEach(el=>{if(el)el.style.display=show?'':'none';});}
   function syncGeoControls(){if(els.mapUnusedToggle)els.mapUnusedToggle.checked=!!state.config.showUnusedAerodromes;if(els.mapAreasToggle)els.mapAreasToggle.checked=state.config.showOperationalAreas!==false;if(els.mapFollowToggle)els.mapFollowToggle.checked=state.config.followAircraft!==false;['geoShowUnused','geoShowAreas','geoFollowAircraft'].forEach(id=>{if(els[id])els[id].checked=id==='geoShowUnused'?!!state.config.showUnusedAerodromes:id==='geoShowAreas'?state.config.showOperationalAreas!==false:state.config.followAircraft!==false;});syncRealMapControls();}
   function setGeoOption(key,value){state.config[key]=!!value;saveConfig();syncAdvancedConfig();syncGeoControls();if(key==='showUnusedAerodromes')updateUnusedAirportVisibility();if(key==='showOperationalAreas')updateOperationalAreaVisibility();refreshRealMapLayers();}
-  function maybeFollowAircraft(point){if(!state.parsed||state.config.followAircraft===false||state.geo.dragging)return;const v=state.geo.viewBox;if(v.width>900)return;const edge=.22;const minX=v.x+v.width*edge,maxX=v.x+v.width*(1-edge),minY=v.y+v.height*edge,maxY=v.y+v.height*(1-edge);if(point.x<minX||point.x>maxX||point.y<minY||point.y>maxY)setMapViewBox({x:point.x-v.width/2,y:point.y-v.height/2,width:v.width,height:v.height});}
   function updateGeoStats(){if(!els.geoStats)return;const customCount=Object.keys(state.customAerodromes||{}).length;const sourceCount=(state.geoData.sourceHistory||[]).length;els.geoStats.textContent=`${state.geo.airportByCode.size} aeródromos${customCount?` (${customCount} confirmado${customCount===1?'':'s'} por você)`:''} · ${(state.geoData.towers||[]).length} torres · ${(state.geoData.apps||[]).length} áreas APP · ${(state.geoData.accs||[]).length} área ACC · ${sourceCount>1?`${sourceCount} bases mescladas`:`base ${state.geoData.source||state.geoData.version||'local'}`}`;}
 
   async function importGeoFile(file){
@@ -7192,6 +7192,9 @@ const { updateRadarTagPosition } = RadarTagController.create({ els });
     sources: [],  // array de { id, name, parsed }
     activeSourceId: null,
   };
+const AircraftFollowController = window.FlightFlowAircraftFollowController;
+if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');
+const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });
 
 
 

@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1129722;
-const EXPECTED_SHA256 = '5c3f3e00fa8498dd15781618dbe6cb46ab6f128b2dc72ebe54acc46e31063eb6';
-const EXPECTED_LINES = 5270;
+const EXPECTED_BYTES = 1129561;
+const EXPECTED_SHA256 = '426388746502e85028dd694af845d7db07cb608ba2d31477d218c1abe5edc524';
+const EXPECTED_LINES = 5272;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -35,6 +35,7 @@ const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconH
 const EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker'];
 const EXTRACTED_AIRCRAFT_MOTION_CONTROLLER = ['resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'];
 const EXTRACTED_RADAR_TAG_CONTROLLER = ['updateRadarTagPosition'];
+const EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER = ['maybeFollowAircraft'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -74,6 +75,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const RadarTagController = window.FlightFlowRadarTagController;',
     "if (!RadarTagController) throw new Error('FlightFlowRadarTagController não foi carregado.');",
     'const { updateRadarTagPosition } = RadarTagController.create({ els });',
+    'const AircraftFollowController = window.FlightFlowAircraftFollowController;',
+    "if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');",
+    'const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });',
     'const AircraftMotionController = window.FlightFlowAircraftMotionController;',
     "if (!AircraftMotionController) throw new Error('FlightFlowAircraftMotionController não foi carregado.');",
     'const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, startMotionLoop } = AircraftMotionController.create({',
@@ -165,8 +169,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 324);
-  assert.equal(counts.size, 324);
+  assert.equal(names.length, 323);
+  assert.equal(counts.size, 323);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
@@ -187,6 +191,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,
     ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,
     ...EXTRACTED_RADAR_TAG_CONTROLLER,
+    ...EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER,
     ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
