@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1129561;
-const EXPECTED_SHA256 = '426388746502e85028dd694af845d7db07cb608ba2d31477d218c1abe5edc524';
-const EXPECTED_LINES = 5272;
+const EXPECTED_BYTES = 1129241;
+const EXPECTED_SHA256 = 'eda36146cf0abc681358e083f175b3b8e2031396693139f65ec86aa49c270361';
+const EXPECTED_LINES = 5271;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -36,6 +36,7 @@ const EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'go
 const EXTRACTED_AIRCRAFT_MOTION_CONTROLLER = ['resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'];
 const EXTRACTED_RADAR_TAG_CONTROLLER = ['updateRadarTagPosition'];
 const EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER = ['maybeFollowAircraft'];
+const EXTRACTED_REAL_MAP_AIRCRAFT_CONTROLLER = ['updateRealMapAircraft'];
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -72,6 +73,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const AircraftMarkerController = window.FlightFlowAircraftMarkerController;',
     "if (!AircraftMarkerController) throw new Error('FlightFlowAircraftMarkerController não foi carregado.');",
     'const { updateLeafletAircraftMarker, googlePlaneSymbol, updateGoogleAircraftMarker } = AircraftMarkerController.create({',
+    'const RealMapAircraftController = window.FlightFlowRealMapAircraftController;',
+    "if (!RealMapAircraftController) throw new Error('FlightFlowRealMapAircraftController não foi carregado.');",
+    'const { updateRealMapAircraft } = RealMapAircraftController.create({',
     'const RadarTagController = window.FlightFlowRadarTagController;',
     "if (!RadarTagController) throw new Error('FlightFlowRadarTagController não foi carregado.');",
     'const { updateRadarTagPosition } = RadarTagController.create({ els });',
@@ -169,8 +173,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 323);
-  assert.equal(counts.size, 323);
+  assert.equal(names.length, 322);
+  assert.equal(counts.size, 322);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CORE_UTILS,
@@ -192,6 +196,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,
     ...EXTRACTED_RADAR_TAG_CONTROLLER,
     ...EXTRACTED_AIRCRAFT_FOLLOW_CONTROLLER,
+    ...EXTRACTED_REAL_MAP_AIRCRAFT_CONTROLLER,
     ...EXTRACTED_AIRCRAFT_MOTION_CONTROLLER,
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
