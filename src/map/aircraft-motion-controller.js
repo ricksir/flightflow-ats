@@ -127,7 +127,7 @@
     state.motion.raf = requestAnimationFrame(frame);
   }
 
-  function create(deps = {}) {
+  const create = (deps = {}) => {
     state = deps.state;
     els = deps.els;
     pointAlongPolyline = deps.pointAlongPolyline;
@@ -154,7 +154,7 @@
       snapMotionTo,
       startMotionLoop,
     });
-  }
+  };
 
   window.FlightFlowAircraftMotionController = Object.freeze({ create });
 })();
