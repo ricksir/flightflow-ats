@@ -5,6 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const indexHtml = fs.readFileSync('index.html', 'utf8');
+const markerModule = fs.readFileSync('src/map/aircraft-marker-controller.js', 'utf8');
 
 function sha256(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
@@ -12,20 +13,20 @@ function sha256(text) {
 
 function extractFunctionSource(name) {
   const marker = `function ${name}(`;
-  const markerIndex = indexHtml.indexOf(marker);
+  const markerIndex = markerModule.indexOf(marker);
   assert.notEqual(markerIndex, -1, `${name} must remain present in index.html while this contract is frozen`);
 
-  const start = indexHtml.lastIndexOf('\n', markerIndex) + 1;
-  const open = indexHtml.indexOf('{', markerIndex);
+  const start = markerModule.lastIndexOf('\n', markerIndex) + 1;
+  const open = markerModule.indexOf('{', markerIndex);
   assert.notEqual(open, -1, `${name} must have a function body`);
 
   let depth = 0;
-  for (let i = open; i < indexHtml.length; i += 1) {
-    const char = indexHtml[i];
+  for (let i = open; i < markerModule.length; i += 1) {
+    const char = markerModule[i];
     if (char === '{') depth += 1;
     if (char === '}') {
       depth -= 1;
-      if (depth === 0) return indexHtml.slice(start, i + 1);
+      if (depth === 0) return markerModule.slice(start, i + 1);
     }
   }
 
@@ -58,7 +59,7 @@ const frozenSources = {
 };
 
 for (const [name, expected] of Object.entries(frozenSources)) {
-  test(`${name} source identity is frozen before extraction`, () => {
+  test(`${name} preserves frozen source identity after extraction`, () => {
     const source = extractFunctionSource(name);
     assert.equal(Buffer.byteLength(source), expected.bytes, `${name} byte count changed; actual SHA-256: ${sha256(source)}`);
     assert.equal(source.split('\n').length, expected.lines, `${name} line count changed; actual SHA-256: ${sha256(source)}`);
@@ -242,4 +243,45 @@ test('updateGoogleAircraftMarker is inert outside the Google engine or without a
   context.realMapState.map = null;
   update(1, 2, 3, 'TEST');
   assert.equal(markerCreateCount, 0);
+});
+
+
+test('aircraft marker controller module is loaded before the kernel and removes inline declarations', () => {
+  const tag = '<script src="src/map/aircraft-marker-controller.js"></script>';
+  const tagIndex = indexHtml.indexOf(tag);
+  const kernelIndex = indexHtml.indexOf('const Parser = window.FlightParser;');
+  assert.notEqual(tagIndex, -1);
+  assert.notEqual(kernelIndex, -1);
+  assert.ok(tagIndex < kernelIndex, 'marker controller must load before the main kernel');
+  for (const name of Object.keys(frozenSources)) {
+    assert.equal(indexHtml.includes(`function ${name}(`), false, `${name} must no longer be declared inline`);
+  }
+  assert.match(indexHtml, /FlightFlowAircraftMarkerController/);
+  assert.match(indexHtml, /AircraftMarkerController\.create\(\{/);
+});
+
+test('aircraft marker controller exposes only the frozen marker operations', () => {
+  const context = { window: {}, console };
+  vm.createContext(context);
+  vm.runInContext(markerModule, context);
+  const api = context.window.FlightFlowAircraftMarkerController;
+  assert.ok(api);
+  assert.deepEqual(Object.keys(api), ['create']);
+  const controller = api.create({
+    realMapState: { engine: 'leaflet', map: null, layers: { aircraft: null } },
+    aircraftPixelSizeForZoom: () => 24,
+    planeIconHtml: () => 'plane',
+    clamp: (value, min, max) => Math.min(max, Math.max(min, value)),
+    addGoogleOverlay: () => {},
+  });
+  assert.deepEqual(Array.from(Object.keys(controller)), [
+    'updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker',
+  ]);
+  assert.equal(Object.isFrozen(controller), true);
+});
+
+test('aircraft marker controller stays outside route, timeline and movement orchestration', () => {
+  for (const forbidden of ['goTo(', 'renderCurrent(', 'updateRealMapAircraft(', 'pointAlongPolyline(', 'state.motion']) {
+    assert.equal(markerModule.includes(forbidden), false, `module must not absorb ${forbidden}`);
+  }
 });
