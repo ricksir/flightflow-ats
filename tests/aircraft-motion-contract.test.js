@@ -158,7 +158,7 @@ test('applyMotionFrame preserva interpolação espacial, menor giro angular e sm
     updateRealMapAircraft: value => calls.push(['real', value]),
   });
   applyMotionFrame(.5, false);
-  assert.ok(state.motion.heading > 350 && state.motion.heading < 368, 'heading deve girar pelo menor arco e suavizar');
+  assert.ok(Math.abs(state.motion.heading - 368) < 1e-9, 'heading deve girar pelo menor arco e aplicar smoothing de 18%');
   assert.equal(state.renderedProgress, .5);
   assert.equal(state.renderedPlane.x, 400);
   assert.equal(state.renderedPlane.y, 300);
@@ -246,7 +246,9 @@ test('startMotionLoop preserva easing senoidal e passagem explícita no fixo', (
   assert.equal(callbacks.length, 1);
   callbacks.shift()(501);
   assert.ok(Math.abs(state.motion.currentProgress - .4) < 1e-9, 'meio da perna deve usar easing senoidal de 50%');
-  assert.deepEqual(JSON.parse(JSON.stringify(frames)), [[.4]]);
+  assert.equal(frames.length, 1);
+  assert.equal(frames[0].length, 1);
+  assert.ok(Math.abs(frames[0][0] - .4) < 1e-9, 'frame intermediário deve refletir o mesmo progresso com tolerância de ponto flutuante');
   assert.equal(events.length, 0);
 
   callbacks.shift()(1001);
