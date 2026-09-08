@@ -23,7 +23,9 @@ function namedFunctionSource(source, name) {
   const start = source.indexOf(signature);
   assert.ok(start >= 0, `${name} deve permanecer no núcleo principal`);
 
-  const openBrace = source.indexOf('{', start + signature.length);
+  const paramsClose = source.indexOf(')', start + signature.length);
+  assert.ok(paramsClose >= 0, `${name} deve possuir parâmetros delimitados`);
+  const openBrace = source.indexOf('{', paramsClose + 1);
   assert.ok(openBrace >= 0, `${name} deve possuir corpo`);
 
   let depth = 0;
