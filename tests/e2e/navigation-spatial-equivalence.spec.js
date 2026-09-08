@@ -34,6 +34,10 @@ async function installCriticalFixture(page) {
       const timestamp = eventTimestamp(index);
       clone.index = index;
       clone.time = hhmm(timestamp);
+      clone.timestamp = timestamp;
+      clone.receivedAt = timestamp;
+      clone.rawBlock = '';
+      clone.content = '';
       clone.operation = `EVENTO ${index + 1}`;
       return clone;
     });
