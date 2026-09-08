@@ -153,7 +153,8 @@ async function installCriticalFixture(page) {
     }));
 
     if (!state.motion) throw new Error('estado de movimento indisponível');
-    if (state.motion.raf) cancelAnimationFrame(state.motion.raf);
+    // O RAF abaixo pertence ao controlador real de movimento e precisa continuar vivo:
+    // cancelar esse loop congela qualquer transição instalada pelo goTo().
     state.motion.initialized = false;
     state.motion.ffrpTransition = null;
     state.motion.velocity = 0;
@@ -360,7 +361,32 @@ async function navigateViaNext(page) {
 async function navigateViaTimeline(page) {
   await page.locator('.tab[data-tab="timeline"]').click();
   await expect(page.locator('[data-panel="timeline"]')).toHaveClass(/active/);
-  await page.locator(`.timeline-item[data-event-index="${TARGET_INDEX}"]`).click();
+
+  const target = page.locator(`.timeline-item[data-event-index="${TARGET_INDEX}"]`);
+  await target.scrollIntoViewIfNeeded();
+  await expect(target).toBeVisible();
+
+  // O clique continua sendo um pointer click real do Playwright. Apenas escolhemos
+  // um ponto do próprio item que esteja efetivamente hit-testable, evitando que
+  // toast/strip flutuante cubra o centro geométrico usado pelo click() padrão.
+  const position = await expect.poll(async () => target.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    const xs = [0.15, 0.35, 0.5, 0.65, 0.85];
+    const ys = [0.2, 0.35, 0.5, 0.65, 0.8];
+    for (const fy of ys) {
+      for (const fx of xs) {
+        const clientX = rect.left + rect.width * fx;
+        const clientY = rect.top + rect.height * fy;
+        const hit = document.elementFromPoint(clientX, clientY);
+        if (hit === el || el.contains(hit)) {
+          return { x: rect.width * fx, y: rect.height * fy };
+        }
+      }
+    }
+    return null;
+  }), { timeout: 5_000, intervals: [50, 100, 200] }).not.toBeNull();
+
+  await target.click({ position });
 }
 
 async function navigateViaScrubber(page) {
