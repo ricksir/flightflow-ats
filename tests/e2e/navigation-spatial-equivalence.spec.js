@@ -128,6 +128,14 @@ async function installCriticalFixture(page) {
     model.routeProgress = 0;
     model.movementProfile = null;
 
+    // O perfil de movimento sempre privilegia state.parsed.events sobre model.history.events.
+    // Instale os 80 eventos críticos antes de construir o perfil; do contrário 77/78 são
+    // clampados ao último índice da demo curta e o plano fica sem checkpoints.
+    state.parsed = { ...state.parsed, events };
+    state.index = 0;
+    state.playing = false;
+    state.speed = 1;
+
     const profile = api.buildMovementProfile();
     model.movementProfile = profile;
     const plan = api.transitionPlanForEvents(baseIndex, targetIndex);
@@ -138,10 +146,6 @@ async function installCriticalFixture(page) {
       y: 450,
     }));
 
-    state.parsed = { ...state.parsed, events };
-    state.index = 0;
-    state.playing = false;
-    state.speed = 1;
     state.geo = state.geo || {};
     state.geo.eventRoutes = Array.from({ length: events.length }, (_, index) => ({
       points: pixelPoints,
