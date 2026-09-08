@@ -3,6 +3,7 @@ const { test, expect } = require('@playwright/test');
 const BASE_INDEX = 77; // Evento 78 — antes de PADIL
 const TARGET_INDEX = 78; // Evento 79 — após MASVA
 const TEST_TIMEOUT_MS = 60_000;
+const METHOD_FILTER = String(process.env.SPATIAL_EQ_METHOD || '').trim().toLowerCase();
 
 async function loadDemoPaused(page) {
   await page.goto('/index.html', { waitUntil: 'load' });
@@ -59,6 +60,64 @@ async function spatialSnapshot(page) {
       },
       transitionActive: state?.motion?.ffrpTransition != null,
     };
+  });
+}
+
+async function collectDiagnostic(page) {
+  return page.evaluate(() => {
+    const state = window.__FlightFlowFirBridge?.state;
+    const finiteOrNull = value => {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
+    };
+    const index = Number.isInteger(state?.index) ? state.index : null;
+    const routeTarget = index == null
+      ? null
+      : finiteOrNull(state?.geo?.eventRoutes?.[index]?.target);
+
+    return {
+      index,
+      playing: typeof state?.playing === 'boolean' ? state.playing : null,
+      routeTarget,
+      motion: state?.motion ? {
+        initialized: Boolean(state.motion.initialized),
+        targetProgress: finiteOrNull(state.motion.targetProgress),
+        currentProgress: finiteOrNull(state.motion.currentProgress),
+        renderedProgress: finiteOrNull(state.renderedProgress),
+        velocity: finiteOrNull(state.motion.velocity),
+        transitionActive: state.motion.ffrpTransition != null,
+      } : null,
+      renderedPlane: state?.renderedPlane ? {
+        x: finiteOrNull(state.renderedPlane.x),
+        y: finiteOrNull(state.renderedPlane.y),
+        progress: finiteOrNull(state.renderedPlane.progress),
+      } : null,
+      scrubber: document.querySelector('#scrubber')?.value ?? null,
+      playTitle: document.querySelector('#playBtn')?.title ?? null,
+      speed: document.querySelector('#speedSelect')?.value ?? null,
+      activeTimelineIndex: document.querySelector('.timeline-item.active')?.getAttribute('data-event-index') ?? null,
+    };
+  });
+}
+
+async function emitFailureDiagnostic({ page, testInfo, method, phase, expected, actual, error }) {
+  const observed = actual ?? await spatialSnapshot(page).catch(() => null);
+  const state = await collectDiagnostic(page).catch(() => null);
+  const payload = {
+    method,
+    phase,
+    expected,
+    actual: observed,
+    state,
+    error: error instanceof Error ? error.message : String(error),
+  };
+  const compact = JSON.stringify(payload);
+
+  // Linha única, pensada para ser copiada diretamente do terminal local ou do log do CI.
+  console.log(`SPATIAL_EQ_DIAG=${compact}`);
+  await testInfo.attach('spatial-equivalence-diagnostic', {
+    body: Buffer.from(JSON.stringify(payload, null, 2)),
+    contentType: 'application/json',
   });
 }
 
@@ -141,38 +200,75 @@ async function navigateViaAutoplay(page) {
 }
 
 const methods = [
-  ['Próximo', navigateViaNext],
-  ['timeline', navigateViaTimeline],
-  ['scrubber', navigateViaScrubber],
-  ['teclado', navigateViaKeyboard],
-  ['autoplay', navigateViaAutoplay],
+  { slug: 'next', name: 'Próximo', navigate: navigateViaNext },
+  { slug: 'timeline', name: 'timeline', navigate: navigateViaTimeline },
+  { slug: 'scrubber', name: 'scrubber', navigate: navigateViaScrubber },
+  { slug: 'keyboard', name: 'teclado', navigate: navigateViaKeyboard },
+  { slug: 'autoplay', name: 'autoplay', navigate: navigateViaAutoplay },
 ];
 
-for (const [name, navigate] of methods) {
-  test(`${name} converge para a posição espacial canônica no trecho crítico 78 → 79`, async ({ page }) => {
+const validMethodSlugs = new Set(methods.map(method => method.slug));
+if (METHOD_FILTER && !validMethodSlugs.has(METHOD_FILTER)) {
+  throw new Error(`SPATIAL_EQ_METHOD inválido: ${METHOD_FILTER}. Use: ${[...validMethodSlugs].join(', ')}`);
+}
+
+for (const method of methods) {
+  test(`${method.name} converge para a posição espacial canônica no trecho crítico 78 → 79`, async ({ page }, testInfo) => {
+    test.skip(Boolean(METHOD_FILTER && METHOD_FILTER !== method.slug), `filtrado por SPATIAL_EQ_METHOD=${METHOD_FILTER}`);
+
     // Este cenário faz dois snaps determinísticos, carregamento da demo e a
     // transição real 78 → 79. Mantemos cada espera funcional curta e rígida;
     // ampliamos somente o orçamento total deste teste, sem alterar produção.
     test.setTimeout(TEST_TIMEOUT_MS);
 
-    await loadDemoPaused(page);
+    let phase = 'load-demo';
+    let expected = null;
+    let actual = null;
 
-    // O target canônico é obtido pelo snap determinístico já existente em produção.
-    // Depois voltamos ao Evento 78 e exercitamos integralmente o caminho real 78 → 79.
-    await snapToIndex(page, TARGET_INDEX);
-    const expected = await spatialSnapshot(page);
-    expect(expected.index).toBe(TARGET_INDEX);
-    expect(expected.transitionActive).toBe(false);
-    expect(expected.currentProgress).toBe(expected.routeTarget);
-    expect(expected.renderedProgress).toBe(expected.routeTarget);
-    expect(expected.plane.progress).toBe(expected.routeTarget);
+    try {
+      await loadDemoPaused(page);
 
-    await snapToIndex(page, BASE_INDEX);
-    await navigate(page);
-    await expect(page.locator('#scrubber')).toHaveValue(String(TARGET_INDEX));
-    await waitForSpatialSettled(page, TARGET_INDEX);
+      // O target canônico é obtido pelo snap determinístico já existente em produção.
+      // Depois voltamos ao Evento 78 e exercitamos integralmente o caminho real 78 → 79.
+      phase = 'canonical-snap';
+      await snapToIndex(page, TARGET_INDEX);
+      expected = await spatialSnapshot(page);
+      expect(expected.index).toBe(TARGET_INDEX);
+      expect(expected.transitionActive).toBe(false);
+      expect(expected.currentProgress).toBe(expected.routeTarget);
+      expect(expected.renderedProgress).toBe(expected.routeTarget);
+      expect(expected.plane.progress).toBe(expected.routeTarget);
 
-    const actual = await spatialSnapshot(page);
-    expect(actual, `${name} deve convergir para o mesmo estado espacial canônico`).toEqual(expected);
+      phase = 'base-snap';
+      await snapToIndex(page, BASE_INDEX);
+
+      phase = `navigate-${method.slug}`;
+      await method.navigate(page);
+      await expect(page.locator('#scrubber')).toHaveValue(String(TARGET_INDEX));
+
+      phase = 'wait-spatial-settled';
+      await waitForSpatialSettled(page, TARGET_INDEX);
+
+      phase = 'compare-canonical';
+      actual = await spatialSnapshot(page);
+      expect(actual, `${method.name} deve convergir para o mesmo estado espacial canônico`).toEqual(expected);
+    } catch (error) {
+      await emitFailureDiagnostic({
+        page,
+        testInfo,
+        method: method.slug,
+        phase,
+        expected,
+        actual,
+        error,
+      }).catch(diagnosticError => {
+        console.log(`SPATIAL_EQ_DIAG_ERROR=${JSON.stringify({
+          method: method.slug,
+          phase,
+          error: diagnosticError instanceof Error ? diagnosticError.message : String(diagnosticError),
+        })}`);
+      });
+      throw error;
+    }
   });
 }
