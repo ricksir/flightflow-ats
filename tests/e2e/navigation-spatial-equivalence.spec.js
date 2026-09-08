@@ -104,11 +104,39 @@ async function navigateViaKeyboard(page) {
 
 async function navigateViaAutoplay(page) {
   await page.locator('#speedSelect').selectOption('1');
-  await page.locator('#playBtn').click();
-  await expect(page.locator('#playBtn')).toHaveAttribute('title', /Pausar/);
-  await expect.poll(async () => Number(await page.locator('#scrubber').inputValue()), { timeout: 4_000 })
-    .toBe(TARGET_INDEX);
-  await page.locator('#playBtn').click();
+
+  // O autoplay agenda continuamente o próximo evento enquanto state.playing=true.
+  // Para testar exatamente a transição 78 → 79 sem deixar o relógio avançar para o
+  // evento seguinte, iniciamos pelo botão real e o pausamos pelo mesmo botão assim
+  // que o estado de produção alcançar o índice-alvo. O requestAnimationFrame fecha
+  // a janela de corrida do polling externo sem chamar nenhuma API interna de teste.
+  await page.evaluate(targetIndex => new Promise((resolve, reject) => {
+    const playBtn = document.querySelector('#playBtn');
+    if (!playBtn) {
+      reject(new Error('botão de autoplay indisponível'));
+      return;
+    }
+
+    const deadline = performance.now() + 4_000;
+    const watchTarget = () => {
+      const state = window.__FlightFlowFirBridge?.state;
+      if (state?.index === targetIndex) {
+        if (state.playing) playBtn.click();
+        resolve();
+        return;
+      }
+      if (performance.now() >= deadline) {
+        reject(new Error(`autoplay não alcançou o índice ${targetIndex} no prazo esperado`));
+        return;
+      }
+      requestAnimationFrame(watchTarget);
+    };
+
+    playBtn.click();
+    requestAnimationFrame(watchTarget);
+  }), TARGET_INDEX);
+
+  await expect(page.locator('#scrubber')).toHaveValue(String(TARGET_INDEX));
   await expect(page.locator('#playBtn')).toHaveAttribute('title', /Reproduzir/);
 }
 
