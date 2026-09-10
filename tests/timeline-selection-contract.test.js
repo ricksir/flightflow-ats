@@ -9,6 +9,7 @@ const crypto = require('node:crypto');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'timeline-selection-controller.js');
+const RENDER_CURRENT_MODULE = path.join(ROOT, 'src', 'core', 'render-current-controller.js');
 const REFERENCE = '<script id="flightflow-timeline-selection-controller" src="src/timeline/timeline-selection-controller.js"></script>';
 const MODULE_BYTES = 1387;
 const MODULE_SHA256 = '3b1449594d70c1cf136c7568bcc3d3c0d7d961a64b883497d9a5411d54a84861';
@@ -120,8 +121,9 @@ test('módulo permanece desacoplado de DOM global, rota, mapa, aeronave, storage
   ]) assert.equal(source.includes(token), false, `acoplamento proibido: ${token}`);
 });
 
-test('index carrega controlador antes do núcleo e preserva os dois consumidores conhecidos', () => {
+test('index e renderCurrent preservam os dois consumidores conhecidos da seleção da timeline', () => {
   const html = fs.readFileSync(HTML, 'utf8');
+  const renderCurrentSource = fs.readFileSync(RENDER_CURRENT_MODULE, 'utf8');
   assert.equal(occurrences(html, REFERENCE), 1, 'referência externa deve ser única');
   const referenceIndex = html.indexOf(REFERENCE);
   const anchorIndex = html.indexOf('window.__FlightFlowFirBridge = Object.freeze({');
@@ -135,10 +137,15 @@ test('index carrega controlador antes do núcleo e preserva os dois consumidores
     'state,',
     'getTimelineList: () => els.timelineList,',
     "isTimelinePanelActive: () => document.querySelector('[data-panel=\"timeline\"]').classList.contains('active'),",
-    'renderCommunication(event);\n    updateTimelineSelection();\n    renderOriginalEvent(event);',
+    'updateTimelineSelection: (...args) => updateTimelineSelection(...args),',
     "if (name === 'timeline') updateTimelineSelection();",
   ]) assert.ok(html.includes(token), `integração ausente: ${token}`);
 
+  assert.ok(
+    renderCurrentSource.includes('renderCommunication(event);\n      updateTimelineSelection();\n      renderOriginalEvent(event);'),
+    'renderCurrent deve preservar updateTimelineSelection entre comunicação e evento original',
+  );
   assert.doesNotMatch(html, /function\s+updateTimelineSelection\s*\(/, 'implementação inline deve ter sido removida');
-  assert.equal(occurrences(html, 'updateTimelineSelection();'), 2, 'os dois consumidores existentes devem permanecer');
+  assert.equal(occurrences(html, 'updateTimelineSelection();'), 1, 'consumidor direto da aba timeline deve permanecer no núcleo');
+  assert.equal(occurrences(renderCurrentSource, 'updateTimelineSelection();'), 1, 'renderCurrent deve continuar como segundo consumidor');
 });
