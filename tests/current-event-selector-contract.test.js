@@ -86,9 +86,14 @@ test('index carrega seletor antes do núcleo e mantém wiring explícito', () =>
   const tag = '<script id="flightflow-current-event-selector" src="src/core/current-event-selector.js"></script>';
   const tagIndex = HTML.indexOf(tag);
   const kernelIndex = HTML.indexOf('const Parser = window.FlightParser;');
+  const stateIndex = HTML.indexOf('const state = {');
+  const wiringIndex = HTML.indexOf('const CurrentEventSelector = window.FlightFlowCurrentEventSelector;');
+  const firstDirectConsumer = HTML.indexOf('const RealMapAircraftController = window.FlightFlowRealMapAircraftController;');
 
   assert.notEqual(tagIndex, -1, 'seletor deve estar referenciado');
   assert.ok(tagIndex < kernelIndex, 'seletor deve carregar antes do IIFE principal');
+  assert.ok(stateIndex >= 0 && wiringIndex > stateIndex, 'seletor deve ser instanciado somente após state');
+  assert.ok(firstDirectConsumer > wiringIndex, 'seletor deve estar inicializado antes do primeiro consumidor direto');
   assert.equal(HTML.includes('  function currentEvent()'), false, 'currentEvent não deve voltar ao IIFE');
 
   for (const token of [
