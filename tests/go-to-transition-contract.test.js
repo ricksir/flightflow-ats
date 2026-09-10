@@ -7,54 +7,16 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const MODULE_PATH = path.join(ROOT, 'src', 'core', 'event-navigation-controller.js');
+const SOURCE = fs.readFileSync(MODULE_PATH, 'utf8');
 
-function extractNamedFunction(source, name) {
-  const match = new RegExp(`^[ \\t]*function[ \\t]+${name}[ \\t]*\\(`, 'm').exec(source);
-  assert.ok(match, `${name} deve continuar inline neste corte`);
-  const start = match.index;
-  const openParen = source.indexOf('(', match.index);
-  const closeParen = source.indexOf(')', openParen + 1);
-  assert.ok(openParen >= 0 && closeParen > openParen, `${name} deve manter assinatura válida`);
-  const brace = source.indexOf('{', closeParen + 1);
-  assert.ok(brace > closeParen, `${name} deve manter corpo delimitado`);
-
-  let depth = 0;
-  let quote = null;
-  let escaped = false;
-  let lineComment = false;
-  let blockComment = false;
-  for (let i = brace; i < source.length; i += 1) {
-    const ch = source[i];
-    const next = source[i + 1] || '';
-    if (lineComment) {
-      if (ch === '\n') lineComment = false;
-      continue;
-    }
-    if (blockComment) {
-      if (ch === '*' && next === '/') { blockComment = false; i += 1; }
-      continue;
-    }
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
-      else if (ch === quote) quote = null;
-      continue;
-    }
-    if (ch === '/' && next === '/') { lineComment = true; i += 1; continue; }
-    if (ch === '/' && next === '*') { blockComment = true; i += 1; continue; }
-    if (ch === '\'' || ch === '"' || ch === '`') quote = ch;
-    else if (ch === '{') depth += 1;
-    else if (ch === '}') {
-      depth -= 1;
-      if (depth === 0) return source.slice(start, i + 1).trim();
-    }
-  }
-  throw new Error(`${name} não terminou corretamente`);
+function loadController() {
+  delete require.cache[require.resolve(MODULE_PATH)];
+  return require(MODULE_PATH);
 }
 
-const GO_TO_SOURCE = extractNamedFunction(HTML, 'goTo');
-
 function createHarness(options = {}) {
+  const Controller = loadController();
   const state = {
     parsed: options.parsed === false ? null : { events: [{ index: 0 }, { index: 1 }, { index: 2 }] },
     index: options.index ?? 0,
@@ -68,20 +30,35 @@ function createHarness(options = {}) {
   const renderCurrent = renderOptions => {
     renderCalls.push({ options: renderOptions, indexAtRender: state.index });
   };
-  const factory = new Function(
-    'state', 'planMotionTransition', 'renderCurrent',
-    `${GO_TO_SOURCE}; return goTo;`,
-  );
-  const goTo = factory(state, planMotionTransition, renderCurrent);
-  return { goTo, state, plannerCalls, renderCalls };
+  const api = Controller.create({ state, planMotionTransition, renderCurrent });
+  return { Controller, api, goTo: api.goTo, state, plannerCalls, renderCalls };
 }
+
+test('módulo publica fábrica mínima e congelada', () => {
+  const Controller = loadController();
+  assert.equal(Object.isFrozen(Controller), true);
+  assert.deepEqual(Object.keys(Controller), ['create']);
+  const h = createHarness();
+  assert.equal(Object.isFrozen(h.api), true);
+  assert.deepEqual(Object.keys(h.api), ['goTo']);
+});
+
+test('fábrica exige somente state, planner e renderCurrent', () => {
+  const Controller = loadController();
+  assert.throws(() => Controller.create(), /requer state/);
+  assert.throws(() => Controller.create({ state: {} }), /requer planMotionTransition/);
+  assert.throws(
+    () => Controller.create({ state: {}, planMotionTransition() {} }),
+    /requer renderCurrent/,
+  );
+});
 
 test('goTo delega planejamento ao MotionTransitionPlanner e permanece orquestrador fino', () => {
   for (const token of [
     'if (state.motion) planMotionTransition(nextIndex);',
     'state.index = nextIndex;',
     'renderCurrent(options);',
-  ]) assert.ok(GO_TO_SOURCE.includes(token), `contrato ausente em goTo: ${token}`);
+  ]) assert.ok(SOURCE.includes(token), `contrato ausente em goTo: ${token}`);
 
   for (const forbidden of [
     'transitionPlanForEvents',
@@ -90,7 +67,7 @@ test('goTo delega planejamento ao MotionTransitionPlanner e permanece orquestrad
     'FlightFlowRouteProcessedV7412',
     'performance.now()',
     'console.warn',
-  ]) assert.equal(GO_TO_SOURCE.includes(forbidden), false, `planejamento ainda inline em goTo: ${forbidden}`);
+  ]) assert.equal(SOURCE.includes(forbidden), false, `planejamento ainda absorvido por goTo: ${forbidden}`);
 });
 
 test('goTo sem plano carregado continua no-op', () => {
@@ -106,6 +83,11 @@ test('goTo limita o índice antes de delegar e planner observa o índice anterio
   harness.goTo(99);
   assert.deepEqual(harness.plannerCalls, [{ nextIndex: 2, indexAtPlan: 0 }]);
   assert.equal(harness.state.index, 2);
+
+  const lower = createHarness({ index: 2 });
+  lower.goTo(-99);
+  assert.deepEqual(lower.plannerCalls, [{ nextIndex: 0, indexAtPlan: 2 }]);
+  assert.equal(lower.state.index, 0);
 });
 
 test('goTo compromete state.index antes de renderCurrent e preserva options', () => {
@@ -123,4 +105,21 @@ test('goTo sem motion não chama planner, mas continua navegando e renderizando'
   assert.deepEqual(harness.plannerCalls, []);
   assert.equal(harness.state.index, 1);
   assert.equal(harness.renderCalls[0].indexAtRender, 1);
+});
+
+test('index carrega controller antes do núcleo e mantém wiring explícito', () => {
+  const tag = '<script id="flightflow-event-navigation-controller" src="src/core/event-navigation-controller.js"></script>';
+  const tagIndex = HTML.indexOf(tag);
+  const kernelIndex = HTML.indexOf('const Parser = window.FlightParser;');
+  assert.notEqual(tagIndex, -1, 'controller deve estar referenciado');
+  assert.ok(tagIndex < kernelIndex, 'controller deve carregar antes do IIFE principal');
+  assert.equal(HTML.includes('  function goTo('), false, 'goTo não deve voltar ao IIFE principal');
+  for (const token of [
+    'const EventNavigationController = window.FlightFlowEventNavigationController;',
+    "if (!EventNavigationController) throw new Error('FlightFlowEventNavigationController não foi carregado.');",
+    'const { goTo } = EventNavigationController.create({',
+    'state,',
+    'planMotionTransition: (...args) => planMotionTransition(...args),',
+    'renderCurrent: (...args) => renderCurrent(...args),',
+  ]) assert.ok(HTML.includes(token), `wiring ausente: ${token}`);
 });

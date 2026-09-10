@@ -10,6 +10,7 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const MOTION_MODULE = fs.readFileSync(path.join(ROOT, 'src', 'map', 'aircraft-motion-controller.js'), 'utf8');
+const EVENT_NAVIGATION_MODULE = fs.readFileSync(path.join(ROOT, 'src', 'core', 'event-navigation-controller.js'), 'utf8');
 const EXPECTED = Object.freeze({
   resetMotionController: {
     bytes: 497,
@@ -39,7 +40,9 @@ const EXPECTED = Object.freeze({
 });
 
 function sourceContainer(name) {
-  return Object.prototype.hasOwnProperty.call(EXPECTED, name) ? MOTION_MODULE : HTML;
+  if (Object.prototype.hasOwnProperty.call(EXPECTED, name)) return MOTION_MODULE;
+  if (name === 'goTo') return EVENT_NAVIGATION_MODULE;
+  return HTML;
 }
 
 function functionSource(name) {
@@ -298,9 +301,12 @@ test('goTo delega o planejamento; planner monta a transição e motor apenas a e
   assert.equal(motionLoop.includes('transitionDurations'), false);
 });
 
-test('renderCurrent e Rota Processada permanecem fora deste corte de congelamento', () => {
+test('goTo, renderCurrent e Rota Processada permanecem fora do motor de movimento', () => {
+  assert.equal(HTML.includes('  function goTo('), false, 'goTo não deve voltar ao IIFE principal');
   assert.equal(HTML.includes('  function renderCurrent('), false, 'renderCurrent não deve voltar ao IIFE principal');
+  assert.ok(HTML.includes('src/core/event-navigation-controller.js'), 'goTo deve permanecer no controller dedicado');
   assert.ok(HTML.includes('src/core/render-current-controller.js'), 'renderCurrent deve permanecer no controller dedicado');
+  assert.ok(HTML.includes('FlightFlowEventNavigationController'));
   assert.ok(HTML.includes('FlightFlowRenderCurrentController'));
   assert.ok(HTML.includes('FlightFlowRouteProcessedV7412'));
   const combined = Object.keys(EXPECTED).map(functionSource).join('\n');
