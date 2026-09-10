@@ -5479,6 +5479,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-geo-data" src="src/data/geo-data.js"></script>
 
 <script id="flightflow-core-utils" src="src/core/core-utils.js"></script>
+<script id="flightflow-render-current-controller" src="src/core/render-current-controller.js"></script>
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
@@ -8772,45 +8773,28 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
   }
 
   // Modifica renderCurrent para também mostrar a fonte no cabeçalho (opcional)
-  function renderCurrent(options = {}) {
-    const event = currentEvent();
-    if (!event) return;
-    const snapshot = event.snapshot;
-    const total = state.parsed.events.length;
-    els.callsignTitle.textContent = snapshot.callsign || state.parsed.meta.callsign || 'ACFT';
-    els.adepTitle.textContent = snapshot.adep || 'ADEP';
-    els.adesTitle.textContent = snapshot.ades || 'ADES';
-    els.departureCode.textContent = snapshot.adep || 'ADEP';
-    els.arrivalCode.textContent = snapshot.ades || 'ADES';
-    els.planeLabel.textContent = snapshot.callsign || 'ACFT';
-    els.statusBadge.textContent = snapshot.status || 'SEM ESTADO';
-    els.statusBadge.className = `status-badge ${statusClass(snapshot.status)}`;
-    els.stageBadge.textContent = event.stage.label;
-    els.frameCounter.textContent = `${state.index + 1} / ${total}`;
-    els.operationTitle.textContent = event.operation;
-    els.captionTitle.textContent = `${event.stage.label} · ${event.messageType}`;
-    els.captionText.textContent = event.description;
-    els.changeCount.textContent = String(event.changes.length);
-    els.scrubber.value = String(state.index);
-    els.currentTimeLabel.textContent = event.time || '--:--:--';
-    els.eventLabel.textContent = `Evento ${state.index + 1} de ${total}`;
-    els.prevBtn.disabled = state.index <= 0;
-    els.nextBtn.disabled = state.index >= total - 1;
-    renderFields(event);
-    renderChanges(event);
-    renderScene(event);
-    renderRealMapEvent(event);
-    renderRadarTag(event);
-    renderCommunication(event);
-    updateTimelineSelection();
-    renderOriginalEvent(event);
-    renderFpv(event);
-    renderStrip(event);
-    syncDetachedWindows();
-    maybeAutoOpenFpv(event);
-    maybeAutoOpenStrip(event);
-    if (!options.silent) playTransitionSound(event);
-  }
+  const RenderCurrentController = window.FlightFlowRenderCurrentController;
+  if (!RenderCurrentController) throw new Error('FlightFlowRenderCurrentController não foi carregado.');
+  const { renderCurrent } = RenderCurrentController.create({
+    state,
+    els,
+    currentEvent: (...args) => currentEvent(...args),
+    statusClass: (...args) => statusClass(...args),
+    renderFields: (...args) => renderFields(...args),
+    renderChanges: (...args) => renderChanges(...args),
+    renderScene: (...args) => renderScene(...args),
+    renderRealMapEvent: (...args) => renderRealMapEvent(...args),
+    renderRadarTag: (...args) => renderRadarTag(...args),
+    renderCommunication: (...args) => renderCommunication(...args),
+    updateTimelineSelection: (...args) => updateTimelineSelection(...args),
+    renderOriginalEvent: (...args) => renderOriginalEvent(...args),
+    renderFpv: (...args) => renderFpv(...args),
+    renderStrip: (...args) => renderStrip(...args),
+    syncDetachedWindows: (...args) => syncDetachedWindows(...args),
+    maybeAutoOpenFpv: (...args) => maybeAutoOpenFpv(...args),
+    maybeAutoOpenStrip: (...args) => maybeAutoOpenStrip(...args),
+    playTransitionSound: (...args) => playTransitionSound(...args),
+  });
 
   // Atualiza a função que carrega o arquivo: agora usa loadFileAsSource
   // Já modificamos loadFile e loadDemo
