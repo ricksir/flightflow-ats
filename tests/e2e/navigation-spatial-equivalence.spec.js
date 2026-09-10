@@ -228,6 +228,16 @@ async function waitForSpatialSettled(page, index) {
   }, index), { timeout: 12_000, intervals: [50, 100, 200] }).toBe(true);
 }
 
+async function waitForCanonicalSpatialSnapshot(page, expected) {
+  // Os campos lógicos de progresso podem convergir antes do último frame visual
+  // atualizar renderedPlane.x/y. Aguardar a própria igualdade canônica elimina
+  // essa corrida sem relaxar a equivalência espacial exigida pelo teste.
+  await expect.poll(
+    async () => spatialSnapshot(page),
+    { timeout: 5_000, intervals: [16, 32, 64, 100, 200] },
+  ).toEqual(expected);
+}
+
 async function spatialSnapshot(page) {
   return page.evaluate(() => {
     const state = window.__FlightFlowFirBridge?.state;
@@ -478,6 +488,9 @@ for (const method of methods) {
 
       phase = 'wait-spatial-settled';
       await waitForSpatialSettled(page, TARGET_INDEX);
+
+      phase = 'wait-canonical-spatial-render';
+      await waitForCanonicalSpatialSnapshot(page, expected);
 
       phase = 'verify-fix-sequence';
       const crossed = await stopFixCapture(page);
