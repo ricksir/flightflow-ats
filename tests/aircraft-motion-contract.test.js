@@ -299,7 +299,9 @@ test('goTo delega o planejamento; planner monta a transição e motor apenas a e
 });
 
 test('renderCurrent e Rota Processada permanecem fora deste corte de congelamento', () => {
-  assert.ok(HTML.includes('function renderCurrent('));
+  assert.equal(HTML.includes('  function renderCurrent('), false, 'renderCurrent não deve voltar ao IIFE principal');
+  assert.ok(HTML.includes('src/core/render-current-controller.js'), 'renderCurrent deve permanecer no controller dedicado');
+  assert.ok(HTML.includes('FlightFlowRenderCurrentController'));
   assert.ok(HTML.includes('FlightFlowRouteProcessedV7412'));
   const combined = Object.keys(EXPECTED).map(functionSource).join('\n');
   assert.equal(combined.includes('function renderCurrent('), false);
