@@ -178,3 +178,123 @@ test('controller exige explicitamente todas as dependências de renderização',
   assert.ok(MODULE.includes('return Object.freeze({ renderCurrent });'));
   assert.ok(MODULE.includes('return Object.freeze({ create });'));
 });
+
+
+test('controller preserva efeitos, ordem e modo silencioso em execução', () => {
+  const Controller = require(MODULE_PATH);
+  const element = () => ({ textContent: '', className: '', value: '', disabled: false });
+  const els = {
+    callsignTitle: element(), adepTitle: element(), adesTitle: element(),
+    departureCode: element(), arrivalCode: element(), planeLabel: element(),
+    statusBadge: element(), stageBadge: element(), frameCounter: element(),
+    operationTitle: element(), captionTitle: element(), captionText: element(),
+    changeCount: element(), scrubber: element(), currentTimeLabel: element(),
+    eventLabel: element(), prevBtn: element(), nextBtn: element(),
+  };
+  const event = {
+    snapshot: { callsign: 'GLO1762', adep: 'SBBS', ades: 'SBPJ', status: 'ATIVO' },
+    stage: { label: 'EM ROTA' },
+    operation: 'EVENTO 79 — após MASVA',
+    messageType: 'CPL',
+    description: 'Descrição operacional',
+    changes: [{ key: 'route' }],
+    time: '01:37',
+  };
+  const state = {
+    index: 1,
+    parsed: { meta: { callsign: 'FALLBACK' }, events: [{}, event] },
+  };
+  const calls = [];
+  const effect = name => (...args) => calls.push({ name, args });
+  const controller = Controller.create({
+    state,
+    els,
+    currentEvent: () => event,
+    statusClass: () => 'status-active',
+    renderFields: effect('renderFields'),
+    renderChanges: effect('renderChanges'),
+    renderScene: effect('renderScene'),
+    renderRealMapEvent: effect('renderRealMapEvent'),
+    renderRadarTag: effect('renderRadarTag'),
+    renderCommunication: effect('renderCommunication'),
+    updateTimelineSelection: effect('updateTimelineSelection'),
+    renderOriginalEvent: effect('renderOriginalEvent'),
+    renderFpv: effect('renderFpv'),
+    renderStrip: effect('renderStrip'),
+    syncDetachedWindows: effect('syncDetachedWindows'),
+    maybeAutoOpenFpv: effect('maybeAutoOpenFpv'),
+    maybeAutoOpenStrip: effect('maybeAutoOpenStrip'),
+    playTransitionSound: effect('playTransitionSound'),
+  });
+
+  controller.renderCurrent();
+
+  assert.equal(els.callsignTitle.textContent, 'GLO1762');
+  assert.equal(els.adepTitle.textContent, 'SBBS');
+  assert.equal(els.adesTitle.textContent, 'SBPJ');
+  assert.equal(els.departureCode.textContent, 'SBBS');
+  assert.equal(els.arrivalCode.textContent, 'SBPJ');
+  assert.equal(els.planeLabel.textContent, 'GLO1762');
+  assert.equal(els.statusBadge.textContent, 'ATIVO');
+  assert.equal(els.statusBadge.className, 'status-badge status-active');
+  assert.equal(els.stageBadge.textContent, 'EM ROTA');
+  assert.equal(els.frameCounter.textContent, '2 / 2');
+  assert.equal(els.operationTitle.textContent, 'EVENTO 79 — após MASVA');
+  assert.equal(els.captionTitle.textContent, 'EM ROTA · CPL');
+  assert.equal(els.captionText.textContent, 'Descrição operacional');
+  assert.equal(els.changeCount.textContent, '1');
+  assert.equal(els.scrubber.value, '1');
+  assert.equal(els.currentTimeLabel.textContent, '01:37');
+  assert.equal(els.eventLabel.textContent, 'Evento 2 de 2');
+  assert.equal(els.prevBtn.disabled, false);
+  assert.equal(els.nextBtn.disabled, true);
+
+  assert.deepEqual(calls.map(call => call.name), [
+    'renderFields', 'renderChanges', 'renderScene', 'renderRealMapEvent',
+    'renderRadarTag', 'renderCommunication', 'updateTimelineSelection',
+    'renderOriginalEvent', 'renderFpv', 'renderStrip', 'syncDetachedWindows',
+    'maybeAutoOpenFpv', 'maybeAutoOpenStrip', 'playTransitionSound',
+  ]);
+  for (const call of calls.filter(call => !['updateTimelineSelection', 'syncDetachedWindows'].includes(call.name))) {
+    assert.strictEqual(call.args[0], event, `${call.name} deve receber o mesmo evento corrente`);
+  }
+
+  calls.length = 0;
+  controller.renderCurrent({ silent: true });
+  assert.equal(calls.some(call => call.name === 'playTransitionSound'), false, 'modo silencioso deve suprimir somente o som');
+  assert.deepEqual(calls.map(call => call.name), [
+    'renderFields', 'renderChanges', 'renderScene', 'renderRealMapEvent',
+    'renderRadarTag', 'renderCommunication', 'updateTimelineSelection',
+    'renderOriginalEvent', 'renderFpv', 'renderStrip', 'syncDetachedWindows',
+    'maybeAutoOpenFpv', 'maybeAutoOpenStrip',
+  ]);
+});
+
+test('controller não produz efeitos quando não há evento corrente', () => {
+  const Controller = require(MODULE_PATH);
+  const calls = [];
+  const noop = () => calls.push('effect');
+  const controller = Controller.create({
+    state: { index: 0, parsed: { meta: {}, events: [] } },
+    els: {},
+    currentEvent: () => null,
+    statusClass: () => '',
+    renderFields: noop,
+    renderChanges: noop,
+    renderScene: noop,
+    renderRealMapEvent: noop,
+    renderRadarTag: noop,
+    renderCommunication: noop,
+    updateTimelineSelection: noop,
+    renderOriginalEvent: noop,
+    renderFpv: noop,
+    renderStrip: noop,
+    syncDetachedWindows: noop,
+    maybeAutoOpenFpv: noop,
+    maybeAutoOpenStrip: noop,
+    playTransitionSound: noop,
+  });
+
+  assert.equal(controller.renderCurrent(), undefined);
+  assert.deepEqual(calls, []);
+});
