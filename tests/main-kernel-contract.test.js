@@ -6,10 +6,11 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1127333;
-const EXPECTED_SHA256 = 'a7db027692512e978ccb8c3978b09c1d52ca147ba7872aac5e83ea9151e850f4';
-const EXPECTED_LINES = 5233;
+const EXPECTED_BYTES = 1127438;
+const EXPECTED_SHA256 = '1e05521dea2c60f8a086e683b8203c0f6da4fc2df15c210794490635c96af374';
+const EXPECTED_LINES = 5234;
 const EXPECTED_DUPLICATES = [];
+const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
 const EXTRACTED_RENDER_CURRENT = ['renderCurrent'];
 const EXTRACTED_CORE_UTILS = [
@@ -112,6 +113,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;',
     "if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');",
     'const { internalTransitionDetails } = CommunicationContextUtils;',
+    'const CurrentEventSelector = window.FlightFlowCurrentEventSelector;',
+    "if (!CurrentEventSelector) throw new Error('FlightFlowCurrentEventSelector não foi carregado.');",
+    'const { currentEvent } = CurrentEventSelector.create({ state });',
     'const RenderCurrentController = window.FlightFlowRenderCurrentController;',
     "if (!RenderCurrentController) throw new Error('FlightFlowRenderCurrentController não foi carregado.');",
     'const { renderCurrent } = RenderCurrentController.create({',
@@ -185,10 +189,11 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 320);
-  assert.equal(counts.size, 320);
+  assert.equal(names.length, 319);
+  assert.equal(counts.size, 319);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
+    ...EXTRACTED_CURRENT_EVENT,
     ...EXTRACTED_EVENT_NAVIGATION,
     ...EXTRACTED_RENDER_CURRENT,
     ...EXTRACTED_CORE_UTILS,
@@ -217,6 +222,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
   assert.equal(counts.has('goTo'), false, 'goTo deve permanecer fora do IIFE neste corte');
+  assert.equal(counts.has('currentEvent'), false, 'currentEvent deve permanecer fora do IIFE neste corte');
   assert.equal(counts.has('renderCurrent'), false, 'renderCurrent deve permanecer fora do IIFE neste corte');
   assert.equal(counts.get('clamp'), 1, 'clamp deve permanecer inline neste corte');
   assert.equal(counts.get('clamp01'), 1, 'clamp01 deve permanecer inline neste corte');
