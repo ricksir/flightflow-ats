@@ -6,10 +6,11 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1127440;
-const EXPECTED_SHA256 = 'eb8f47df30c05fc0b01ebb3db6a3de276808b1d40004a9fe6eab31cb2219f05b';
-const EXPECTED_LINES = 5236;
+const EXPECTED_BYTES = 1127333;
+const EXPECTED_SHA256 = 'a7db027692512e978ccb8c3978b09c1d52ca147ba7872aac5e83ea9151e850f4';
+const EXPECTED_LINES = 5233;
 const EXPECTED_DUPLICATES = [];
+const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
 const EXTRACTED_RENDER_CURRENT = ['renderCurrent'];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
@@ -114,6 +115,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const RenderCurrentController = window.FlightFlowRenderCurrentController;',
     "if (!RenderCurrentController) throw new Error('FlightFlowRenderCurrentController não foi carregado.');",
     'const { renderCurrent } = RenderCurrentController.create({',
+    'const EventNavigationController = window.FlightFlowEventNavigationController;',
+    "if (!EventNavigationController) throw new Error('FlightFlowEventNavigationController não foi carregado.');",
+    'const { goTo } = EventNavigationController.create({',
     'const PlaybackController = window.FlightFlowPlaybackController;',
     "if (!PlaybackController) throw new Error('FlightFlowPlaybackController não foi carregado.');",
     'const { startPlayback, stopPlayback, togglePlayback, scheduleNext } = PlaybackController.create({',
@@ -181,10 +185,11 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 321);
-  assert.equal(counts.size, 321);
+  assert.equal(names.length, 320);
+  assert.equal(counts.size, 320);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
+    ...EXTRACTED_EVENT_NAVIGATION,
     ...EXTRACTED_RENDER_CURRENT,
     ...EXTRACTED_CORE_UTILS,
     ...EXTRACTED_TYPOGRAPHY_UTILS,
@@ -211,7 +216,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   ]) {
     assert.equal(counts.has(name), false, `${name} deve permanecer fora do IIFE principal`);
   }
-  assert.equal(counts.get('goTo'), 1, 'goTo deve permanecer inline neste corte');
+  assert.equal(counts.has('goTo'), false, 'goTo deve permanecer fora do IIFE neste corte');
   assert.equal(counts.has('renderCurrent'), false, 'renderCurrent deve permanecer fora do IIFE neste corte');
   assert.equal(counts.get('clamp'), 1, 'clamp deve permanecer inline neste corte');
   assert.equal(counts.get('clamp01'), 1, 'clamp01 deve permanecer inline neste corte');
