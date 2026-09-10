@@ -5480,6 +5480,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
 <script id="flightflow-core-utils" src="src/core/core-utils.js"></script>
 <script id="flightflow-render-current-controller" src="src/core/render-current-controller.js"></script>
+<script id="flightflow-event-navigation-controller" src="src/core/event-navigation-controller.js"></script>
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
@@ -8817,16 +8818,13 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     now: () => performance.now(),
     warn: (...args) => console.warn(...args),
   });
-  function goTo(index, options = {}) {
-    if (!state.parsed) return;
-    const max = state.parsed.events.length - 1;
-    const nextIndex = Math.max(0, Math.min(max, Number(index) || 0));
-    // v7.4.12: transição orientada pelos fixos/ETIM. Se o intervalo entre dois eventos
-    // cruza vários pontos (ex.: 78 → 79), cada ponto vira uma etapa obrigatória da animação.
-    if (state.motion) planMotionTransition(nextIndex);
-    state.index = nextIndex;
-    renderCurrent(options);
-  }
+  const EventNavigationController = window.FlightFlowEventNavigationController;
+  if (!EventNavigationController) throw new Error('FlightFlowEventNavigationController não foi carregado.');
+  const { goTo } = EventNavigationController.create({
+    state,
+    planMotionTransition: (...args) => planMotionTransition(...args),
+    renderCurrent: (...args) => renderCurrent(...args),
+  });
 
   // ... resto do código existente, com as funções que já foram adaptadas (renderCurrent, buildTimeline, etc.)
   // Como o arquivo é muito grande, o resto das funções (renderFields, renderChanges, etc.) permanecem como estão,
