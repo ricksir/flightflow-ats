@@ -7197,6 +7197,9 @@ const { updateRadarTagPosition } = RadarTagController.create({ els });
     sources: [],  // array de { id, name, parsed }
     activeSourceId: null,
   };
+  const CurrentEventSelector = window.FlightFlowCurrentEventSelector;
+  if (!CurrentEventSelector) throw new Error('FlightFlowCurrentEventSelector não foi carregado.');
+  const { currentEvent } = CurrentEventSelector.create({ state });
 const AircraftFollowController = window.FlightFlowAircraftFollowController;
 if (!AircraftFollowController) throw new Error('FlightFlowAircraftFollowController não foi carregado.');
 const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapViewBox });
@@ -8807,9 +8810,7 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
   // O parser e demais funções continuam funcionando.
 
 
-  const CurrentEventSelector = window.FlightFlowCurrentEventSelector;
-  if (!CurrentEventSelector) throw new Error('FlightFlowCurrentEventSelector não foi carregado.');
-  const { currentEvent } = CurrentEventSelector.create({ state });
+  
 
   const MotionTransitionPlanner = window.FlightFlowMotionTransitionPlanner;
   if (!MotionTransitionPlanner) throw new Error('FlightFlowMotionTransitionPlanner não foi carregado.');
