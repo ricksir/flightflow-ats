@@ -7,12 +7,31 @@ const METHOD_FILTER = String(process.env.SPATIAL_EQ_METHOD || '').trim().toLower
 const EXPECTED_FIXES = ['PADIL', 'IRISO', 'LIBEC', 'EGDOD', 'IBGAM', 'PMS', 'ILVES', 'MASVA'];
 
 async function installCriticalFixture(page) {
-  return page.evaluate(({ baseIndex, targetIndex }) => {
+  return page.evaluate(async ({ baseIndex, targetIndex }) => {
     const bridge = window.__FlightFlowFirBridge;
     const api = window.FlightFlowRouteProcessedV7412;
     const state = bridge?.state;
     if (!state?.parsed?.events?.length) throw new Error('demo base não carregada');
     if (!api) throw new Error('FlightFlowRouteProcessedV7412 não carregado');
+
+    const model = api.getModel();
+
+    // O módulo de Rota Processada mantém uma ponte passiva que reaplica a rota
+    // geográfica a cada 500 ms. Este teste instala uma geometria pixel-controlada
+    // para provar equivalência espacial dos cinco mecanismos de navegação; portanto,
+    // primeiro drenamos qualquer tick já agendado e impedimos que ele substitua o
+    // fixture no meio da asserção. Nenhum comportamento de produção é alterado.
+    if (model.passiveTimer) {
+      clearInterval(model.passiveTimer);
+      model.passiveTimer = 0;
+    }
+    await new Promise(resolve => setTimeout(resolve, 650));
+    const passiveDeadline = performance.now() + 1_200;
+    while (model.passiveBusy && performance.now() < passiveDeadline) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    if (model.passiveBusy) throw new Error('ponte passiva da rota não estabilizou para o fixture e2e');
+    model.passiveBusy = true;
 
     const utcIso = (hour, minute, second = 0) => new Date(Date.UTC(2026, 8, 4, hour, minute, second)).toISOString();
     const eventTimestamp = index => {
@@ -107,7 +126,6 @@ async function installCriticalFixture(page) {
       signature: 'fixture-critical-78-79-navigation-equivalence',
     };
 
-    const model = api.getModel();
     model.history = {
       sourceFile: 'fixture-glo1762-navigation-equivalence.txt',
       callsign: 'GLO1762',
@@ -138,6 +156,12 @@ async function installCriticalFixture(page) {
 
     const profile = api.buildMovementProfile();
     model.movementProfile = profile;
+
+    // A partir daqui o perfil e o snapshot necessários ao planner real já estão
+    // congelados. Remover apenas history desarma os ressincronizadores passivos
+    // (que retornam cedo sem histórico), enquanto goTo()/planner/motor continuam
+    // reais e operam sobre state.parsed.events + model.movementProfile.
+    model.history = null;
     const plan = api.transitionPlanForEvents(baseIndex, targetIndex);
     const fractions = api.routeDistanceFractions(points);
     const pixelPoints = points.map((p, index) => ({
