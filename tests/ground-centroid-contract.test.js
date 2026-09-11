@@ -12,7 +12,7 @@ const MODULE = path.join(ROOT, 'src', 'geo', 'coordinate-utils.js');
 const EXPECTED_BYTES = 279;
 const EXPECTED_LINES = 5;
 const EXPECTED_SHA256 = '6b44bab8c967d72ca473e966bd782704177f9d595589451a4c42eab4dbe15559';
-const EXPECTED_CONSUMERS = 2;
+const EXPECTED_CONSUMERS = 1;
 const CONTROL_WORDS = new Set(['if','for','while','switch','catch','function','with','typeof','return','new','delete','void','await','yield','class','super']);
 
 function kernelSource() {
@@ -73,13 +73,15 @@ test('groundCentroid permanece função geográfica pura e folha', () => {
   assert.deepEqual(bareCalls(source, 'groundCentroid'), []);
 });
 
-test('IIFE usa groundCentroid pelo coordinate-utils sem alterar os dois consumidores', () => {
+test('IIFE usa groundCentroid pelo coordinate-utils após extrair groundMidpoint', () => {
   const kernel = kernelSource();
   assert.equal(kernel.includes('function groundCentroid('), false);
-  assert.ok(kernel.includes('{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
+  assert.ok(kernel.includes('{ normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
   const consumers = [...kernel.matchAll(/(?<![\w$.])groundCentroid\s*\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
-  assert.ok(kernel.includes('function groundMidpoint('), 'groundMidpoint deve permanecer inline');
+  assert.equal(kernel.includes('function groundMidpoint('), false, 'groundMidpoint não deve permanecer inline');
   const module = fs.readFileSync(MODULE, 'utf8');
   assert.ok(module.includes('    groundCentroid,'));
+  assert.ok(module.includes('  function groundMidpoint(points) { return groundCentroid(points); }'));
+  assert.ok(module.includes('    groundMidpoint,'));
 });
