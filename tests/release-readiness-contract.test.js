@@ -81,7 +81,7 @@ test('regressões baseadas em históricos representativos permanecem no conjunto
 test('documentação atual descreve o estado real de modularização e testes', () => {
   assert.ok(README.includes('Release Readiness'));
   assert.ok(README.includes('src/'));
-  assert.ok(README.includes('módulos extraídos'));
+  assert.ok(README.includes('módulos já extraídos'));
   assert.equal(README.includes('destino da modularização futura'), false);
 
   assert.ok(TESTS_README.includes('testes automatizados'));
