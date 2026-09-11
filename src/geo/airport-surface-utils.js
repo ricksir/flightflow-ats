@@ -6,7 +6,7 @@
     SBGO: { terminalBearing: 210, standDistanceM: 620, apronDistanceM: 500, thresholdDistanceM: 1180, rolloutDistanceM: 820, approachDistanceM: 4300, climbDistanceM: 2800 }
   });
 
-  function create(options = {}) {
+  function createAirportSurfaceUtils(options = {}) {
     const normalizeLocalityCode = options.normalizeLocalityCode;
     if (typeof normalizeLocalityCode !== 'function') {
       throw new Error('FlightFlowAirportSurfaceUtils requer normalizeLocalityCode.');
@@ -21,7 +21,7 @@
   }
 
   window.FlightFlowAirportSurfaceUtils = Object.freeze({
-    create,
+    create: createAirportSurfaceUtils,
     presets: AIRPORT_SURFACE_PRESETS,
   });
 })();
