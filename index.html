@@ -10166,19 +10166,7 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
 
   const SearchExcerpt = window.FlightFlowSearchExcerpt;
   if (!SearchExcerpt) throw new Error('FlightFlowSearchExcerpt não foi carregado.');
-  const { makeSearchExcerpt } = SearchExcerpt.create({ normalizeSearchText });
-
-  function highlightSearchExcerpt(text, query) {
-    const source = String(text || '');
-    const normalizedSource = normalizeSearchText(source);
-    const normalizedQuery = normalizeSearchText(query);
-    const index = normalizedSource.indexOf(normalizedQuery);
-    if (index < 0 || !normalizedQuery) return escapeHtml(source);
-    const before = source.slice(0, index);
-    const hit = source.slice(index, index + query.length);
-    const after = source.slice(index + query.length);
-    return `${escapeHtml(before)}<mark>${escapeHtml(hit)}</mark>${escapeHtml(after)}`;
-  }
+  const { makeSearchExcerpt, highlightSearchExcerpt } = SearchExcerpt.create({ normalizeSearchText, escapeHtml });
 
   function searchOriginalHistory() {
     if (!state.parsed) { toast('Carregue um histórico antes de pesquisar.', 'error'); return; }
