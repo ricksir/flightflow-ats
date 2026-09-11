@@ -84,7 +84,7 @@ test('documentação atual descreve o estado real de modularização e testes', 
   assert.ok(README.includes('módulos já extraídos'));
   assert.equal(README.includes('destino da modularização futura'), false);
 
-  assert.ok(TESTS_README.includes('testes automatizados'));
+  assert.ok(TESTS_README.includes('cobertura automatizada'));
   assert.ok(TESTS_README.includes('Playwright'));
   assert.equal(TESTS_README.includes('A próxima etapa é adicionar testes automatizados'), false);
 
