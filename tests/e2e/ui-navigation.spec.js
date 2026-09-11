@@ -171,16 +171,57 @@ test('demonstração inicia no evento 1 e troca de histórico sem resíduo da se
   await expect(page.locator('.timeline-item.active')).toBeVisible();
 });
 
-test('Próximo e Anterior mantêm scrubber, frame e seleção sincronizados', async ({ page }) => {
+test('Próximo e Anterior mantêm navegação sincronizada e atualizam STRIP/FPV', async ({ page }) => {
+  await expect(page.locator('#stripToggleBtn')).toBeEnabled();
+  await expect(page.locator('#fpvToggleBtn')).toBeEnabled();
+
+  await page.locator('#stripToggleBtn').click();
+  await expect(page.locator('#stripWindow')).toBeVisible();
+  await expect(page.locator('#stripToggleBtn')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#stripCanvas [data-strip-field="E"] .strip-value')).toHaveText('TAM3542');
+  await expect(page.locator('#stripCanvas [data-strip-field="F"] .strip-value')).toHaveText('SBBR');
+  await expect(page.locator('#stripCanvas [data-strip-field="H"] .strip-value')).toHaveText('SBGO');
+  await expect(page.locator('#stripStageLabel')).toContainText('evento 1');
+  expect(await page.locator('#stripCanvas .strip-cell').count()).toBeGreaterThan(20);
+
+  await page.locator('#stripRecognizeBtn').click();
+  await expect(page.locator('#stripNotice')).toContainText('Alterações reconhecidas');
+
+  await page.locator('#stripCloseBtn').click();
+  await expect(page.locator('#stripWindow')).toBeHidden();
+  await expect(page.locator('#stripToggleBtn')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#stripToggleBtn')).toHaveClass(/is-minimized/);
+
+  await page.locator('#stripToggleBtn').click();
+  await expect(page.locator('#stripWindow')).toBeVisible();
+  await expect(page.locator('#stripToggleBtn')).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('#fpvToggleBtn').click();
+  await expect(page.locator('#fpvWindow')).toBeVisible();
+  await expect(page.locator('#fpvToggleBtn')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-fpv="acft"] b')).toHaveText('TAM3542');
+  await expect(page.locator('[data-fpv="dest"] b')).toHaveText('SBGO');
+  await expect(page.locator('#fpvNotice')).not.toHaveText('');
+
   await page.locator('#nextBtn').click();
   expect(await page.locator('#scrubber').inputValue()).toBe('1');
   await expect(page.locator('#frameCounter')).toContainText('2 / ');
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '1');
+  await expect(page.locator('#stripStageLabel')).toContainText('evento 2');
+  await expect(page.locator('#stripCanvas [data-strip-field="E"] .strip-value')).toHaveText('TAM3542');
+
+  await page.locator('#fpvCloseBtn').click();
+  await expect(page.locator('#fpvWindow')).toBeHidden();
+  await expect(page.locator('#fpvToggleBtn')).toHaveClass(/is-minimized/);
+  await page.locator('#fpvToggleBtn').click();
+  await expect(page.locator('#fpvWindow')).toBeVisible();
 
   await page.locator('#prevBtn').click();
   expect(await page.locator('#scrubber').inputValue()).toBe('0');
   await expect(page.locator('#frameCounter')).toContainText('1 / ');
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '0');
+  await expect(page.locator('#stripStageLabel')).toContainText('evento 1');
+  await expect(page.locator('[data-fpv="acft"] b')).toHaveText('TAM3542');
   await expect(page.locator('#prevBtn')).toBeDisabled();
 });
 
