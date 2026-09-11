@@ -22,6 +22,8 @@
     return {lat:valid.reduce((s,p)=>s+p.lat,0)/valid.length,lon:valid.reduce((s,p)=>s+p.lon,0)/valid.length};
   }
 
+  function groundMidpoint(points) { return groundCentroid(points); }
+
   function runwayTokens(value) { return String(value||'').toUpperCase().match(/\b\d{2}[LCR]?\b/g)||[]; }
 
   function runwayHeading(value,fallback) {
@@ -67,6 +69,7 @@
     formatGeoCoord,
     atsCoordinateLabel,
     groundCentroid,
+    groundMidpoint,
     runwayTokens,
     runwayHeading,
     runwayHeadingFromCode,
