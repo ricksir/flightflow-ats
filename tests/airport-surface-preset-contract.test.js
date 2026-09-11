@@ -124,7 +124,7 @@ test('AIRPORT_SURFACE_PRESETS preserva exatamente SBBR e SBGO', () => {
 
   const start = kernel.indexOf(EXPECTED_PRESETS_SOURCE);
   assert.ok(start >= 0);
-  assert.equal(kernel.indexOf('const AIRPORT_SURFACE_PRESETS', start + 1), -1);
+  assert.equal(kernel.indexOf('const AIRPORT_SURFACE_PRESETS', start + EXPECTED_PRESETS_SOURCE.length), -1);
 });
 
 test('airportSurfacePreset resolve o código normalizado sem alterar o preset', () => {
