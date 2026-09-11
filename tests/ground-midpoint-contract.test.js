@@ -104,7 +104,7 @@ test('groundMidpoint permanece helper geográfico puro com uma única dependênc
 
 test('groundMidpoint mantém exatamente um consumidor no núcleo', () => {
   const kernel = kernelSource();
-  const occurrences = [...kernel.matchAll(/(?<![\w$.])groundMidpoint\s*\(/g)].length;
+  const occurrences = [...kernel.matchAll(/\bgroundMidpoint\s*\(/g)].length;
   assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('...groundMidpoint(w.points)'));
 });
