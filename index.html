@@ -5487,6 +5487,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
 <script id="flightflow-route-update-utils" src="src/route/route-update-utils.js"></script>
+<script id="flightflow-route-revision-reason" src="src/route/route-revision-reason.js"></script>
 <script id="flightflow-communication-context-utils" src="src/timeline/communication-context-utils.js"></script>
 <script id="flightflow-playback-controller" src="src/timeline/playback-controller.js"></script>
 <script id="flightflow-transport-navigation-controller" src="src/timeline/transport-navigation-controller.js"></script>
@@ -5538,6 +5539,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const RouteUpdateUtils = window.FlightFlowRouteUpdateUtils;
   if (!RouteUpdateUtils) throw new Error('FlightFlowRouteUpdateUtils não foi carregado.');
   const { isRouteUpdateEvent } = RouteUpdateUtils;
+
+  const RouteRevisionReason = window.FlightFlowRouteRevisionReason;
+  if (!RouteRevisionReason) throw new Error('FlightFlowRouteRevisionReason não foi carregado.');
+  const { routeRevisionReason } = RouteRevisionReason.create({ shortMessageType });
 
   const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;
   if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');
@@ -6770,14 +6775,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     renderRouteRevisionMarkers(events.length?events[0]:null);
     if(events.length && state.geo.eventRoutes[0]) els.flightPath.setAttribute('d',state.geo.eventRoutes[0].path);
     state.geo.relevantBounds=mergeBounds(state.geo.relevantBounds,pointsBounds(relevantPoints.length?relevantPoints:route));
-  }
-
-  function routeRevisionReason(event,destinationChanged=false) {
-    const labels={route:'ROTA',sid:'SID',star:'STAR',adep:'ADEP',ades:'ADES',runwayDeparture:'PISTA DEP',runwayArrival:'PISTA ARR',cfl:'CFL',rfl:'RFL'};
-    const changed=[...new Set((event.changes||[]).map(ch=>labels[ch.key]).filter(Boolean))];
-    if(destinationChanged&&!changed.includes('ADES')) changed.unshift('ADES');
-    const type=shortMessageType(event.messageType||event.operation||'ATUALIZAÇÃO');
-    return changed.length?`${type} · ${changed.join(' / ')}`:type;
   }
 
   function routeSignature(event,revision) {
