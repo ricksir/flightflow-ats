@@ -5485,6 +5485,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-strip-color-meaning" src="src/ui/strip-color-meaning.js"></script>
+<script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
 <script id="flightflow-route-update-utils" src="src/route/route-update-utils.js"></script>
@@ -10163,16 +10164,9 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
   }
 
-  function makeSearchExcerpt(text, query, radius = 105) {
-    const raw = String(text || '').replace(/\s+/g, ' ').trim();
-    const normalizedRaw = normalizeSearchText(raw);
-    const normalizedQuery = normalizeSearchText(query);
-    const index = normalizedRaw.indexOf(normalizedQuery);
-    if (index < 0) return raw.slice(0, radius * 2);
-    const start = Math.max(0, index - radius);
-    const end = Math.min(raw.length, index + query.length + radius);
-    return `${start > 0 ? '…' : ''}${raw.slice(start, end)}${end < raw.length ? '…' : ''}`;
-  }
+  const SearchExcerpt = window.FlightFlowSearchExcerpt;
+  if (!SearchExcerpt) throw new Error('FlightFlowSearchExcerpt não foi carregado.');
+  const { makeSearchExcerpt } = SearchExcerpt.create({ normalizeSearchText });
 
   function highlightSearchExcerpt(text, query) {
     const source = String(text || '');
