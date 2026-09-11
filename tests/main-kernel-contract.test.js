@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1127438;
-const EXPECTED_SHA256 = '1e05521dea2c60f8a086e683b8203c0f6da4fc2df15c210794490635c96af374';
-const EXPECTED_LINES = 5234;
+const EXPECTED_BYTES = 1127140;
+const EXPECTED_SHA256 = 'b126697f02be93a5a5854ae71ecb39e58cb00fa47708c0381f79a9b28967a250';
+const EXPECTED_LINES = 5230;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -25,6 +25,7 @@ const EXTRACTED_COORDINATE_UTILS = [
 ];
 const EXTRACTED_AIRPORT_GROUND_QUERY = ['airportGroundQuery'];
 const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
+const EXTRACTED_ROUTE_REVISION_REASON = ['routeRevisionReason'];
 const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
@@ -110,6 +111,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const RouteUpdateUtils = window.FlightFlowRouteUpdateUtils;',
     "if (!RouteUpdateUtils) throw new Error('FlightFlowRouteUpdateUtils não foi carregado.');",
     'const { isRouteUpdateEvent } = RouteUpdateUtils;',
+    'const RouteRevisionReason = window.FlightFlowRouteRevisionReason;',
+    "if (!RouteRevisionReason) throw new Error('FlightFlowRouteRevisionReason não foi carregado.');",
+    'const { routeRevisionReason } = RouteRevisionReason.create({ shortMessageType });',
     'const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;',
     "if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');",
     'const { internalTransitionDetails } = CommunicationContextUtils;',
@@ -189,8 +193,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 319);
-  assert.equal(counts.size, 319);
+  assert.equal(names.length, 318);
+  assert.equal(counts.size, 318);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -202,6 +206,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_COORDINATE_UTILS,
     ...EXTRACTED_AIRPORT_GROUND_QUERY,
     ...EXTRACTED_ROUTE_UPDATE_UTILS,
+    ...EXTRACTED_ROUTE_REVISION_REASON,
     ...EXTRACTED_COMMUNICATION_CONTEXT_UTILS,
     ...EXTRACTED_PLAYBACK,
     ...EXTRACTED_TRANSPORT,
