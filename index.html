@@ -5489,6 +5489,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
 <script id="flightflow-stand-hint-utils" src="src/geo/stand-hint-utils.js"></script>
+<script id="flightflow-airport-surface-utils" src="src/geo/airport-surface-utils.js"></script>
 <script id="flightflow-route-update-utils" src="src/route/route-update-utils.js"></script>
 <script id="flightflow-route-revision-reason" src="src/route/route-revision-reason.js"></script>
 <script id="flightflow-communication-context-utils" src="src/timeline/communication-context-utils.js"></script>
@@ -5542,6 +5543,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const StandHintUtils = window.FlightFlowStandHintUtils;
   if (!StandHintUtils) throw new Error('FlightFlowStandHintUtils não foi carregado.');
   const { extractStandHint } = StandHintUtils;
+
+  const AirportSurfaceUtils = window.FlightFlowAirportSurfaceUtils;
+  if (!AirportSurfaceUtils) throw new Error('FlightFlowAirportSurfaceUtils não foi carregado.');
+  const { airportSurfacePreset } = AirportSurfaceUtils.create({ normalizeLocalityCode });
 
   const RouteUpdateUtils = window.FlightFlowRouteUpdateUtils;
   if (!RouteUpdateUtils) throw new Error('FlightFlowRouteUpdateUtils não foi carregado.');
@@ -6634,11 +6639,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   }
 
 
-  const AIRPORT_SURFACE_PRESETS = Object.freeze({
-    SBBR: { terminalBearing: 20, standDistanceM: 720, apronDistanceM: 560, thresholdDistanceM: 1420, rolloutDistanceM: 920, approachDistanceM: 5600, climbDistanceM: 3400 },
-    SBGO: { terminalBearing: 210, standDistanceM: 620, apronDistanceM: 500, thresholdDistanceM: 1180, rolloutDistanceM: 820, approachDistanceM: 4300, climbDistanceM: 2800 }
-  });
-
   function projectOffsetAirportPoint(airport, distanceMeters, bearingDegrees) {
     if (!airport) return null;
     const point = geoOffset(airport.lat, airport.lon, distanceMeters, bearingDegrees);
@@ -6651,11 +6651,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     const dy = Number(toPoint.lat) - Number(fromPoint.lat);
     const angle = Math.atan2(dx, dy) * 180 / Math.PI;
     return (angle + 360) % 360;
-  }
-
-  function airportSurfacePreset(airport) {
-    const code = normalizeLocalityCode(airport && airport.code || '');
-    return AIRPORT_SURFACE_PRESETS[code] || {};
   }
 
   function buildAirportSurfaceRoute(airport, kind, runwayCode, fallbackHeading) {

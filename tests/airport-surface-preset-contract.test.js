@@ -8,6 +8,10 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'geo', 'airport-surface-utils.js');
+const REFERENCE = '<script id="flightflow-airport-surface-utils" src="src/geo/airport-surface-utils.js"></script>';
+const MODULE_BYTES = 1071;
+const MODULE_SHA256 = '55bf9697f1fc9ced0b5b4ce1c3388035683190fef62c9ee3c16068b6fce2450d';
 const FUNCTION_NAME = 'airportSurfacePreset';
 const EXPECTED_BYTES = 165;
 const EXPECTED_LINES = 4;
@@ -34,7 +38,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -84,24 +88,21 @@ function extractNamedFunction(source, name) {
   throw new Error(`fim de ${name} não encontrado`);
 }
 
-function loadResolver(normalizeLocalityCode, presets) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'normalizeLocalityCode',
-    'AIRPORT_SURFACE_PRESETS',
-    `${source}; return ${FUNCTION_NAME};`
-  )(normalizeLocalityCode, presets);
+function loadModule() {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const fakeWindow = {};
+  return Function('window', `${source}\nreturn window.FlightFlowAirportSurfaceUtils;`)(fakeWindow);
 }
 
-test('airportSurfacePreset mantém identidade exata antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('airportSurfacePreset mantém identidade exata após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(source.split(/\r?\n/).length, EXPECTED_LINES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
 });
 
 test('airportSurfacePreset permanece puro e desacoplado de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -114,42 +115,86 @@ test('airportSurfacePreset permanece puro e desacoplado de infraestrutura', () =
 test('airportSurfacePreset mantém exatamente um consumidor no núcleo', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bairportSurfacePreset\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('const preset = airportSurfacePreset(airport);'));
+  assert.equal(kernel.includes('function airportSurfacePreset('), false);
+  assert.equal(kernel.includes('const AIRPORT_SURFACE_PRESETS = Object.freeze({'), false);
 });
 
-test('AIRPORT_SURFACE_PRESETS preserva exatamente SBBR e SBGO', () => {
-  const kernel = kernelSource();
-  assert.equal(kernel.includes(EXPECTED_PRESETS_SOURCE), true);
+test('airport-surface-utils carrega antes do núcleo e expõe API congelada', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  const source = fs.readFileSync(MODULE, 'utf8');
 
-  const start = kernel.indexOf(EXPECTED_PRESETS_SOURCE);
-  assert.ok(start >= 0);
-  assert.equal(kernel.indexOf('const AIRPORT_SURFACE_PRESETS', start + EXPECTED_PRESETS_SOURCE.length), -1);
+  assert.equal(Buffer.byteLength(source, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), MODULE_SHA256);
+  assert.equal(html.split(REFERENCE).length - 1, 1);
+
+  const referenceIndex = html.indexOf(REFERENCE);
+  const anchorIndex = html.indexOf('window.__FlightFlowFirBridge = Object.freeze({');
+  const mainScriptStart = html.lastIndexOf('<script', anchorIndex);
+  assert.ok(referenceIndex >= 0 && referenceIndex < mainScriptStart);
+
+  const api = loadModule();
+  assert.equal(Object.isFrozen(api), true);
+  assert.equal(Object.isFrozen(api.presets), true);
+  assert.equal(typeof api.create, 'function');
+
+  const kernel = kernelSource();
+  assert.ok(kernel.includes('const AirportSurfaceUtils = window.FlightFlowAirportSurfaceUtils;'));
+  assert.ok(kernel.includes("if (!AirportSurfaceUtils) throw new Error('FlightFlowAirportSurfaceUtils não foi carregado.');"));
+  assert.ok(kernel.includes('const { airportSurfacePreset } = AirportSurfaceUtils.create({ normalizeLocalityCode });'));
+});
+
+test('AIRPORT_SURFACE_PRESETS preserva exatamente SBBR e SBGO no módulo', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  assert.equal(source.includes(EXPECTED_PRESETS_SOURCE), true);
+
+  const api = loadModule();
+  assert.deepEqual(api.presets.SBBR, {
+    terminalBearing: 20,
+    standDistanceM: 720,
+    apronDistanceM: 560,
+    thresholdDistanceM: 1420,
+    rolloutDistanceM: 920,
+    approachDistanceM: 5600,
+    climbDistanceM: 3400,
+  });
+  assert.deepEqual(api.presets.SBGO, {
+    terminalBearing: 210,
+    standDistanceM: 620,
+    apronDistanceM: 500,
+    thresholdDistanceM: 1180,
+    rolloutDistanceM: 820,
+    approachDistanceM: 4300,
+    climbDistanceM: 2800,
+  });
 });
 
 test('airportSurfacePreset resolve o código normalizado sem alterar o preset', () => {
   const calls = [];
-  const normalize = value => {
+  const normalizeLocalityCode = value => {
     calls.push(value);
     return String(value || '').trim().toUpperCase();
   };
-  const presets = Object.freeze({
-    SBBR: Object.freeze({ terminalBearing: 20, standDistanceM: 720 }),
-    SBGO: Object.freeze({ terminalBearing: 210, standDistanceM: 620 }),
-  });
-  const fn = loadResolver(normalize, presets);
+  const api = loadModule();
+  const { airportSurfacePreset } = api.create({ normalizeLocalityCode });
 
-  assert.equal(fn({ code: ' sbbr ' }), presets.SBBR);
-  assert.equal(fn({ code: 'sbgo' }), presets.SBGO);
+  assert.equal(airportSurfacePreset({ code: ' sbbr ' }), api.presets.SBBR);
+  assert.equal(airportSurfacePreset({ code: 'sbgo' }), api.presets.SBGO);
   assert.deepEqual(calls, [' sbbr ', 'sbgo']);
 });
 
-test('airportSurfacePreset preserva fallback vazio para aeroporto ou código desconhecido', () => {
-  const normalize = value => String(value || '').trim().toUpperCase();
-  const fn = loadResolver(normalize, Object.freeze({ SBBR: Object.freeze({ terminalBearing: 20 }) }));
+test('airportSurfacePreset preserva fallback vazio e exige normalizador', () => {
+  const api = loadModule();
+  assert.throws(
+    () => api.create({}),
+    /FlightFlowAirportSurfaceUtils requer normalizeLocalityCode/
+  );
 
-  const unknown = fn({ code: 'XXXX' });
-  const missing = fn(null);
+  const normalizeLocalityCode = value => String(value || '').trim().toUpperCase();
+  const { airportSurfacePreset } = api.create({ normalizeLocalityCode });
+  const unknown = airportSurfacePreset({ code: 'XXXX' });
+  const missing = airportSurfacePreset(null);
 
   assert.deepEqual(unknown, {});
   assert.deepEqual(missing, {});
