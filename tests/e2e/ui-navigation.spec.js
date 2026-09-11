@@ -52,7 +52,7 @@ test.beforeEach(async ({ page }) => {
   await loadDemo(page);
 });
 
-test('demonstração habilita timeline e inicia no primeiro evento', async ({ page }) => {
+test('demonstração inicia no evento 1 e troca de histórico sem resíduo da sessão anterior', async ({ page }) => {
   const total = await page.locator('.timeline-item').count();
   expect(total).toBeGreaterThan(2);
   await expect(page.locator('#prevBtn')).toBeDisabled();
@@ -60,6 +60,112 @@ test('demonstração habilita timeline e inicia no primeiro evento', async ({ pa
   expect(await page.locator('#scrubber').inputValue()).toBe('0');
   await expect(page.locator('#frameCounter')).toContainText('1 / ');
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '0');
+
+  for (let index = 0; index < 3; index += 1) await page.locator('#nextBtn').click();
+  expect(await page.locator('#scrubber').inputValue()).toBe('3');
+
+  const previousSession = await page.evaluate(() => {
+    const state = window.__FlightFlowFirBridge?.state;
+    const routeApi = window.FlightFlowRouteProcessedV7412;
+    if (!state || !routeApi) throw new Error('estado de sessão/rota indisponível');
+
+    window.__flightflowHistoryResetModes = [];
+    document.addEventListener('flightflow:history-session-reset', event => {
+      window.__flightflowHistoryResetModes.push(event?.detail?.mode || '');
+    });
+
+    const model = routeApi.getModel();
+    model.history = { callsign: 'TAM3542', sourceFile: 'Demonstração TAM3542' };
+    model.resolvedSnapshots = [{ signature: 'stale-session' }];
+    model.currentSnapshotIndex = 7;
+    model.routeProgress = 0.77;
+    model.sourceFile = 'Demonstração TAM3542';
+    model.lastNativeIndex = 42;
+    model.movementProfile = { stale: true };
+    state.geo = state.geo || {};
+    state.geo.ffrpProcessedRoute = { session: 'stale' };
+
+    return {
+      activeSourceId: state.activeSourceId,
+      sourceNames: state.sources.map(source => source.name),
+    };
+  });
+
+  expect(previousSession.sourceNames).toContain('Demonstração TAM3542');
+
+  const sample = await page.evaluate(() => window.__SAMPLE_HISTORY__);
+  expect(sample).toContain('TAM3542');
+  const secondHistory = sample.replaceAll('TAM3542', 'GLO4321');
+
+  await page.locator('#fileInput').setInputFiles({
+    name: 'history-second.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from(secondHistory, 'utf8'),
+  });
+  await expect(page.locator('#readStartBtn')).toBeEnabled();
+
+  await expect.poll(() => page.evaluate(() => {
+    const model = window.FlightFlowRouteProcessedV7412?.getModel();
+    const state = window.__FlightFlowFirBridge?.state;
+    return {
+      history: model?.history ?? null,
+      resolvedSnapshots: model?.resolvedSnapshots?.length ?? -1,
+      currentSnapshotIndex: model?.currentSnapshotIndex,
+      routeProgress: model?.routeProgress,
+      sourceFile: model?.sourceFile,
+      lastNativeIndex: model?.lastNativeIndex,
+      movementProfile: model?.movementProfile ?? null,
+      hasProcessedRoute: Boolean(state?.geo?.ffrpProcessedRoute),
+      modes: window.__flightflowHistoryResetModes || [],
+    };
+  })).toEqual({
+    history: null,
+    resolvedSnapshots: 0,
+    currentSnapshotIndex: 0,
+    routeProgress: 0,
+    sourceFile: '',
+    lastNativeIndex: -1,
+    movementProfile: null,
+    hasProcessedRoute: false,
+    modes: ['pending'],
+  });
+
+  await page.locator('#readStartBtn').click();
+
+  await expect(page.locator('#callsignTitle')).toHaveText('GLO4321');
+  await expect(page.locator('#selectedFileLabel')).toContainText('history-second.txt');
+  expect(await page.locator('#scrubber').inputValue()).toBe('0');
+  await expect(page.locator('#frameCounter')).toContainText('1 / ');
+  await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '0');
+  await expect(page.locator('#playBtn')).toHaveAttribute('title', /Reproduzir/);
+
+  const currentSession = await page.evaluate(() => {
+    const state = window.__FlightFlowFirBridge?.state;
+    const model = window.FlightFlowRouteProcessedV7412?.getModel();
+    return {
+      activeSourceId: state?.activeSourceId,
+      sourceName: state?.sourceName,
+      sourceNames: (state?.sources || []).map(source => source.name),
+      callsign: state?.parsed?.meta?.callsign || state?.parsed?.events?.at(-1)?.snapshot?.callsign || '',
+      index: state?.index,
+      modes: window.__flightflowHistoryResetModes || [],
+      staleProcessedRoute: state?.geo?.ffrpProcessedRoute?.session === 'stale',
+      staleSnapshot: Boolean(model?.resolvedSnapshots?.some?.(snapshot => snapshot?.signature === 'stale-session')),
+      staleMovementProfile: model?.movementProfile?.stale === true,
+      staleRouteHistory: model?.history?.callsign === 'TAM3542',
+    };
+  });
+
+  expect(currentSession.activeSourceId).not.toBe(previousSession.activeSourceId);
+  expect(currentSession.sourceName).toBe('history-second');
+  expect(currentSession.sourceNames).toEqual(['history-second']);
+  expect(currentSession.callsign).toBe('GLO4321');
+  expect(currentSession.index).toBe(0);
+  expect(currentSession.modes).toEqual(['pending', 'source']);
+  expect(currentSession.staleProcessedRoute).toBe(false);
+  expect(currentSession.staleSnapshot).toBe(false);
+  expect(currentSession.staleMovementProfile).toBe(false);
+  expect(currentSession.staleRouteHistory).toBe(false);
 
   await openTimeline(page);
   await expect(page.locator('.timeline-item.active')).toBeVisible();
