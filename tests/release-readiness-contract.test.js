@@ -59,7 +59,7 @@ test('sequência crítica 78 → 79 permanece protegida em Node e Playwright', (
 
 test('equivalência das formas de navegação continua coberta por E2E', () => {
   for (const token of [
-    'Próximo e Anterior mantêm scrubber, frame e seleção sincronizados',
+    'Próximo e Anterior mantêm navegação sincronizada e atualizam STRIP/FPV',
     'Próximo, clique na timeline e scrubber convergem para o mesmo estado visível',
     'teclado ArrowRight e ArrowLeft usa a mesma navegação da interface',
     'autoplay avança e uma navegação manual interrompe a reprodução',
@@ -68,6 +68,24 @@ test('equivalência das formas de navegação continua coberta por E2E', () => {
   for (const token of ['EXPECTED_FIXES', 'BASE_INDEX = 77', 'TARGET_INDEX = 78']) {
     assert.ok(NAV_SPATIAL.includes(token), `contrato espacial de navegação ausente: ${token}`);
   }
+});
+
+test('STRIP e FPV permanecem cobertos no fluxo operacional E2E', () => {
+  for (const token of [
+    '#stripToggleBtn',
+    '#stripWindow',
+    '[data-strip-field="E"] .strip-value',
+    '[data-strip-field="F"] .strip-value',
+    '[data-strip-field="H"] .strip-value',
+    '#stripRecognizeBtn',
+    'Alterações reconhecidas',
+    '#stripCloseBtn',
+    '#fpvToggleBtn',
+    '#fpvWindow',
+    '[data-fpv="acft"] b',
+    '[data-fpv="dest"] b',
+    '#fpvCloseBtn',
+  ]) assert.ok(UI_NAV.includes(token), `cobertura operacional ausente: ${token}`);
 });
 
 test('troca de histórico sem resíduo permanece coberta por E2E', () => {

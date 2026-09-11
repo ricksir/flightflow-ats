@@ -54,6 +54,8 @@ Os contratos acima são cobertos, entre outros, por:
 
 A troca real de arquivo também é exercitada em `tests/e2e/ui-navigation.spec.js`: o cenário injeta estado derivado da sessão anterior, seleciona um segundo histórico, confirma o reset `pending`, carrega o novo arquivo e verifica que a nova sessão começa no evento 1 sem snapshots, perfil de movimento ou rota processada marcados como resíduos da sessão anterior.
 
+O mesmo arquivo E2E também cobre o uso normal dos painéis operacionais STRIP e FPV: abertura pelos toggles, preenchimento com callsign/origem/destino, reconhecimento de alterações da STRIP, minimização/restauração e atualização dos painéis durante Próximo/Anterior.
+
 Também existem regressões baseadas em históricos operacionais representativos para:
 
 - rota multilinha GLO7634;
