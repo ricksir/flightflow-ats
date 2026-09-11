@@ -141,6 +141,6 @@ test('index carrega módulo antes do kernel e mantém wiring explícito', () => 
   ]) assert.ok(HTML.includes(token), `wiring ausente: ${token}`);
 
   assert.equal(HTML.includes('function routeRevisionReason('), false, 'implementação inline não pode voltar');
-  assert.equal((HTML.match(/(?<![\\w$.])routeRevisionReason\\s*\\(/g) || []).length, 1);
+  assert.equal((HTML.match(/(?<![\w$.])routeRevisionReason\s*\(/g) || []).length, 1);
   assert.ok(HTML.includes('message:routeRevisionReason(e,destinationChanged)'));
 });
