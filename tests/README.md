@@ -51,7 +51,8 @@ incluindo:
 - aeronave exatamente sobre os checkpoints;
 - equivalência entre Próximo, timeline, scrubber, teclado e autoplay;
 - DEP como referência temporal do perfil de movimento;
-- troca real de arquivo limpando a sessão anterior antes de carregar o novo histórico.
+- troca real de arquivo limpando a sessão anterior antes de carregar o novo histórico;
+- abertura, preenchimento, reconhecimento, minimização/restauração e atualização de STRIP/FPV durante a navegação.
 
 ## Históricos representativos
 
