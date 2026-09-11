@@ -72,7 +72,7 @@ test('ocorrência perto das bordas adiciona elipse somente onde necessário', ()
   const { makeSearchExcerpt } = loadModule().create({ normalizeSearchText });
 
   assert.equal(makeSearchExcerpt('ALVO abcdefghijklmnop', 'ALVO', 4), 'ALVO abc…');
-  assert.equal(makeSearchExcerpt('abcdefghijklmnop ALVO', 'ALVO', 4), '…mnop ALVO');
+  assert.equal(makeSearchExcerpt('abcdefghijklmnop ALVO', 'ALVO', 4), '…nop ALVO');
 });
 
 test('preserva dependência injetada e não modifica argumentos', () => {
