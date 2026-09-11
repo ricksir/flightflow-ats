@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1125392;
-const EXPECTED_SHA256 = '09491c6a3ae28384406c4ceeefa1fff6071ad5a5fff3d7a5a46aeb8086839880';
-const EXPECTED_LINES = 5197;
+const EXPECTED_BYTES = 1125079;
+const EXPECTED_SHA256 = 'dfe0f6b42a872852386ee476adf29c47bb90e4f6959fdc451e805dce9fe30d75';
+const EXPECTED_LINES = 5191;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -27,6 +27,7 @@ const EXTRACTED_COORDINATE_UTILS = [
 ];
 const EXTRACTED_AIRPORT_GROUND_QUERY = ['airportGroundQuery'];
 const EXTRACTED_STAND_HINT_UTILS = ['extractStandHint'];
+const EXTRACTED_AIRPORT_SURFACE_UTILS = ['airportSurfacePreset'];
 const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
 const EXTRACTED_ROUTE_REVISION_REASON = ['routeRevisionReason'];
 const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails'];
@@ -120,6 +121,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const StandHintUtils = window.FlightFlowStandHintUtils;',
     "if (!StandHintUtils) throw new Error('FlightFlowStandHintUtils não foi carregado.');",
     'const { extractStandHint } = StandHintUtils;',
+    'const AirportSurfaceUtils = window.FlightFlowAirportSurfaceUtils;',
+    "if (!AirportSurfaceUtils) throw new Error('FlightFlowAirportSurfaceUtils não foi carregado.');",
+    'const { airportSurfacePreset } = AirportSurfaceUtils.create({ normalizeLocalityCode });',
     'const RouteUpdateUtils = window.FlightFlowRouteUpdateUtils;',
     "if (!RouteUpdateUtils) throw new Error('FlightFlowRouteUpdateUtils não foi carregado.');",
     'const { isRouteUpdateEvent } = RouteUpdateUtils;',
@@ -205,8 +209,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 313);
-  assert.equal(counts.size, 313);
+  assert.equal(names.length, 312);
+  assert.equal(counts.size, 312);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -220,6 +224,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_COORDINATE_UTILS,
     ...EXTRACTED_AIRPORT_GROUND_QUERY,
     ...EXTRACTED_STAND_HINT_UTILS,
+    ...EXTRACTED_AIRPORT_SURFACE_UTILS,
     ...EXTRACTED_ROUTE_UPDATE_UTILS,
     ...EXTRACTED_ROUTE_REVISION_REASON,
     ...EXTRACTED_COMMUNICATION_CONTEXT_UTILS,
