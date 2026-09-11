@@ -5488,6 +5488,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
+<script id="flightflow-stand-hint-utils" src="src/geo/stand-hint-utils.js"></script>
 <script id="flightflow-route-update-utils" src="src/route/route-update-utils.js"></script>
 <script id="flightflow-route-revision-reason" src="src/route/route-revision-reason.js"></script>
 <script id="flightflow-communication-context-utils" src="src/timeline/communication-context-utils.js"></script>
@@ -5537,6 +5538,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;
   if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');
   const { airportGroundQuery } = AirportGroundQueryModule;
+
+  const StandHintUtils = window.FlightFlowStandHintUtils;
+  if (!StandHintUtils) throw new Error('FlightFlowStandHintUtils não foi carregado.');
+  const { extractStandHint } = StandHintUtils;
 
   const RouteUpdateUtils = window.FlightFlowRouteUpdateUtils;
   if (!RouteUpdateUtils) throw new Error('FlightFlowRouteUpdateUtils não foi carregado.');
@@ -6160,17 +6165,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     const desired=runwayHeading(wanted||chosen.tags&&chosen.tags.ref,fallbackHeading);
     if(points.length>1&&angleDifference(groundBearing(points[0],points[points.length-1]),desired)>90)points.reverse();
     return {...chosen,points,heading:desired,requested:wanted};
-  }
-
-  function extractStandHint(parsed,arrival=false) {
-    const events=(parsed&&parsed.events)||[];
-    const ordered=arrival?events.slice().reverse():events;
-    for(const event of ordered){
-      const text=String(event.rawBlock||event.content||'');
-      const match=text.match(/(?:POSI(?:Ç|C)[AÃ]O|STAND|BOX|GATE|PATIO|PÁTIO)\s*(?:N[º°O.]*)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-]{0,7})/i);
-      if(match)return match[1].toUpperCase();
-    }
-    return '';
   }
 
   function chooseParkingPosition(data,airport,hint='') {
