@@ -50,7 +50,8 @@ incluindo:
 - retrocesso 79 → 78 pela sequência inversa;
 - aeronave exatamente sobre os checkpoints;
 - equivalência entre Próximo, timeline, scrubber, teclado e autoplay;
-- DEP como referência temporal do perfil de movimento.
+- DEP como referência temporal do perfil de movimento;
+- troca real de arquivo limpando a sessão anterior antes de carregar o novo histórico.
 
 ## Históricos representativos
 
