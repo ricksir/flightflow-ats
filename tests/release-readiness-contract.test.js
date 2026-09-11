@@ -70,6 +70,22 @@ test('equivalência das formas de navegação continua coberta por E2E', () => {
   }
 });
 
+test('troca de histórico sem resíduo permanece coberta por E2E', () => {
+  for (const token of [
+    'troca de histórico sem resíduo da sessão anterior',
+    "document.addEventListener('flightflow:history-session-reset'",
+    "name: 'history-second.txt'",
+    "sample.replaceAll('TAM3542', 'GLO4321')",
+    "modes: ['pending']",
+    "expect(currentSession.modes).toEqual(['pending', 'source'])",
+    "expect(currentSession.sourceNames).toEqual(['history-second'])",
+    'staleProcessedRoute',
+    'staleSnapshot',
+    'staleMovementProfile',
+    'staleRouteHistory',
+  ]) assert.ok(UI_NAV.includes(token), `proteção de troca de histórico ausente: ${token}`);
+});
+
 test('regressões baseadas em históricos representativos permanecem no conjunto Node', () => {
   for (const token of ['GLO7634', 'TAM3774', 'PSFBU']) {
     assert.ok(REAL_PLAN.includes(token), `fixture representativo ausente: ${token}`);
