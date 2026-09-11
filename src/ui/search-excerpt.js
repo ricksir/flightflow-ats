@@ -7,9 +7,13 @@
 
   const create = (options = {}) => {
     const normalizeSearchText = options.normalizeSearchText;
+    const escapeHtml = options.escapeHtml;
 
     if (typeof normalizeSearchText !== 'function') {
       throw new Error('FlightFlowSearchExcerpt requer normalizeSearchText.');
+    }
+    if (typeof escapeHtml !== 'function') {
+      throw new Error('FlightFlowSearchExcerpt requer escapeHtml.');
     }
 
     function makeSearchExcerpt(text, query, radius = 105) {
@@ -23,7 +27,19 @@
       return `${start > 0 ? '…' : ''}${raw.slice(start, end)}${end < raw.length ? '…' : ''}`;
     }
 
-    return Object.freeze({ makeSearchExcerpt });
+    function highlightSearchExcerpt(text, query) {
+      const source = String(text || '');
+      const normalizedSource = normalizeSearchText(source);
+      const normalizedQuery = normalizeSearchText(query);
+      const index = normalizedSource.indexOf(normalizedQuery);
+      if (index < 0 || !normalizedQuery) return escapeHtml(source);
+      const before = source.slice(0, index);
+      const hit = source.slice(index, index + query.length);
+      const after = source.slice(index + query.length);
+      return `${escapeHtml(before)}<mark>${escapeHtml(hit)}</mark>${escapeHtml(after)}`;
+    }
+
+    return Object.freeze({ makeSearchExcerpt, highlightSearchExcerpt });
   };
 
   return Object.freeze({ create });
