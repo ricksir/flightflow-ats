@@ -52,6 +52,8 @@ Os contratos acima são cobertos, entre outros, por:
 - `tests/go-to-transition-contract.test.js`;
 - `tests/render-current-orchestration-contract.test.js`.
 
+A troca real de arquivo também é exercitada em `tests/e2e/ui-navigation.spec.js`: o cenário injeta estado derivado da sessão anterior, seleciona um segundo histórico, confirma o reset `pending`, carrega o novo arquivo e verifica que a nova sessão começa no evento 1 sem snapshots, perfil de movimento ou rota processada marcados como resíduos da sessão anterior.
+
 Também existem regressões baseadas em históricos operacionais representativos para:
 
 - rota multilinha GLO7634;
