@@ -5484,6 +5484,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-event-navigation-controller" src="src/core/event-navigation-controller.js"></script>
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
+<script id="flightflow-strip-color-meaning" src="src/ui/strip-color-meaning.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
 <script id="flightflow-route-update-utils" src="src/route/route-update-utils.js"></script>
@@ -9608,15 +9609,9 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
     return 'O valor é apresentado conforme os dados disponíveis no histórico carregado.';
   }
 
-  function stripColorMeaning(target,theme){
-    const parts=[STRIP_COLOR_MEANINGS[theme]||'Cor operacional do estado atual do plano.'];
-    if(target.classList.contains('updated'))parts.push('Azul-claro: o conteúdo deste campo foi alterado no evento atual e ainda não foi reconhecido pelo operador.');
-    if(target.classList.contains('new-field'))parts.push('Ciano: informação nova ou recém-recebida.');
-    if(target.classList.contains('pending'))parts.push('Lilás: requisição ou coordenação pendente.');
-    if(target.classList.contains('white-border'))parts.push('Borda branca: confirmação ou reconhecimento do recebimento ainda pendente.');
-    if(target.classList.contains('warning'))parts.push('Borda amarela: condição que exige atenção operacional.');
-    return parts.join(' ');
-  }
+  const StripColorMeaning = window.FlightFlowStripColorMeaning;
+  if (!StripColorMeaning) throw new Error('FlightFlowStripColorMeaning não foi carregado.');
+  const { stripColorMeaning } = StripColorMeaning.create({ colorMeanings: STRIP_COLOR_MEANINGS });
 
   function showStripFieldInfo(target){
     const code=target.dataset.stripField||'—';
