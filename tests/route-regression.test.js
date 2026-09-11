@@ -220,14 +220,25 @@ test('durações dão uma etapa visual a cada checkpoint intermediário', () => 
   assert.ok(steps.every(s => Number.isInteger(s.duration) && s.duration >= 240), 'cada etapa manual deve ter duração mínima observável');
 });
 
-test('frações de distância são estritamente não decrescentes e terminam em 100%', () => {
+test('perfil preserva origem, último fixo, destino e termina em 100%', () => {
   const { points } = installCriticalFixture(api, sandbox);
   const fractions = api.routeDistanceFractions(points);
+  const profile = api.buildMovementProfile();
+
   assert.equal(fractions[0], 0);
   assert.ok(Math.abs(fractions.at(-1) - 1) < 1e-12);
   for (let i = 1; i < fractions.length; i++) {
     assert.ok(fractions[i] >= fractions[i - 1], `fração regrediu em ${points[i].ident}`);
   }
+
+  assert.ok(profile, 'perfil de movimento deve existir');
+  assert.equal(profile.points[0].ident, 'SBBS', 'perfil deve iniciar no ADEP');
+  assert.equal(profile.points.at(-2).ident, 'MASVA', 'último fixo antes do destino deve permanecer MASVA');
+  assert.equal(profile.points.at(-1).ident, 'SBPJ', 'perfil deve terminar no ADES');
+  assert.equal(profile.distanceFractions[0], 0);
+  assert.ok(Math.abs(profile.distanceFractions.at(-1) - 1) < 1e-12, 'destino deve representar 100% da rota');
+  assert.ok(Math.abs(profile.targets.at(-1) - 1) < 1e-12, 'evento final deve alcançar o destino');
+  assert.equal(profile.endNative, 79, 'evento final ARR/término deve ser o marco de 100%');
 });
 
 test('mesmo índice nativo resolve sempre o mesmo progresso', () => {
