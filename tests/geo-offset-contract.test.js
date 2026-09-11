@@ -100,7 +100,7 @@ test('geoOffset mantém exatamente um consumidor real', () => {
   assert.equal(kernel.includes('function geoOffset('), false, 'geoOffset não deve permanecer inline');
   const consumers = [...kernel.matchAll(/(?<![\w$.])geoOffset\s*\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
-  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
 });
 
 test('geoOffset preserva deslocamento geodésico norte e leste no equador', () => {

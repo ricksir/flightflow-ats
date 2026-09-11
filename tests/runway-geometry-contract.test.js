@@ -96,5 +96,5 @@ test('cluster runway geometry foi externalizado sem alterar consumidores', () =>
   assert.equal(kernel.includes('function runwayHeadingFromCode('), false);
   assert.ok(module.includes('function runwayHeadingFromCode('));
   assert.ok(module.includes('    runwayHeadingFromCode,'));
-  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
 });

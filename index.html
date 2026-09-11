@@ -5532,7 +5532,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
-  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;
+  const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;
 
   const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;
   if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');
@@ -6067,7 +6067,6 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     return {code,runways,graphWays,aprons,terminals,parking,holding,terminalPoints,loadedAt:Date.now()};
   }
 
-  function groundMidpoint(points) { return groundCentroid(points); }
   function groundDistance(a,b) {
     const R=6371000, p1=Number(a.lat)*Math.PI/180, p2=Number(b.lat)*Math.PI/180;
     const dp=(Number(b.lat)-Number(a.lat))*Math.PI/180, dl=(Number(b.lon)-Number(a.lon))*Math.PI/180;

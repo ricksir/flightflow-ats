@@ -13,7 +13,7 @@ const EXPECTED_BYTES = 337;
 const EXPECTED_LINES = 9;
 const EXPECTED_SHA256 = 'af2ed9697962ac78039ec6c758b9de6e8f1e24367e5d362a8cf245b14572ba61';
 const EXPECTED_CONSUMERS = 1;
-const EXPECTED_ALIAS = 'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;';
+const EXPECTED_ALIAS = 'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;';
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');

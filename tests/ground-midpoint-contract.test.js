@@ -29,7 +29,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -79,15 +79,15 @@ function extractNamedFunction(source, name) {
   throw new Error(`fim de ${name} não encontrado`);
 }
 
-test('groundMidpoint mantém identidade exata antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('groundMidpoint mantém identidade exata após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(COORDINATE_MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
   assert.equal(source, '  function groundMidpoint(points) { return groundCentroid(points); }');
 });
 
 test('groundMidpoint permanece helper geográfico puro com uma única dependência', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(COORDINATE_MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -105,12 +105,12 @@ test('groundMidpoint permanece helper geográfico puro com uma única dependênc
 test('groundMidpoint mantém exatamente um consumidor no núcleo', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bgroundMidpoint\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('...groundMidpoint(w.points)'));
 });
 
 test('groundMidpoint delega ao groundCentroid sem alterar argumentos nem retorno', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(COORDINATE_MODULE, 'utf8'), FUNCTION_NAME);
   const calls = [];
   const expected = { lat: -15.9, lon: -47.9 };
   const groundCentroid = points => {
@@ -124,14 +124,15 @@ test('groundMidpoint delega ao groundCentroid sem alterar argumentos nem retorno
   assert.deepEqual(calls, [points]);
 });
 
-test('groundCentroid já pertence ao CoordinateUtils e groundMidpoint ainda não', () => {
+test('groundMidpoint pertence ao CoordinateUtils e não permanece inline', () => {
   const kernel = kernelSource();
   const module = fs.readFileSync(COORDINATE_MODULE, 'utf8');
 
   assert.ok(kernel.includes('const CoordinateUtils = window.FlightFlowCoordinateUtils;'));
-  assert.ok(kernel.includes('groundCentroid'));
+  assert.ok(kernel.includes('groundCentroid, groundMidpoint'));
+  assert.equal(kernel.includes('function groundMidpoint('), false);
   assert.ok(module.includes('function groundCentroid('));
   assert.ok(module.includes('    groundCentroid,'));
-  assert.equal(module.includes('function groundMidpoint('), false);
-  assert.equal(module.includes('    groundMidpoint,'), false);
+  assert.ok(module.includes('function groundMidpoint('));
+  assert.ok(module.includes('    groundMidpoint,'));
 });

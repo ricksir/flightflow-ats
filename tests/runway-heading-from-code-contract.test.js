@@ -67,7 +67,7 @@ test('runwayHeadingFromCode permanece pura e sem dependência de infraestrutura'
 test('IIFE usa runwayHeadingFromCode pelo CoordinateUtils preservando o único consumidor', () => {
   const kernel = kernelSource();
   assert.equal(kernel.includes('function runwayHeadingFromCode('), false);
-  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
+  assert.ok(kernel.includes('const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;'));
   const consumers = [...kernel.matchAll(/(?<![\w$.])runwayHeadingFromCode\s*\(/g)].length;
   assert.equal(consumers, EXPECTED_CONSUMERS);
 });
