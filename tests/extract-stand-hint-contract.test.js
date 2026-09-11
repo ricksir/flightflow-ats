@@ -8,6 +8,10 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'geo', 'stand-hint-utils.js');
+const REFERENCE = '<script id="flightflow-stand-hint-utils" src="src/geo/stand-hint-utils.js"></script>';
+const MODULE_BYTES = 580;
+const MODULE_SHA256 = '19b7189a6c3d003b11b2148227d2bcd943c7f0f54d5cd86217d7dcff1b1fbe0b';
 const FUNCTION_NAME = 'extractStandHint';
 const EXPECTED_BYTES = 460;
 const EXPECTED_LINES = 10;
@@ -29,7 +33,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -80,19 +84,19 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction() {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(`${source}; return ${FUNCTION_NAME};`)();
 }
 
-test('extractStandHint mantém identidade exata antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('extractStandHint mantém identidade exata após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(source.split(/\r?\n/).length, EXPECTED_LINES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), EXPECTED_SHA256);
 });
 
 test('extractStandHint permanece puro e desacoplado de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -105,8 +109,31 @@ test('extractStandHint permanece puro e desacoplado de infraestrutura', () => {
 test('extractStandHint mantém exatamente um consumidor no núcleo', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bextractStandHint\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes("extractStandHint(parsed,mode==='arrival')"));
+});
+
+test('stand-hint-utils carrega antes do núcleo e expõe API congelada', () => {
+  const html = fs.readFileSync(HTML, 'utf8');
+  const module = fs.readFileSync(MODULE, 'utf8');
+  assert.equal(Buffer.byteLength(module, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(module).digest('hex'), MODULE_SHA256);
+  assert.ok(module.startsWith("(function () {\n  'use strict';"));
+  assert.ok(module.includes('window.FlightFlowStandHintUtils = Object.freeze({'));
+  assert.ok(module.includes('    extractStandHint,'));
+  assert.ok(module.endsWith('})();\n'));
+
+  assert.equal(html.split(REFERENCE).length - 1, 1, 'referência stand-hint-utils deve ser única');
+  const referenceIndex = html.indexOf(REFERENCE);
+  const anchorIndex = html.indexOf('window.__FlightFlowFirBridge = Object.freeze({');
+  const mainScriptStart = html.lastIndexOf('<script', anchorIndex);
+  assert.ok(referenceIndex >= 0 && referenceIndex < mainScriptStart, 'módulo deve carregar antes do IIFE principal');
+
+  const kernel = kernelSource();
+  assert.ok(kernel.includes('const StandHintUtils = window.FlightFlowStandHintUtils;'));
+  assert.ok(kernel.includes("if (!StandHintUtils) throw new Error('FlightFlowStandHintUtils não foi carregado.');"));
+  assert.ok(kernel.includes('const { extractStandHint } = StandHintUtils;'));
+  assert.equal(kernel.includes('function extractStandHint('), false);
 });
 
 test('extractStandHint usa ordem normal na saída e reversa na chegada', () => {
