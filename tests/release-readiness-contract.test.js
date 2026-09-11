@@ -57,6 +57,17 @@ test('sequência crítica 78 → 79 permanece protegida em Node e Playwright', (
   assert.ok(SPATIAL.includes('renderiza a aeronave exatamente em PADIL..MASVA'));
 });
 
+test('origem, último fixo e destino permanecem protegidos no perfil de rota', () => {
+  for (const token of [
+    "perfil preserva origem, último fixo, destino e termina em 100%",
+    "profile.points[0].ident, 'SBBS'",
+    "profile.points.at(-2).ident, 'MASVA'",
+    "profile.points.at(-1).ident, 'SBPJ'",
+    "profile.targets.at(-1) - 1",
+    "profile.endNative, 79",
+  ]) assert.ok(ROUTE_REGRESSION.includes(token), `contrato de endpoint ausente: ${token}`);
+});
+
 test('equivalência das formas de navegação continua coberta por E2E', () => {
   for (const token of [
     'Próximo e Anterior mantêm navegação sincronizada e atualizam STRIP/FPV',

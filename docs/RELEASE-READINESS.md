@@ -37,6 +37,7 @@ A release não pode alterar estes contratos sem uma decisão explícita e novos 
 
 - `ILVES 01:34` deve permanecer antes de `MASVA 01:36`.
 - O retrocesso 79 → 78 deve usar a sequência inversa.
+- O perfil de rota crítico deve iniciar no ADEP `SBBS`, manter `MASVA` como último fixo antes do destino e terminar no ADES `SBPJ` em 100% de progresso.
 
 ## Evidência automatizada atual
 
@@ -55,6 +56,8 @@ Os contratos acima são cobertos, entre outros, por:
 A troca real de arquivo também é exercitada em `tests/e2e/ui-navigation.spec.js`: o cenário injeta estado derivado da sessão anterior, seleciona um segundo histórico, confirma o reset `pending`, carrega o novo arquivo e verifica que a nova sessão começa no evento 1 sem snapshots, perfil de movimento ou rota processada marcados como resíduos da sessão anterior.
 
 O mesmo arquivo E2E também cobre o uso normal dos painéis operacionais STRIP e FPV: abertura pelos toggles, preenchimento com callsign/origem/destino, reconhecimento de alterações da STRIP, minimização/restauração e atualização dos painéis durante Próximo/Anterior.
+
+O teste `tests/route-regression.test.js` afirma ainda o fechamento geográfico do cenário crítico: início em `SBBS`, `MASVA` como último fixo, término em `SBPJ`, fração final 100% e evento de ARR/término como marco final do perfil.
 
 Também existem regressões baseadas em históricos operacionais representativos para:
 

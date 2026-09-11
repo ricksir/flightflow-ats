@@ -52,7 +52,8 @@ incluindo:
 - equivalência entre Próximo, timeline, scrubber, teclado e autoplay;
 - DEP como referência temporal do perfil de movimento;
 - troca real de arquivo limpando a sessão anterior antes de carregar o novo histórico;
-- abertura, preenchimento, reconhecimento, minimização/restauração e atualização de STRIP/FPV durante a navegação.
+- abertura, preenchimento, reconhecimento, minimização/restauração e atualização de STRIP/FPV durante a navegação;
+- fechamento da rota crítica em `SBBS → … → MASVA → SBPJ`, com destino em 100% do perfil.
 
 ## Históricos representativos
 
