@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'findKnowledgeEntryByKey';
 const EXPECTED_CONSUMERS = 5;
 const EXPECTED_SOURCE = [
@@ -33,7 +34,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -84,22 +85,22 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(entriesFactory) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(
     'knowledgeEntries',
     `${source}\nreturn findKnowledgeEntryByKey;`
   )(entriesFactory);
 }
 
-test('findKnowledgeEntryByKey mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('findKnowledgeEntryByKey mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('findKnowledgeEntryByKey permanece puro e sem acoplamento de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -110,15 +111,18 @@ test('findKnowledgeEntryByKey permanece puro e sem acoplamento de infraestrutura
   assert.equal((source.match(/\bknowledgeEntries\s*\(/g) || []).length, 1);
 });
 
-test('findKnowledgeEntryByKey mantém exatamente cinco consumidores no núcleo', () => {
+test('findKnowledgeEntryByKey mantém exatamente cinco consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bfindKnowledgeEntryByKey\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('findKnowledgeEntryByKey(trigger.dataset.knowledgeKey)'));
   assert.ok(kernel.includes('findKnowledgeEntryByKey(state.activeKnowledgeKey)'));
   assert.ok(kernel.includes('findKnowledgeEntryByKey(button.dataset.relatedKnowledge)'));
   assert.ok(kernel.includes('findKnowledgeEntryByKey(initialKey)'));
   assert.ok(kernel.includes('findKnowledgeEntryByKey(button.dataset.knowledgeListKey)'));
+  assert.equal(kernel.includes('function findKnowledgeEntryByKey('), false);
+  assert.ok(kernel.includes('const { findKnowledgeEntryByKey } = CommunicationContextUtils.createKnowledgeEntryFinder({'));
+  assert.ok(kernel.includes('knowledgeEntries,'));
 });
 
 test('findKnowledgeEntryByKey retorna a primeira entrada com chave estritamente igual', () => {
