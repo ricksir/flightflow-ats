@@ -10,8 +10,8 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'formatAddressCode';
-const EXPECTED_KERNEL_CONSUMERS = 1;
-const EXPECTED_MODULE_CONSUMERS = 1;
+const EXPECTED_KERNEL_CONSUMERS = 0;
+const EXPECTED_MODULE_CONSUMERS = 2;
 const EXPECTED_TOTAL_CONSUMERS = 2;
 const EXPECTED_SOURCE = [
   '  function formatAddressCode(code) {',
@@ -113,10 +113,11 @@ test('formatAddressCode permanece sem acoplamento direto de infraestrutura', () 
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('formatAddressCode mantém dois consumidores distribuídos entre núcleo e módulo e não volta inline', () => {
+test('formatAddressCode mantém dois consumidores no módulo e não volta inline ao núcleo', () => {
   const kernel = kernelSource();
   const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const displaySource = extractNamedFunction(moduleSource, 'formatAddressDisplay');
+  const fieldSource = extractNamedFunction(moduleSource, 'formatFieldDisplay');
 
   const kernelOccurrences = [...kernel.matchAll(/\bformatAddressCode\s*\(/g)].length;
   const moduleOccurrences = [...moduleSource.matchAll(/\bformatAddressCode\s*\(/g)].length - 1;
@@ -125,7 +126,7 @@ test('formatAddressCode mantém dois consumidores distribuídos entre núcleo e 
   assert.equal(moduleOccurrences, EXPECTED_MODULE_CONSUMERS);
   assert.equal(kernelOccurrences + moduleOccurrences, EXPECTED_TOTAL_CONSUMERS);
 
-  assert.ok(kernel.includes("return code ? formatAddressCode(code) : '—';"));
+  assert.ok(fieldSource.includes("return code ? formatAddressCode(code) : '—';"));
   assert.ok(displaySource.includes("return normalized ? formatAddressCode(normalized) : (raw || '—');"));
   assert.ok(displaySource.includes(".map(formatAddressCode).join(' · ')"));
   assert.equal(kernel.includes('function formatAddressCode('), false);

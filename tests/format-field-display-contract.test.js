@@ -4,9 +4,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'formatFieldDisplay';
 const EXPECTED_CONSUMERS = 2;
 const EXPECTED_SOURCE = [
@@ -35,7 +37,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -86,29 +88,27 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(deps = {}) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'cleanDisplay',
-    'formatAddressCode',
-    'formatAddressDisplay',
-    'displayValue',
-    `${source}\nreturn formatFieldDisplay;`
-  )(
-    deps.cleanDisplay,
-    deps.formatAddressCode,
-    deps.formatAddressDisplay,
-    deps.displayValue
-  );
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  return context.window.FlightFlowCommunicationContextUtils
+    .createFieldDisplayFormatter({
+      cleanDisplay: deps.cleanDisplay,
+      formatAddressCode: deps.formatAddressCode,
+      formatAddressDisplay: deps.formatAddressDisplay,
+      displayValue: deps.displayValue,
+    })
+    .formatFieldDisplay;
 }
 
-test('formatFieldDisplay mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('formatFieldDisplay mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), Buffer.byteLength(EXPECTED_SOURCE, 'utf8'));
 });
 
 test('formatFieldDisplay permanece sem acoplamento direto de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -118,12 +118,14 @@ test('formatFieldDisplay permanece sem acoplamento direto de infraestrutura', ()
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('formatFieldDisplay mantém exatamente dois consumidores no núcleo', () => {
+test('formatFieldDisplay mantém exatamente dois consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bformatFieldDisplay\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('const value = formatFieldDisplay(key, snapshot[key]);'));
   assert.ok(kernel.includes("const before = change ? formatFieldDisplay(key, change.before) : '';"));
+  assert.equal(kernel.includes('function formatFieldDisplay('), false);
+  assert.ok(kernel.includes('const { formatFieldDisplay } = CommunicationContextUtils.createFieldDisplayFormatter({ cleanDisplay, formatAddressCode, formatAddressDisplay, displayValue });'));
 });
 
 test('formatFieldDisplay formata ADEP e ADES como código de endereço', () => {

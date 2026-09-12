@@ -5562,6 +5562,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });
   const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });
   const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });
+  const { formatFieldDisplay } = CommunicationContextUtils.createFieldDisplayFormatter({ cleanDisplay, formatAddressCode, formatAddressDisplay, displayValue });
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -9961,15 +9962,6 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
 
   function lookupLocality(code) {
     return state.localities[normalizeLocalityCode(code)] || '';
-  }
-
-  function formatFieldDisplay(key, value) {
-    if (['adep','ades'].includes(key)) {
-      const code = cleanDisplay(value);
-      return code ? formatAddressCode(code) : '—';
-    }
-    if (key === 'originator' || key === 'recipients') return formatAddressDisplay(value);
-    return displayValue(value);
   }
 
   function renderLocalityList() {

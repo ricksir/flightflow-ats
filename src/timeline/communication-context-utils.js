@@ -82,10 +82,41 @@ Destinatário(s): ${context.recipients}`;
     return Object.freeze({ formatAddressDisplay });
   }
 
+  function createFieldDisplayFormatter(options = {}) {
+    const cleanDisplay = options.cleanDisplay;
+    const formatAddressCode = options.formatAddressCode;
+    const formatAddressDisplay = options.formatAddressDisplay;
+    const displayValue = options.displayValue;
+    if (typeof cleanDisplay !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer cleanDisplay para campos.');
+    }
+    if (typeof formatAddressCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer formatAddressCode para campos.');
+    }
+    if (typeof formatAddressDisplay !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer formatAddressDisplay.');
+    }
+    if (typeof displayValue !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer displayValue.');
+    }
+
+  function formatFieldDisplay(key, value) {
+    if (['adep','ades'].includes(key)) {
+      const code = cleanDisplay(value);
+      return code ? formatAddressCode(code) : '—';
+    }
+    if (key === 'originator' || key === 'recipients') return formatAddressDisplay(value);
+    return displayValue(value);
+  }
+
+    return Object.freeze({ formatFieldDisplay });
+  }
+
   window.FlightFlowCommunicationContextUtils = Object.freeze({
     internalTransitionDetails,
     create: createCommunicationContextUtils,
     createAddressFormatter,
     createAddressDisplayFormatter,
+    createFieldDisplayFormatter,
   });
 })();
