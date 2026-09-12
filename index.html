@@ -8884,9 +8884,10 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     return knowledgeEntries().map(entry => ({ ...entry }));
   };
 
-  function knowledgeEntryDocumentLabel(entry) {
-    return KNOWLEDGE_DOCUMENT_LABELS[knowledgeEntryDocumentKey(entry)] || 'Base normativa ATM';
-  }
+  const { knowledgeEntryDocumentLabel } = CommunicationContextUtils.createKnowledgeDocumentLabeler({
+    knowledgeDocumentLabels: KNOWLEDGE_DOCUMENT_LABELS,
+    knowledgeEntryDocumentKey,
+  });
 
   function normalizeKnowledgeText(value) {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[–—]/g,'-').replace(/[^A-Z0-9-]+/g,' ').replace(/\s+/g,' ').trim();

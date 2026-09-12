@@ -19,6 +19,23 @@
     return 'CIRCEA';
   }
 
+  function createKnowledgeDocumentLabeler(options = {}) {
+    const KNOWLEDGE_DOCUMENT_LABELS = options.knowledgeDocumentLabels;
+    const knowledgeEntryDocumentKey = options.knowledgeEntryDocumentKey;
+    if (!KNOWLEDGE_DOCUMENT_LABELS || typeof KNOWLEDGE_DOCUMENT_LABELS !== 'object') {
+      throw new Error('FlightFlowCommunicationContextUtils requer knowledgeDocumentLabels.');
+    }
+    if (typeof knowledgeEntryDocumentKey !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentKey para rótulos.');
+    }
+
+  function knowledgeEntryDocumentLabel(entry) {
+    return KNOWLEDGE_DOCUMENT_LABELS[knowledgeEntryDocumentKey(entry)] || 'Base normativa ATM';
+  }
+
+    return Object.freeze({ knowledgeEntryDocumentLabel });
+  }
+
   function createCommunicationContextUtils(options = {}) {
     const canonicalKnowledgeCode = options.canonicalKnowledgeCode;
     if (typeof canonicalKnowledgeCode !== 'function') {
@@ -122,6 +139,7 @@ Destinatário(s): ${context.recipients}`;
   window.FlightFlowCommunicationContextUtils = Object.freeze({
     internalTransitionDetails,
     knowledgeEntryDocumentKey,
+    createKnowledgeDocumentLabeler,
     create: createCommunicationContextUtils,
     createAddressFormatter,
     createAddressDisplayFormatter,
