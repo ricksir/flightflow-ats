@@ -2,15 +2,15 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **12/09/2026**, após o merge do PR **#115** e conclusão verde do workflow pós-merge **#319**.
+> Última verificação: **12/09/2026**, após o merge do PR **#118** e conclusão verde do workflow pós-merge **#325**.
 
 ## 1. Fonte de verdade atual
 
 - Repositório: `ricksir/flightflow-ats`.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `498bc5e286912ebfe6f25cf39728742667467483`
-  — `refactor: extract knowledge document label (#115)`.
+  `becf20008696abb0b77478ca04ed960c28d8bfe5`
+  — `refactor: extract knowledge category label (#118)`.
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -19,6 +19,37 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção acima.
 
 ## 2. Último ciclo concluído
+
+### PR #117 — congelamento do contrato de categoria
+
+O PR **#117 — `test: freeze knowledge category label contract for v0.3.0`** congelou `knowledgeCategoryLabel` antes da extração, cobrindo:
+
+- identidade exata de **119 bytes**;
+- SHA-256 `40eecb777708abf7e0bfcb2a1fbb90a6672ef130ce7a443809da61ca920296c0`;
+- pureza e ausência de acoplamento de infraestrutura;
+- exatamente quatro consumidores;
+- rótulos conhecidos;
+- fallback por `humanize` exatamente uma vez.
+
+### PR #118 — extração de categoria
+
+O PR **#118 — `refactor: extract knowledge category label`** foi mergeado por squash.
+
+A função `knowledgeCategoryLabel` saiu do IIFE principal e passou para
+`src/timeline/communication-context-utils.js`, por meio da fábrica
+`createKnowledgeCategoryLabeler(...)`.
+
+A instanciação permanece no ponto da antiga função inline, depois da criação de
+`KNOWLEDGE_CATEGORY_LABELS`, recebendo explicitamente `humanize`.
+
+Distribuição atual:
+
+- `knowledgeCategoryLabel`: **4 consumidores no núcleo**, sem declaração inline;
+- corpo congelado de 119 bytes preservado byte a byte no módulo.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação ou movimento foi alterado nesse ciclo.
+
+### Ciclo anterior — PRs #114/#115
 
 ### PR #114 — congelamento do contrato
 
@@ -58,26 +89,27 @@ Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner ou movimento f
 
 Conforme `tests/main-kernel-contract.test.js` após o PR #115:
 
-- **1.124.084 bytes**;
-- **5.154 linhas**;
+- **1.124.136 bytes**;
+- **5.155 linhas**;
 - SHA-256:
-  `2da42681d2c79b9533bddfedf26d8cd6f7a7350edd772350e647177dd8be3358`;
-- **306 funções nomeadas** no núcleo protegido.
+  `dcbd3c8c1ed36260f06fcb1031d54b1d8528da76ebf15a9cf7cb2daf1d53826c`;
+- **305 funções nomeadas** no núcleo protegido.
 
 ### Communication Context Utils
 
 Conforme `tests/communication-context-utils-contract.test.js`:
 
 - arquivo: `src/timeline/communication-context-utils.js`;
-- **6.106 bytes**;
+- **6.821 bytes**;
 - SHA-256:
-  `52d24bc4eac41a3468b39d2c0c779555f848dcf42d4cf0b45d133d722468a419`.
+  `647ed387c2353bd547a5b3b2730ccbe0f1d6d49b79c033a1d8c21314c9dbfb11`.
 
 A API pública congelada inclui:
 
 - `internalTransitionDetails`;
 - `knowledgeEntryDocumentKey`;
 - `createKnowledgeDocumentLabeler`;
+- `createKnowledgeCategoryLabeler`;
 - `create`;
 - `createAddressFormatter`;
 - `createAddressDisplayFormatter`;
@@ -95,13 +127,15 @@ Nenhum PR de produção pode ser mergeado sem todos os gates verdes:
 
 Referência do último ciclo:
 
-- workflow do PR #115: **#318** — sucesso;
+- workflow do PR #118: **#324** — sucesso;
 - Playwright: **46 passed**;
 - **0 flaky**;
 - **0 retry**;
 - **0 `SPATIAL_EQ_DIAG`**;
-- workflow pós-merge no `main`: **#319** — sucesso;
+- workflow pós-merge no `main`: **#325** — sucesso;
 - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+O PR de contrato #117 também foi validado no workflow **#322** e no pós-merge **#323**, ambos verdes.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**.
 
@@ -136,7 +170,7 @@ As branches `analysis/*` existentes foram criadas em estados anteriores do kerne
 Próximo fluxo seguro:
 
 1. confirmar que `main` ainda contém o baseline acima ou identificar alterações posteriores;
-2. remapear no **`main` atual** os candidatos restantes de baixo acoplamento;
+2. remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento; `knowledgeCategoryLabel` já foi extraída e não deve reaparecer como candidata;
 3. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 4. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
