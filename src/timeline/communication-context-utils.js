@@ -51,9 +51,41 @@ Destinatário(s): ${context.recipients}`;
     return Object.freeze({ formatAddressCode });
   }
 
+  function createAddressDisplayFormatter(options = {}) {
+    const cleanDisplay = options.cleanDisplay;
+    const parseAddresses = options.parseAddresses;
+    const normalizeLocalityCode = options.normalizeLocalityCode;
+    const formatAddressCode = options.formatAddressCode;
+    if (typeof cleanDisplay !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer cleanDisplay.');
+    }
+    if (typeof parseAddresses !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer parseAddresses.');
+    }
+    if (typeof normalizeLocalityCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer normalizeLocalityCode para display.');
+    }
+    if (typeof formatAddressCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer formatAddressCode.');
+    }
+
+  function formatAddressDisplay(value) {
+    const raw = cleanDisplay(value);
+    const addresses = parseAddresses(raw);
+    if (!addresses.length) {
+      const normalized = normalizeLocalityCode(raw);
+      return normalized ? formatAddressCode(normalized) : (raw || '—');
+    }
+    return [...new Set(addresses)].map(formatAddressCode).join(' · ');
+  }
+
+    return Object.freeze({ formatAddressDisplay });
+  }
+
   window.FlightFlowCommunicationContextUtils = Object.freeze({
     internalTransitionDetails,
     create: createCommunicationContextUtils,
     createAddressFormatter,
+    createAddressDisplayFormatter,
   });
 })();
