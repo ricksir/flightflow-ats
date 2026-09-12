@@ -12,6 +12,13 @@
     return { previous: normalize(previous), current: normalize(current) };
   }
 
+  function parseAddresses(value) {
+    const text = String(value || '').toUpperCase();
+    const matches = text.match(/\b[A-Z]{4}[A-Z0-9]{4}\b/g) || [];
+    if (matches.length) return [...new Set(matches)];
+    return [...new Set(text.split(/[\s,;|/]+/).map(v => v.replace(/[^A-Z0-9-]/g,'')).filter(v => v.length >= 4))];
+  }
+
   function knowledgeEntryDocumentKey(entry) {
     const source = String(entry?.sourceDocument || entry?.source || '').toUpperCase();
     if (source.includes('SAGITARIO ACC') || source.includes('DISCIPLINA II')) return 'SAGITARIO';
@@ -155,6 +162,7 @@ Destinatário(s): ${context.recipients}`;
 
   window.FlightFlowCommunicationContextUtils = Object.freeze({
     internalTransitionDetails,
+    parseAddresses,
     knowledgeEntryDocumentKey,
     createKnowledgeDocumentLabeler,
     createKnowledgeCategoryLabeler,
