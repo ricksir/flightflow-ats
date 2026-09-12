@@ -36,6 +36,23 @@
     return Object.freeze({ knowledgeEntryDocumentLabel });
   }
 
+  function createKnowledgeCategoryLabeler(options = {}) {
+    const KNOWLEDGE_CATEGORY_LABELS = options.knowledgeCategoryLabels;
+    const humanize = options.humanize;
+    if (!KNOWLEDGE_CATEGORY_LABELS || typeof KNOWLEDGE_CATEGORY_LABELS !== 'object') {
+      throw new Error('FlightFlowCommunicationContextUtils requer knowledgeCategoryLabels.');
+    }
+    if (typeof humanize !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer humanize para categorias.');
+    }
+
+  function knowledgeCategoryLabel(category) {
+    return KNOWLEDGE_CATEGORY_LABELS[category] || humanize(category);
+  }
+
+    return Object.freeze({ knowledgeCategoryLabel });
+  }
+
   function createCommunicationContextUtils(options = {}) {
     const canonicalKnowledgeCode = options.canonicalKnowledgeCode;
     if (typeof canonicalKnowledgeCode !== 'function') {
@@ -140,6 +157,7 @@ Destinatário(s): ${context.recipients}`;
     internalTransitionDetails,
     knowledgeEntryDocumentKey,
     createKnowledgeDocumentLabeler,
+    createKnowledgeCategoryLabeler,
     create: createCommunicationContextUtils,
     createAddressFormatter,
     createAddressDisplayFormatter,

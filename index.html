@@ -9030,9 +9030,10 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     openKnowledgeDetail(entry, context);
   }
 
-  function knowledgeCategoryLabel(category) {
-    return KNOWLEDGE_CATEGORY_LABELS[category] || humanize(category);
-  }
+  const { knowledgeCategoryLabel } = CommunicationContextUtils.createKnowledgeCategoryLabeler({
+    knowledgeCategoryLabels: KNOWLEDGE_CATEGORY_LABELS,
+    humanize,
+  });
 
   function relatedKnowledgeButtons(entry) {
     const codes = Array.isArray(entry.related) ? entry.related : [];
