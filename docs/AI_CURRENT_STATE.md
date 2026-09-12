@@ -87,7 +87,7 @@ Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner ou movimento f
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #115:
+Conforme `tests/main-kernel-contract.test.js` após o PR #118:
 
 - **1.124.136 bytes**;
 - **5.155 linhas**;
