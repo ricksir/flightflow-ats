@@ -11,7 +11,7 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const MODULE_BYTES = 4951;
-const MODULE_SHA256 = 'afecb2a6913d0769f8c94a304ec80dc82e7130b0814c7d9c819ccdbca9958fc5'
+const MODULE_SHA256 = 'cff2cabbf5799eb613f0db4280757807186ef54e3fdb50d6f17961f70a2bcd23';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
