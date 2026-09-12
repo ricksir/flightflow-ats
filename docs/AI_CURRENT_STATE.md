@@ -2,15 +2,15 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **12/09/2026**, após o merge do PR **#118** e conclusão verde do workflow pós-merge **#325**.
+> Última verificação: **12/09/2026**, após o merge do PR **#121** e conclusão verde do workflow pós-merge **#332**.
 
 ## 1. Fonte de verdade atual
 
 - Repositório: `ricksir/flightflow-ats`.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `becf20008696abb0b77478ca04ed960c28d8bfe5`
-  — `refactor: extract knowledge category label (#118)`.
+  `bb18fe2336132080097384d33bad101f989be67d`
+  — `refactor: extract parse addresses` (PR #121).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,59 +20,54 @@ Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o tr
 
 ## 2. Último ciclo concluído
 
-### PR #117 — congelamento do contrato de categoria
+### PR #120 — congelamento do contrato de endereçamento
 
-O PR **#117 — `test: freeze knowledge category label contract for v0.3.0`** congelou `knowledgeCategoryLabel` antes da extração, cobrindo:
+O PR **#120 — `test: freeze parse addresses contract for v0.3.0`** congelou `parseAddresses` antes da extração, cobrindo:
 
-- identidade exata de **119 bytes**;
-- SHA-256 `40eecb777708abf7e0bfcb2a1fbb90a6672ef130ce7a443809da61ca920296c0`;
+- identidade exata de **325 bytes**;
+- SHA-256 `6f1b8ab72ae94cae39a38be245f1014cb96e79449353d47ba76abb74eab4a103`;
 - pureza e ausência de acoplamento de infraestrutura;
-- exatamente quatro consumidores;
-- rótulos conhecidos;
-- fallback por `humanize` exatamente uma vez.
+- exatamente **4 consumidores** no núcleo;
+- precedência dos endereços AFTN;
+- normalização para maiúsculas;
+- preservação de ordem e remoção de duplicatas;
+- fallback tokenizado;
+- preservação de hífen;
+- comportamento para entradas vazias.
 
-### PR #118 — extração de categoria
+### PR #121 — extração de `parseAddresses`
 
-O PR **#118 — `refactor: extract knowledge category label`** foi mergeado por squash.
+O PR **#121 — `refactor: extract parse addresses`** foi mergeado por squash.
 
-A função `knowledgeCategoryLabel` saiu do IIFE principal e passou para
-`src/timeline/communication-context-utils.js`, por meio da fábrica
-`createKnowledgeCategoryLabeler(...)`.
-
-A instanciação permanece no ponto da antiga função inline, depois da criação de
-`KNOWLEDGE_CATEGORY_LABELS`, recebendo explicitamente `humanize`.
+A função `parseAddresses` saiu do IIFE principal e passou diretamente para
+`src/timeline/communication-context-utils.js` como helper puro exportado pela
+API `FlightFlowCommunicationContextUtils`.
 
 Distribuição atual:
 
-- `knowledgeCategoryLabel`: **4 consumidores no núcleo**, sem declaração inline;
-- corpo congelado de 119 bytes preservado byte a byte no módulo.
+- `parseAddresses`: **4 consumidores no núcleo**, sem declaração inline;
+- o corpo congelado de 325 bytes foi preservado byte a byte no módulo;
+- o núcleo usa o alias explícito:
+  `const { parseAddresses } = CommunicationContextUtils;`;
+- a injeção de `parseAddresses` em `createAddressDisplayFormatter(...)` foi
+  mantida, sem alteração de comportamento.
 
-Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação ou movimento foi alterado nesse ciclo.
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação,
+mapa ou movimento foi alterado nesse ciclo.
+
+### Ciclo anterior — PRs #117/#118
+
+O PR **#117** congelou `knowledgeCategoryLabel` e o PR **#118** fez sua extração
+para `src/timeline/communication-context-utils.js` por meio de
+`createKnowledgeCategoryLabeler(...)`.
+
+A função permanece com **4 consumidores no núcleo**, sem declaração inline, e
+seu corpo congelado de 119 bytes continua preservado no módulo.
 
 ### Ciclo anterior — PRs #114/#115
 
-### PR #114 — congelamento do contrato
-
-O PR **#114 — `test: freeze knowledge document label contract for v0.3.0`** congelou `knowledgeEntryDocumentLabel` antes da extração, cobrindo:
-
-- identidade byte a byte;
-- pureza e ausência de acoplamento de infraestrutura;
-- exatamente cinco consumidores;
-- os três rótulos normativos conhecidos;
-- fallback `Base normativa ATM`;
-- delegação única a `knowledgeEntryDocumentKey`;
-- preservação da suíte Playwright com 46 testes.
-
-### PR #115 — extração
-
-O PR **#115 — `refactor: extract knowledge document label`** foi mergeado por squash.
-
-A função `knowledgeEntryDocumentLabel` saiu do IIFE principal e passou para
-`src/timeline/communication-context-utils.js`, por meio da fábrica
-`createKnowledgeDocumentLabeler(...)`.
-
-A instanciação permanece no ponto da antiga função inline, depois da criação de
-`KNOWLEDGE_DOCUMENT_LABELS`. Isso é intencional: inicializar a fábrica no bloco inicial de aliases quebraria a ordem de inicialização.
+O PR **#114** congelou `knowledgeEntryDocumentLabel` e o PR **#115** fez sua
+extração para o mesmo módulo por meio de `createKnowledgeDocumentLabeler(...)`.
 
 Distribuição atual relevante:
 
@@ -81,32 +76,34 @@ Distribuição atual relevante:
   - 1 no núcleo;
   - 1 no módulo de communication context.
 
-Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner ou movimento foi alterado nesse ciclo.
+Nenhum desses ciclos alterou rota, DEP, `goTo()`, `renderCurrent()`, planner
+ou movimento.
 
 ## 3. Baselines atuais protegidos
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #118:
+Conforme `tests/main-kernel-contract.test.js` após o PR #121:
 
-- **1.124.136 bytes**;
-- **5.155 linhas**;
+- **1.123.864 bytes**;
+- **5.148 linhas**;
 - SHA-256:
-  `dcbd3c8c1ed36260f06fcb1031d54b1d8528da76ebf15a9cf7cb2daf1d53826c`;
-- **305 funções nomeadas** no núcleo protegido.
+  `e107d596665b1fdfa76c4b9e3d65c477956aaa80b4b08ad87cd093cedc356b8d`;
+- **304 funções nomeadas** no núcleo protegido.
 
 ### Communication Context Utils
 
 Conforme `tests/communication-context-utils-contract.test.js`:
 
 - arquivo: `src/timeline/communication-context-utils.js`;
-- **6.821 bytes**;
+- **7.168 bytes**;
 - SHA-256:
-  `647ed387c2353bd547a5b3b2730ccbe0f1d6d49b79c033a1d8c21314c9dbfb11`.
+  `a981b3474e82938a78851e69255a3ae726de106941bf7c999e92417ceaaa8edd`.
 
 A API pública congelada inclui:
 
 - `internalTransitionDetails`;
+- `parseAddresses`;
 - `knowledgeEntryDocumentKey`;
 - `createKnowledgeDocumentLabeler`;
 - `createKnowledgeCategoryLabeler`;
@@ -127,15 +124,16 @@ Nenhum PR de produção pode ser mergeado sem todos os gates verdes:
 
 Referência do último ciclo:
 
-- workflow do PR #118: **#324** — sucesso;
-- Playwright: **46 passed**;
-- **0 flaky**;
-- **0 retry**;
-- **0 `SPATIAL_EQ_DIAG`**;
-- workflow pós-merge no `main`: **#325** — sucesso;
-- pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-
-O PR de contrato #117 também foi validado no workflow **#322** e no pós-merge **#323**, ambos verdes.
+- PR de contrato #120:
+  - workflow **#329** — sucesso;
+  - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
+  - pós-merge no `main`: workflow **#330** — sucesso;
+  - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+- PR de extração #121:
+  - workflow **#331** — sucesso;
+  - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
+  - pós-merge no `main`: workflow **#332** — sucesso;
+  - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**.
 
@@ -170,7 +168,7 @@ As branches `analysis/*` existentes foram criadas em estados anteriores do kerne
 Próximo fluxo seguro:
 
 1. confirmar que `main` ainda contém o baseline acima ou identificar alterações posteriores;
-2. remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento; `knowledgeCategoryLabel` já foi extraída e não deve reaparecer como candidata;
+2. remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento; `knowledgeCategoryLabel` e `parseAddresses` já foram extraídas e não devem reaparecer como candidatas;
 3. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 4. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
