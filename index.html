@@ -5561,6 +5561,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { internalTransitionDetails } = CommunicationContextUtils;
   const { parseAddresses } = CommunicationContextUtils;
   const { knowledgeEntryDocumentKey } = CommunicationContextUtils;
+  const { canonicalKnowledgeCode } = CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });
   const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });
   const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });
   const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });
@@ -8884,10 +8885,6 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
 
   function normalizeKnowledgeText(value) {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[–—]/g,'-').replace(/[^A-Z0-9-]+/g,' ').replace(/\s+/g,' ').trim();
-  }
-
-  function canonicalKnowledgeCode(value) {
-    return normalizeKnowledgeText(value).replace(/[^A-Z0-9]/g, '');
   }
 
   function entryMatchesToken(entry, normalizedText) {

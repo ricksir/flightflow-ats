@@ -26,6 +26,19 @@
     return 'CIRCEA';
   }
 
+  function createCanonicalKnowledgeCode(options = {}) {
+    const normalizeKnowledgeText = options.normalizeKnowledgeText;
+    if (typeof normalizeKnowledgeText !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para código canônico.');
+    }
+
+  function canonicalKnowledgeCode(value) {
+    return normalizeKnowledgeText(value).replace(/[^A-Z0-9]/g, '');
+  }
+
+    return Object.freeze({ canonicalKnowledgeCode });
+  }
+
   function createKnowledgeEntryFinder(options = {}) {
     const knowledgeEntries = options.knowledgeEntries;
     if (typeof knowledgeEntries !== 'function') {
@@ -195,6 +208,7 @@ Destinatário(s): ${context.recipients}`;
     internalTransitionDetails,
     parseAddresses,
     knowledgeEntryDocumentKey,
+    createCanonicalKnowledgeCode,
     createKnowledgeEntryFinder,
     createKnowledgeEntriesByCodeFinder,
     createKnowledgeDocumentLabeler,

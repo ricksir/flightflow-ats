@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'canonicalKnowledgeCode';
 const EXPECTED_CONSUMERS = 9;
 const EXPECTED_SOURCE = [
@@ -33,7 +34,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -84,22 +85,22 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(normalizeKnowledgeText) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(
     'normalizeKnowledgeText',
     `${source}\nreturn canonicalKnowledgeCode;`
   )(normalizeKnowledgeText);
 }
 
-test('canonicalKnowledgeCode mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('canonicalKnowledgeCode mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('canonicalKnowledgeCode permanece puro e depende somente de normalizeKnowledgeText', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -110,12 +111,13 @@ test('canonicalKnowledgeCode permanece puro e depende somente de normalizeKnowle
   assert.equal((source.match(/\bnormalizeKnowledgeText\s*\(/g) || []).length, 1);
 });
 
-test('canonicalKnowledgeCode mantém exatamente nove consumidores no núcleo', () => {
+test('canonicalKnowledgeCode mantém nove consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const declarations = [...kernel.matchAll(/\bfunction\s+canonicalKnowledgeCode\s*\(/g)].length;
   const references = [...kernel.matchAll(/\bcanonicalKnowledgeCode\b/g)].length;
-  assert.equal(declarations, 1);
-  assert.equal(references - declarations, EXPECTED_CONSUMERS);
+  assert.equal(declarations, 0);
+  assert.equal(references, EXPECTED_CONSUMERS + 1);
+  assert.ok(kernel.includes('const { canonicalKnowledgeCode } = CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });'));
   assert.ok(kernel.includes('canonicalKnowledgeCode,'));
 });
 
