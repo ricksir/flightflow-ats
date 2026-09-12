@@ -25,7 +25,7 @@ function functionSource(container, name) {
     const c = container[i];
     if (quote) {
       if (escaped) escaped = false;
-      else if (c === '\\\\') escaped = true;
+      else if (c === '\\') escaped = true;
       else if (c === quote) quote = null;
       i += 1; continue;
     }
@@ -35,14 +35,14 @@ function functionSource(container, name) {
     i += 1;
   }
   let brace = i + 1;
-  while (/\\s/.test(container[brace] || '')) brace += 1;
+  while (/\s/.test(container[brace] || '')) brace += 1;
   assert.equal(container[brace], '{');
   depth = 0; quote = null; escaped = false;
   for (i = brace; i < container.length; i += 1) {
     const c = container[i];
     if (quote) {
       if (escaped) escaped = false;
-      else if (c === '\\\\') escaped = true;
+      else if (c === '\\') escaped = true;
       else if (c === quote) quote = null;
       continue;
     }
@@ -60,8 +60,8 @@ test('módulo communication-context-utils mantém identidade estrutural congelad
   const source = fs.readFileSync(MODULE, 'utf8');
   assert.equal(Buffer.byteLength(source, 'utf8'), MODULE_BYTES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), MODULE_SHA256);
-  assert.match(source, /^\\(function \\(\\) \\{\\n  'use strict';/);
-  assert.match(source, /\\}\\)\\(\\);\\n$/);
+  assert.match(source, /^\(function \(\) \{\n  'use strict';/);
+  assert.match(source, /\}\)\(\);\n$/);
 });
 
 test('internalTransitionDetails preserva exatamente os bytes congelados dentro do módulo', () => {
@@ -96,7 +96,7 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   const html = fs.readFileSync(HTML, 'utf8');
   const tag = '<script id="flightflow-communication-context-utils" src="src/timeline/communication-context-utils.js"></script>';
   assert.equal(html.split(tag).length - 1, 1);
-  const iife = html.indexOf('<script>\\n\\n(function () {');
+  const iife = html.indexOf('<script>\n\n(function () {');
   assert.ok(iife > 0 && html.indexOf(tag) < iife);
   assert.ok(html.includes('const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;'));
   assert.ok(html.includes("if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');"));
