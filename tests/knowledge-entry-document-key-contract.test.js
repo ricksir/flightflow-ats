@@ -109,11 +109,16 @@ test('knowledgeEntryDocumentKey permanece puro e sem acoplamento de infraestrutu
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('knowledgeEntryDocumentKey mantém exatamente dois consumidores no núcleo e não permanece inline', () => {
+test('knowledgeEntryDocumentKey mantém dois consumidores distribuídos entre núcleo e módulo', () => {
   const kernel = kernelSource();
-  const occurrences = [...kernel.matchAll(/\bknowledgeEntryDocumentKey\s*\(/g)].length;
-  assert.equal(occurrences, EXPECTED_CONSUMERS);
-  assert.ok(kernel.includes("return KNOWLEDGE_DOCUMENT_LABELS[knowledgeEntryDocumentKey(entry)] || 'Base normativa ATM';"));
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+  const kernelOccurrences = [...kernel.matchAll(/\bknowledgeEntryDocumentKey\s*\(/g)].length;
+  const moduleOccurrences = [...moduleSource.matchAll(/\bknowledgeEntryDocumentKey\s*\(/g)].length - 1;
+
+  assert.equal(kernelOccurrences, 1);
+  assert.equal(moduleOccurrences, 1);
+  assert.equal(kernelOccurrences + moduleOccurrences, EXPECTED_CONSUMERS);
+  assert.ok(moduleSource.includes("return KNOWLEDGE_DOCUMENT_LABELS[knowledgeEntryDocumentKey(entry)] || 'Base normativa ATM';"));
   assert.ok(kernel.includes("if (documentKey !== 'all' && knowledgeEntryDocumentKey(entry) !== documentKey) return false;"));
   assert.equal(kernel.includes('function knowledgeEntryDocumentKey('), false);
   assert.ok(kernel.includes('const { knowledgeEntryDocumentKey } = CommunicationContextUtils;'));
