@@ -5561,6 +5561,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { internalTransitionDetails } = CommunicationContextUtils;
   const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });
   const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });
+  const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -9960,16 +9961,6 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
 
   function lookupLocality(code) {
     return state.localities[normalizeLocalityCode(code)] || '';
-  }
-
-  function formatAddressDisplay(value) {
-    const raw = cleanDisplay(value);
-    const addresses = parseAddresses(raw);
-    if (!addresses.length) {
-      const normalized = normalizeLocalityCode(raw);
-      return normalized ? formatAddressCode(normalized) : (raw || '—');
-    }
-    return [...new Set(addresses)].map(formatAddressCode).join(' · ');
   }
 
   function formatFieldDisplay(key, value) {

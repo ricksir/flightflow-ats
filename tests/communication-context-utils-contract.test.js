@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 2377;
-const MODULE_SHA256 = 'fb5e9dfe209d8df53e65a1b294ffd9911a2bdcce8c24d4bc3ba95a7c54f1ff39';
+const MODULE_BYTES = 3692;
+const MODULE_SHA256 = 'afecb2a6913d0769f8c94a304ec80dc82e7130b0814c7d9c819ccdbca9958fc5'
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -76,11 +76,12 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'create', 'createAddressFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.create, 'function');
   assert.equal(typeof api.createAddressFormatter, 'function');
+  assert.equal(typeof api.createAddressDisplayFormatter, 'function');
 
   assert.throws(
     () => api.create({}),
@@ -107,6 +108,39 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   assert.equal(Object.isFrozen(addressScoped), true);
   assert.deepEqual(Object.keys(addressScoped), ['formatAddressCode']);
   assert.equal(addressScoped.formatAddressCode('sbbr'), 'SBBR — Brasília');
+
+  assert.throws(
+    () => api.createAddressDisplayFormatter({}),
+    /FlightFlowCommunicationContextUtils requer cleanDisplay/
+  );
+  assert.throws(
+    () => api.createAddressDisplayFormatter({ cleanDisplay: value => value }),
+    /FlightFlowCommunicationContextUtils requer parseAddresses/
+  );
+  assert.throws(
+    () => api.createAddressDisplayFormatter({
+      cleanDisplay: value => value,
+      parseAddresses: () => [],
+    }),
+    /FlightFlowCommunicationContextUtils requer normalizeLocalityCode para display/
+  );
+  assert.throws(
+    () => api.createAddressDisplayFormatter({
+      cleanDisplay: value => value,
+      parseAddresses: () => [],
+      normalizeLocalityCode: value => value,
+    }),
+    /FlightFlowCommunicationContextUtils requer formatAddressCode/
+  );
+  const displayScoped = api.createAddressDisplayFormatter({
+    cleanDisplay: value => String(value || '').trim(),
+    parseAddresses: () => ['SBBR', 'SBBR', 'SBGO'],
+    normalizeLocalityCode: value => String(value || '').toUpperCase(),
+    formatAddressCode: value => `FMT:${value}`,
+  });
+  assert.equal(Object.isFrozen(displayScoped), true);
+  assert.deepEqual(Object.keys(displayScoped), ['formatAddressDisplay']);
+  assert.equal(displayScoped.formatAddressDisplay('qualquer'), 'FMT:SBBR · FMT:SBGO');
 });
 
 test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', () => {
@@ -120,11 +154,12 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('const { internalTransitionDetails } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });'));
   assert.ok(html.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });'));
+  assert.ok(html.includes('const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });'));
 });
 
 test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
   const source = fs.readFileSync(MODULE, 'utf8');
-  for (const name of ['internalTransitionDetails', 'knowledgeContextSummary', 'formatAddressCode']) {
+  for (const name of ['internalTransitionDetails', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay']) {
     const target = functionSource(source, name);
     for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
       assert.equal(target.includes(token), false, `acoplamento inesperado em ${name}: ${token}`);
