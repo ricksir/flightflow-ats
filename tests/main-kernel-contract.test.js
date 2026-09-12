@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1124281;
-const EXPECTED_SHA256 = '67991eddbe1efe88a1db1e1cd24b7d69f66ebb5d03538064e3e714f58f82dbbe';
-const EXPECTED_LINES = 5159;
+const EXPECTED_BYTES = 1124038;
+const EXPECTED_SHA256 = '455d54ee87a7ad807c8f7c7fd5f3b5607e92376597db6c0f5354b86cf533ca2e';
+const EXPECTED_LINES = 5153;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -30,7 +30,7 @@ const EXTRACTED_STAND_HINT_UTILS = ['extractStandHint'];
 const EXTRACTED_AIRPORT_SURFACE_UTILS = ['airportSurfacePreset'];
 const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
 const EXTRACTED_ROUTE_REVISION_REASON = ['routeRevisionReason'];
-const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
+const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'knowledgeEntryDocumentKey', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
 const EXTRACTED_KEYBOARD = ['handleKeyboard'];
@@ -133,6 +133,7 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;',
     "if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');",
     'const { internalTransitionDetails } = CommunicationContextUtils;',
+    'const { knowledgeEntryDocumentKey } = CommunicationContextUtils;',
     'const CurrentEventSelector = window.FlightFlowCurrentEventSelector;',
     "if (!CurrentEventSelector) throw new Error('FlightFlowCurrentEventSelector não foi carregado.');",
     'const { currentEvent } = CurrentEventSelector.create({ state });',
@@ -209,8 +210,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 308);
-  assert.equal(counts.size, 308);
+  assert.equal(names.length, 307);
+  assert.equal(counts.size, 307);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,

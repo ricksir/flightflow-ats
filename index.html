@@ -5559,6 +5559,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;
   if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');
   const { internalTransitionDetails } = CommunicationContextUtils;
+  const { knowledgeEntryDocumentKey } = CommunicationContextUtils;
   const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });
   const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });
   const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });
@@ -8882,13 +8883,6 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
   window.__flightflowKnowledgeEntries = function() {
     return knowledgeEntries().map(entry => ({ ...entry }));
   };
-
-  function knowledgeEntryDocumentKey(entry) {
-    const source = String(entry?.sourceDocument || entry?.source || '').toUpperCase();
-    if (source.includes('SAGITARIO ACC') || source.includes('DISCIPLINA II')) return 'SAGITARIO';
-    if (source.includes('MCA 100-27')) return 'MCA';
-    return 'CIRCEA';
-  }
 
   function knowledgeEntryDocumentLabel(entry) {
     return KNOWLEDGE_DOCUMENT_LABELS[knowledgeEntryDocumentKey(entry)] || 'Base normativa ATM';
