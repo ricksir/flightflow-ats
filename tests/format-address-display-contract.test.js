@@ -10,7 +10,9 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'formatAddressDisplay';
-const EXPECTED_CONSUMERS = 1;
+const EXPECTED_KERNEL_CONSUMERS = 0;
+const EXPECTED_MODULE_CONSUMERS = 1;
+const EXPECTED_TOTAL_CONSUMERS = 1;
 const EXPECTED_SOURCE = [
   '  function formatAddressDisplay(value) {',
   '    const raw = cleanDisplay(value);',
@@ -119,11 +121,17 @@ test('formatAddressDisplay permanece sem acoplamento direto de infraestrutura', 
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('formatAddressDisplay mantém exatamente um consumidor no núcleo e não permanece inline', () => {
+test('formatAddressDisplay mantém exatamente um consumidor no módulo e não volta inline ao núcleo', () => {
   const kernel = kernelSource();
-  const occurrences = [...kernel.matchAll(/\bformatAddressDisplay\s*\(/g)].length;
-  assert.equal(occurrences, EXPECTED_CONSUMERS);
-  assert.ok(kernel.includes("if (key === 'originator' || key === 'recipients') return formatAddressDisplay(value);"));
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+  const fieldSource = extractNamedFunction(moduleSource, 'formatFieldDisplay');
+  const kernelOccurrences = [...kernel.matchAll(/\bformatAddressDisplay\s*\(/g)].length;
+  const moduleOccurrences = [...moduleSource.matchAll(/\bformatAddressDisplay\s*\(/g)].length - 1;
+
+  assert.equal(kernelOccurrences, EXPECTED_KERNEL_CONSUMERS);
+  assert.equal(moduleOccurrences, EXPECTED_MODULE_CONSUMERS);
+  assert.equal(kernelOccurrences + moduleOccurrences, EXPECTED_TOTAL_CONSUMERS);
+  assert.ok(fieldSource.includes("if (key === 'originator' || key === 'recipients') return formatAddressDisplay(value);"));
   assert.equal(kernel.includes('function formatAddressDisplay('), false);
   assert.ok(kernel.includes('const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });'));
 });

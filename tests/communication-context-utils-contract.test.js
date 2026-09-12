@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 3692;
-const MODULE_SHA256 = 'afecb2a6913d0769f8c94a304ec80dc82e7130b0814c7d9c819ccdbca9958fc5'
+const MODULE_BYTES = 4951;
+const MODULE_SHA256 = 'cff2cabbf5799eb613f0db4280757807186ef54e3fdb50d6f17961f70a2bcd23';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -76,12 +76,13 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.create, 'function');
   assert.equal(typeof api.createAddressFormatter, 'function');
   assert.equal(typeof api.createAddressDisplayFormatter, 'function');
+  assert.equal(typeof api.createFieldDisplayFormatter, 'function');
 
   assert.throws(
     () => api.create({}),
@@ -141,6 +142,41 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   assert.equal(Object.isFrozen(displayScoped), true);
   assert.deepEqual(Object.keys(displayScoped), ['formatAddressDisplay']);
   assert.equal(displayScoped.formatAddressDisplay('qualquer'), 'FMT:SBBR · FMT:SBGO');
+
+  assert.throws(
+    () => api.createFieldDisplayFormatter({}),
+    /FlightFlowCommunicationContextUtils requer cleanDisplay para campos/
+  );
+  assert.throws(
+    () => api.createFieldDisplayFormatter({ cleanDisplay: value => value }),
+    /FlightFlowCommunicationContextUtils requer formatAddressCode para campos/
+  );
+  assert.throws(
+    () => api.createFieldDisplayFormatter({
+      cleanDisplay: value => value,
+      formatAddressCode: value => value,
+    }),
+    /FlightFlowCommunicationContextUtils requer formatAddressDisplay/
+  );
+  assert.throws(
+    () => api.createFieldDisplayFormatter({
+      cleanDisplay: value => value,
+      formatAddressCode: value => value,
+      formatAddressDisplay: value => value,
+    }),
+    /FlightFlowCommunicationContextUtils requer displayValue/
+  );
+  const fieldScoped = api.createFieldDisplayFormatter({
+    cleanDisplay: value => String(value || '').trim(),
+    formatAddressCode: value => `CODE:${value}`,
+    formatAddressDisplay: value => `ADDRESS:${value}`,
+    displayValue: value => `VALUE:${value}`,
+  });
+  assert.equal(Object.isFrozen(fieldScoped), true);
+  assert.deepEqual(Object.keys(fieldScoped), ['formatFieldDisplay']);
+  assert.equal(fieldScoped.formatFieldDisplay('adep', ' sbbr '), 'CODE:sbbr');
+  assert.equal(fieldScoped.formatFieldDisplay('originator', 'SBBR'), 'ADDRESS:SBBR');
+  assert.equal(fieldScoped.formatFieldDisplay('callsign', 'FAB1234'), 'VALUE:FAB1234');
 });
 
 test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', () => {
@@ -155,11 +191,12 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });'));
   assert.ok(html.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });'));
   assert.ok(html.includes('const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });'));
+  assert.ok(html.includes('const { formatFieldDisplay } = CommunicationContextUtils.createFieldDisplayFormatter({ cleanDisplay, formatAddressCode, formatAddressDisplay, displayValue });'));
 });
 
 test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
   const source = fs.readFileSync(MODULE, 'utf8');
-  for (const name of ['internalTransitionDetails', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay']) {
+  for (const name of ['internalTransitionDetails', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay']) {
     const target = functionSource(source, name);
     for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
       assert.equal(target.includes(token), false, `acoplamento inesperado em ${name}: ${token}`);
