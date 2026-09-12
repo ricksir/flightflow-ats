@@ -39,6 +39,24 @@
     return Object.freeze({ findKnowledgeEntryByKey });
   }
 
+  function createKnowledgeEntriesByCodeFinder(options = {}) {
+    const knowledgeEntries = options.knowledgeEntries;
+    const canonicalKnowledgeCode = options.canonicalKnowledgeCode;
+    if (typeof knowledgeEntries !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer knowledgeEntries para busca por código.');
+    }
+    if (typeof canonicalKnowledgeCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode para busca por código.');
+    }
+
+  function findKnowledgeEntriesByCode(code) {
+    const normalized = canonicalKnowledgeCode(code);
+    return knowledgeEntries().filter(entry => canonicalKnowledgeCode(entry.code) === normalized || (entry.aliases || []).some(alias => canonicalKnowledgeCode(alias) === normalized));
+  }
+
+    return Object.freeze({ findKnowledgeEntriesByCode });
+  }
+
   function createKnowledgeDocumentLabeler(options = {}) {
     const KNOWLEDGE_DOCUMENT_LABELS = options.knowledgeDocumentLabels;
     const knowledgeEntryDocumentKey = options.knowledgeEntryDocumentKey;
@@ -178,6 +196,7 @@ Destinatário(s): ${context.recipients}`;
     parseAddresses,
     knowledgeEntryDocumentKey,
     createKnowledgeEntryFinder,
+    createKnowledgeEntriesByCodeFinder,
     createKnowledgeDocumentLabeler,
     createKnowledgeCategoryLabeler,
     create: createCommunicationContextUtils,
