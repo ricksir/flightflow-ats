@@ -5559,6 +5559,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;
   if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');
   const { internalTransitionDetails } = CommunicationContextUtils;
+  const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -8967,16 +8968,6 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
       messageType: event.messageType || snapshot.messageType || entry.code,
       operation: event.operation || snapshot.operation || ''
     };
-  }
-
-  function knowledgeContextSummary(entry, context) {
-    if (!context) return '';
-    const prefix = canonicalKnowledgeCode(entry.code) === 'RQP'
-      ? 'Neste RQP, os papéis são obtidos do endereçamento real do histórico, sem presumir que a solicitação partiu de uma TWR.'
-      : 'Endereçamento registrado neste evento.';
-    return `${prefix}
-Originador: ${context.originator}
-Destinatário(s): ${context.recipients}`;
   }
 
   function renderKnowledgeFieldLabel(key, label, rawValue, event) {

@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 768;
-const MODULE_SHA256 = '27b628e342db561f7846449dfcb6b35da52edc103e0817fe2626e18a1cfb604d';
+const MODULE_BYTES = 1590;
+const MODULE_SHA256 = 'a570b130771587d5a1f38f54728de500a6e8e985e6238712b1124199db2ec8a0';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -25,7 +25,7 @@ function functionSource(container, name) {
     const c = container[i];
     if (quote) {
       if (escaped) escaped = false;
-      else if (c === '\\') escaped = true;
+      else if (c === '\\\\') escaped = true;
       else if (c === quote) quote = null;
       i += 1; continue;
     }
@@ -35,14 +35,14 @@ function functionSource(container, name) {
     i += 1;
   }
   let brace = i + 1;
-  while (/\s/.test(container[brace] || '')) brace += 1;
+  while (/\\s/.test(container[brace] || '')) brace += 1;
   assert.equal(container[brace], '{');
   depth = 0; quote = null; escaped = false;
   for (i = brace; i < container.length; i += 1) {
     const c = container[i];
     if (quote) {
       if (escaped) escaped = false;
-      else if (c === '\\') escaped = true;
+      else if (c === '\\\\') escaped = true;
       else if (c === quote) quote = null;
       continue;
     }
@@ -60,8 +60,8 @@ test('módulo communication-context-utils mantém identidade estrutural congelad
   const source = fs.readFileSync(MODULE, 'utf8');
   assert.equal(Buffer.byteLength(source, 'utf8'), MODULE_BYTES);
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), MODULE_SHA256);
-  assert.match(source, /^\(function \(\) \{\n  'use strict';/);
-  assert.match(source, /\}\)\(\);\n$/);
+  assert.match(source, /^\\(function \\(\\) \\{\\n  'use strict';/);
+  assert.match(source, /\\}\\)\\(\\);\\n$/);
 });
 
 test('internalTransitionDetails preserva exatamente os bytes congelados dentro do módulo', () => {
@@ -70,31 +70,46 @@ test('internalTransitionDetails preserva exatamente os bytes congelados dentro d
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), TARGET_SHA256);
 });
 
-test('API pública é congelada e expõe somente internalTransitionDetails', () => {
+test('API pública preserva internalTransitionDetails e expõe fábrica explícita para contexto de conhecimento', () => {
   const source = fs.readFileSync(MODULE, 'utf8');
   const context = { window: {} };
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'create']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
+  assert.equal(typeof api.create, 'function');
+
+  assert.throws(
+    () => api.create({}),
+    /FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode/
+  );
+
+  const scoped = api.create({ canonicalKnowledgeCode: value => String(value || '').toUpperCase() });
+  assert.equal(Object.isFrozen(scoped), true);
+  assert.deepEqual(Object.keys(scoped), ['knowledgeContextSummary']);
+  assert.equal(typeof scoped.knowledgeContextSummary, 'function');
 });
 
-test('index carrega módulo antes do IIFE e núcleo usa alias explícito', () => {
+test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', () => {
   const html = fs.readFileSync(HTML, 'utf8');
   const tag = '<script id="flightflow-communication-context-utils" src="src/timeline/communication-context-utils.js"></script>';
   assert.equal(html.split(tag).length - 1, 1);
-  const iife = html.indexOf('<script>\n\n(function () {');
+  const iife = html.indexOf('<script>\\n\\n(function () {');
   assert.ok(iife > 0 && html.indexOf(tag) < iife);
   assert.ok(html.includes('const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;'));
   assert.ok(html.includes("if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');"));
   assert.ok(html.includes('const { internalTransitionDetails } = CommunicationContextUtils;'));
+  assert.ok(html.includes('const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });'));
 });
 
 test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
-  const target = functionSource(fs.readFileSync(MODULE, 'utf8'), 'internalTransitionDetails');
-  for (const token of ['state.', 'els.', 'document.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
-    assert.equal(target.includes(token), false, `acoplamento inesperado: ${token}`);
+  const source = fs.readFileSync(MODULE, 'utf8');
+  for (const name of ['internalTransitionDetails', 'knowledgeContextSummary']) {
+    const target = functionSource(source, name);
+    for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
+      assert.equal(target.includes(token), false, `acoplamento inesperado em ${name}: ${token}`);
+    }
   }
 });
