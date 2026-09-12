@@ -14,7 +14,7 @@ function extractFunction(source, name, startIndex) {
   marker.lastIndex = startIndex || 0;
   const match = marker.exec(source);
   if (!match) return null;
-  const braceStart = source.indexOf('{', match.index);
+  const braceStart = match.index + match[0].length - 1;
   let depth = 0;
   let mode = 'code';
   for (let i = braceStart; i < source.length; i++) {
