@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 6821;
-const MODULE_SHA256 = '647ed387c2353bd547a5b3b2730ccbe0f1d6d49b79c033a1d8c21314c9dbfb11';
+const MODULE_BYTES = 7168;
+const MODULE_SHA256 = 'a981b3474e82938a78851e69255a3ae726de106941bf7c999e92417ceaaa8edd';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -76,9 +76,11 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'knowledgeEntryDocumentKey', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
+  assert.equal(typeof api.parseAddresses, 'function');
+  assert.equal(JSON.stringify(api.parseAddresses('sbbrztzx sbbszqzx SBBRZTZX')), '["SBBRZTZX","SBBSZQZX"]');
   assert.equal(typeof api.knowledgeEntryDocumentKey, 'function');
   assert.equal(api.knowledgeEntryDocumentKey({ sourceDocument: 'MCA 100-27' }), 'MCA');
   assert.equal(typeof api.createKnowledgeDocumentLabeler, 'function');
@@ -223,6 +225,7 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;'));
   assert.ok(html.includes("if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');"));
   assert.ok(html.includes('const { internalTransitionDetails } = CommunicationContextUtils;'));
+  assert.ok(html.includes('const { parseAddresses } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { knowledgeEntryDocumentKey } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { knowledgeEntryDocumentLabel } = CommunicationContextUtils.createKnowledgeDocumentLabeler({'));
   assert.ok(html.includes('knowledgeDocumentLabels: KNOWLEDGE_DOCUMENT_LABELS,'));
@@ -238,7 +241,7 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
 
 test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
   const source = fs.readFileSync(MODULE, 'utf8');
-  for (const name of ['internalTransitionDetails', 'knowledgeEntryDocumentKey', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay']) {
+  for (const name of ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay']) {
     const target = functionSource(source, name);
     for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
       assert.equal(target.includes(token), false, `acoplamento inesperado em ${name}: ${token}`);

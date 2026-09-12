@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'parseAddresses';
 const EXPECTED_CONSUMERS = 4;
 const EXPECTED_SOURCE = [
@@ -36,7 +37,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -87,19 +88,19 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction() {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(`${source}\nreturn parseAddresses;`)();
 }
 
-test('parseAddresses mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('parseAddresses mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('parseAddresses permanece puro e sem acoplamento de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -109,14 +110,16 @@ test('parseAddresses permanece puro e sem acoplamento de infraestrutura', () => 
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('parseAddresses mantém exatamente quatro consumidores no núcleo', () => {
+test('parseAddresses mantém exatamente quatro consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bparseAddresses\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('const originators = parseAddresses(originatorRaw);'));
   assert.ok(kernel.includes('const recipients = parseAddresses(recipientsRaw);'));
   assert.ok(kernel.includes("const originators = parseAddresses(s.originator || event.originator || '');"));
   assert.ok(kernel.includes("const recipients = parseAddresses(s.recipients || event.recipients || '');"));
+  assert.equal(kernel.includes('function parseAddresses('), false);
+  assert.ok(kernel.includes('const { parseAddresses } = CommunicationContextUtils;'));
 });
 
 test('parseAddresses normaliza AFTN para maiúsculas, preserva ordem e remove duplicatas', () => {

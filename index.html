@@ -5559,6 +5559,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const CommunicationContextUtils = window.FlightFlowCommunicationContextUtils;
   if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');
   const { internalTransitionDetails } = CommunicationContextUtils;
+  const { parseAddresses } = CommunicationContextUtils;
   const { knowledgeEntryDocumentKey } = CommunicationContextUtils;
   const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });
   const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });
@@ -8862,14 +8863,6 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     const status = cleanDisplay(event.snapshot && event.snapshot.status);
     return `${operation}${status ? ` · estado ${status}` : ''}. ${stage.scene || ''}`.trim();
   }
-
-  function parseAddresses(value) {
-    const text = String(value || '').toUpperCase();
-    const matches = text.match(/\b[A-Z]{4}[A-Z0-9]{4}\b/g) || [];
-    if (matches.length) return [...new Set(matches)];
-    return [...new Set(text.split(/[\s,;|/]+/).map(v => v.replace(/[^A-Z0-9-]/g,'')).filter(v => v.length >= 4))];
-  }
-
 
   function knowledgeEntries() {
     const circea = Array.isArray(CIRCEA_KNOWLEDGE.entries) ? CIRCEA_KNOWLEDGE.entries : [];
