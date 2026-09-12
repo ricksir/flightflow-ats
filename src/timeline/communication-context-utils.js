@@ -31,8 +31,29 @@ Destinatário(s): ${context.recipients}`;
     return Object.freeze({ knowledgeContextSummary });
   }
 
+  function createAddressFormatter(options = {}) {
+    const normalizeLocalityCode = options.normalizeLocalityCode;
+    const lookupLocality = options.lookupLocality;
+    if (typeof normalizeLocalityCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer normalizeLocalityCode.');
+    }
+    if (typeof lookupLocality !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer lookupLocality.');
+    }
+
+  function formatAddressCode(code) {
+    const normalized = normalizeLocalityCode(code);
+    if (!normalized) return '—';
+    const locality = lookupLocality(normalized);
+    return locality ? `${normalized} — ${locality}` : normalized;
+  }
+
+    return Object.freeze({ formatAddressCode });
+  }
+
   window.FlightFlowCommunicationContextUtils = Object.freeze({
     internalTransitionDetails,
     create: createCommunicationContextUtils,
+    createAddressFormatter,
   });
 })();
