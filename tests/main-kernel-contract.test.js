@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1124744;
-const EXPECTED_SHA256 = 'b5a9ce9c3045fd3d63c6f3278071183de6b14cfe795b9e9b0d2dc18de4c4a113';
-const EXPECTED_LINES = 5182;
+const EXPECTED_BYTES = 1124623;
+const EXPECTED_SHA256 = 'b08da83992eff6eca37efe83b9e97b2d9553a4db8b8405418dac7a234398dc04';
+const EXPECTED_LINES = 5176;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -30,7 +30,7 @@ const EXTRACTED_STAND_HINT_UTILS = ['extractStandHint'];
 const EXTRACTED_AIRPORT_SURFACE_UTILS = ['airportSurfacePreset'];
 const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
 const EXTRACTED_ROUTE_REVISION_REASON = ['routeRevisionReason'];
-const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'knowledgeContextSummary'];
+const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'knowledgeContextSummary', 'formatAddressCode'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
 const EXTRACTED_KEYBOARD = ['handleKeyboard'];
@@ -209,8 +209,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 311);
-  assert.equal(counts.size, 311);
+  assert.equal(names.length, 310);
+  assert.equal(counts.size, 310);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,

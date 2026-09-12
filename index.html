@@ -5560,6 +5560,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');
   const { internalTransitionDetails } = CommunicationContextUtils;
   const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });
+  const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });
 
 
   // Identidade do programa: altere estes valores para personalizar nome e assinatura.
@@ -9959,13 +9960,6 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
 
   function lookupLocality(code) {
     return state.localities[normalizeLocalityCode(code)] || '';
-  }
-
-  function formatAddressCode(code) {
-    const normalized = normalizeLocalityCode(code);
-    if (!normalized) return '—';
-    const locality = lookupLocality(normalized);
-    return locality ? `${normalized} — ${locality}` : normalized;
   }
 
   function formatAddressDisplay(value) {
