@@ -2,15 +2,15 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **12/09/2026**, após o merge do PR **#121** e conclusão verde do workflow pós-merge **#332**.
+> Última verificação: **12/09/2026**, após o merge do PR **#124** e conclusão verde do workflow pós-merge **#338**.
 
 ## 1. Fonte de verdade atual
 
 - Repositório: `ricksir/flightflow-ats`.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `bb18fe2336132080097384d33bad101f989be67d`
-  — `refactor: extract parse addresses` (PR #121).
+  `23f2fabab5251ba4c640e9e1fcae3a9ef8bd5af8`
+  — `refactor: extract knowledge entry key lookup` (PR #124).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,54 +20,61 @@ Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o tr
 
 ## 2. Último ciclo concluído
 
-### PR #120 — congelamento do contrato de endereçamento
+### PR #123 — congelamento do contrato de busca por chave
 
-O PR **#120 — `test: freeze parse addresses contract for v0.3.0`** congelou `parseAddresses` antes da extração, cobrindo:
+O PR **#123 — `test: freeze knowledge entry key lookup contract`** congelou
+`findKnowledgeEntryByKey` antes da extração, cobrindo:
 
-- identidade exata de **325 bytes**;
-- SHA-256 `6f1b8ab72ae94cae39a38be245f1014cb96e79449353d47ba76abb74eab4a103`;
+- identidade exata de **117 bytes**;
+- SHA-256 `a2c41cfd7762ae0c95386cf046a8fd745ead43e420c098b721b5d2004f3a8d62`;
 - pureza e ausência de acoplamento de infraestrutura;
-- exatamente **4 consumidores** no núcleo;
-- precedência dos endereços AFTN;
-- normalização para maiúsculas;
-- preservação de ordem e remoção de duplicatas;
-- fallback tokenizado;
-- preservação de hífen;
-- comportamento para entradas vazias.
+- exatamente **5 consumidores** no núcleo;
+- dependência única de `knowledgeEntries()`;
+- retorno da primeira entrada com chave estritamente igual;
+- preservação da distinção entre chave numérica e textual;
+- fallback `null` para chave ausente;
+- exatamente uma consulta a `knowledgeEntries()` por busca.
 
-### PR #121 — extração de `parseAddresses`
+### PR #124 — extração de `findKnowledgeEntryByKey`
 
-O PR **#121 — `refactor: extract parse addresses`** foi mergeado por squash.
+O PR **#124 — `refactor: extract knowledge entry key lookup`** foi mergeado por squash.
 
-A função `parseAddresses` saiu do IIFE principal e passou diretamente para
-`src/timeline/communication-context-utils.js` como helper puro exportado pela
-API `FlightFlowCommunicationContextUtils`.
+A função `findKnowledgeEntryByKey` saiu do IIFE principal e passou para
+`src/timeline/communication-context-utils.js`, encapsulada pela fábrica
+`createKnowledgeEntryFinder({ knowledgeEntries })`.
 
 Distribuição atual:
 
-- `parseAddresses`: **4 consumidores no núcleo**, sem declaração inline;
-- o corpo congelado de 325 bytes foi preservado byte a byte no módulo;
-- o núcleo usa o alias explícito:
-  `const { parseAddresses } = CommunicationContextUtils;`;
-- a injeção de `parseAddresses` em `createAddressDisplayFormatter(...)` foi
-  mantida, sem alteração de comportamento.
+- `findKnowledgeEntryByKey`: **5 consumidores no núcleo**, sem declaração inline;
+- corpo congelado de 117 bytes preservado byte a byte no módulo;
+- a dependência `knowledgeEntries` é injetada explicitamente na fábrica;
+- o objeto retornado pela fábrica permanece congelado;
+- nenhum consumidor foi movido ou reescrito.
 
 Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação,
-mapa ou movimento foi alterado nesse ciclo.
+mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse ciclo.
+
+### Ciclo anterior — PRs #120/#121
+
+O PR **#120** congelou `parseAddresses` e o PR **#121** fez sua extração direta
+para `src/timeline/communication-context-utils.js`.
+
+Distribuição atual relevante:
+
+- `parseAddresses`: **4 consumidores no núcleo**, sem declaração inline;
+- corpo congelado de 325 bytes preservado no módulo.
 
 ### Ciclo anterior — PRs #117/#118
 
 O PR **#117** congelou `knowledgeCategoryLabel` e o PR **#118** fez sua extração
-para `src/timeline/communication-context-utils.js` por meio de
-`createKnowledgeCategoryLabeler(...)`.
+por meio de `createKnowledgeCategoryLabeler(...)`.
 
-A função permanece com **4 consumidores no núcleo**, sem declaração inline, e
-seu corpo congelado de 119 bytes continua preservado no módulo.
+A função permanece com **4 consumidores no núcleo**, sem declaração inline.
 
 ### Ciclo anterior — PRs #114/#115
 
 O PR **#114** congelou `knowledgeEntryDocumentLabel` e o PR **#115** fez sua
-extração para o mesmo módulo por meio de `createKnowledgeDocumentLabeler(...)`.
+extração por meio de `createKnowledgeDocumentLabeler(...)`.
 
 Distribuição atual relevante:
 
@@ -76,35 +83,33 @@ Distribuição atual relevante:
   - 1 no núcleo;
   - 1 no módulo de communication context.
 
-Nenhum desses ciclos alterou rota, DEP, `goTo()`, `renderCurrent()`, planner
-ou movimento.
-
 ## 3. Baselines atuais protegidos
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #121:
+Conforme `tests/main-kernel-contract.test.js` após o PR #124:
 
-- **1.123.864 bytes**;
+- **1.123.867 bytes**;
 - **5.148 linhas**;
 - SHA-256:
-  `e107d596665b1fdfa76c4b9e3d65c477956aaa80b4b08ad87cd093cedc356b8d`;
-- **304 funções nomeadas** no núcleo protegido.
+  `c8a159724c4183ca78d3984578404350221a03a9837215f38412dc8034f345e6`;
+- **303 funções nomeadas** no núcleo protegido.
 
 ### Communication Context Utils
 
 Conforme `tests/communication-context-utils-contract.test.js`:
 
 - arquivo: `src/timeline/communication-context-utils.js`;
-- **7.168 bytes**;
+- **7.632 bytes**;
 - SHA-256:
-  `a981b3474e82938a78851e69255a3ae726de106941bf7c999e92417ceaaa8edd`.
+  `133f73515520260526eda03e666629171604acbecfdcdfa1d121174e52b47dd7`.
 
 A API pública congelada inclui:
 
 - `internalTransitionDetails`;
 - `parseAddresses`;
 - `knowledgeEntryDocumentKey`;
+- `createKnowledgeEntryFinder`;
 - `createKnowledgeDocumentLabeler`;
 - `createKnowledgeCategoryLabeler`;
 - `create`;
@@ -124,15 +129,15 @@ Nenhum PR de produção pode ser mergeado sem todos os gates verdes:
 
 Referência do último ciclo:
 
-- PR de contrato #120:
-  - workflow **#329** — sucesso;
+- PR de contrato #123:
+  - workflow **#335** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#330** — sucesso;
+  - pós-merge no `main`: workflow **#336** — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #121:
-  - workflow **#331** — sucesso;
+- PR de extração #124:
+  - workflow **#337** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#332** — sucesso;
+  - pós-merge no `main`: workflow **#338** — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**.
@@ -168,7 +173,7 @@ As branches `analysis/*` existentes foram criadas em estados anteriores do kerne
 Próximo fluxo seguro:
 
 1. confirmar que `main` ainda contém o baseline acima ou identificar alterações posteriores;
-2. remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento; `knowledgeCategoryLabel` e `parseAddresses` já foram extraídas e não devem reaparecer como candidatas;
+2. remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento; `knowledgeCategoryLabel`, `parseAddresses` e `findKnowledgeEntryByKey` já foram extraídas e não devem reaparecer como candidatas;
 3. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 4. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
