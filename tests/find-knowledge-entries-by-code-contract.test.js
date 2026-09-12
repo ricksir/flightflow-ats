@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'findKnowledgeEntriesByCode';
 const EXPECTED_CONSUMERS = 2;
 const EXPECTED_SOURCE = [
@@ -34,7 +35,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -85,7 +86,7 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(entriesFactory, canonicalKnowledgeCode) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(
     'knowledgeEntries',
     'canonicalKnowledgeCode',
@@ -97,15 +98,15 @@ function canonical(value) {
   return String(value || '').trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
-test('findKnowledgeEntriesByCode mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('findKnowledgeEntriesByCode mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('findKnowledgeEntriesByCode permanece puro e sem acoplamento de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -117,12 +118,16 @@ test('findKnowledgeEntriesByCode permanece puro e sem acoplamento de infraestrut
   assert.equal((source.match(/\bcanonicalKnowledgeCode\s*\(/g) || []).length, 3);
 });
 
-test('findKnowledgeEntriesByCode mantém exatamente dois consumidores no núcleo', () => {
+test('findKnowledgeEntriesByCode mantém exatamente dois consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bfindKnowledgeEntriesByCode\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('codes.forEach(code => findKnowledgeEntriesByCode(code).forEach(item => {'));
   assert.ok(kernel.includes('const matches=findKnowledgeEntriesByCode(value).sort((a,b)=>{'));
+  assert.equal(kernel.includes('function findKnowledgeEntriesByCode('), false);
+  assert.ok(kernel.includes('const { findKnowledgeEntriesByCode } = CommunicationContextUtils.createKnowledgeEntriesByCodeFinder({'));
+  assert.ok(kernel.includes('knowledgeEntries,'));
+  assert.ok(kernel.includes('canonicalKnowledgeCode,'));
 });
 
 test('findKnowledgeEntriesByCode encontra código direto e aliases preservando a ordem da base', () => {

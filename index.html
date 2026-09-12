@@ -8932,10 +8932,10 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     knowledgeEntries,
   });
 
-  function findKnowledgeEntriesByCode(code) {
-    const normalized = canonicalKnowledgeCode(code);
-    return knowledgeEntries().filter(entry => canonicalKnowledgeCode(entry.code) === normalized || (entry.aliases || []).some(alias => canonicalKnowledgeCode(alias) === normalized));
-  }
+  const { findKnowledgeEntriesByCode } = CommunicationContextUtils.createKnowledgeEntriesByCodeFinder({
+    knowledgeEntries,
+    canonicalKnowledgeCode,
+  });
 
   function buildKnowledgeEventContext(entry, event) {
     if (!entry || !event) return null;
