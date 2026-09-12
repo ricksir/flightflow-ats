@@ -4,9 +4,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'knowledgeContextSummary';
 const EXPECTED_CONSUMERS = 1;
 const EXPECTED_SOURCE = [
@@ -36,7 +38,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -87,21 +89,22 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(canonicalKnowledgeCode) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'canonicalKnowledgeCode',
-    `${source}; return ${FUNCTION_NAME};`
-  )(canonicalKnowledgeCode);
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  return context.window.FlightFlowCommunicationContextUtils
+    .create({ canonicalKnowledgeCode })
+    .knowledgeContextSummary;
 }
 
-test('knowledgeContextSummary mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('knowledgeContextSummary mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), Buffer.byteLength(EXPECTED_SOURCE, 'utf8'));
 });
 
 test('knowledgeContextSummary permanece puro e sem acoplamento de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -111,11 +114,13 @@ test('knowledgeContextSummary permanece puro e sem acoplamento de infraestrutura
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('knowledgeContextSummary mantém exatamente um consumidor no núcleo', () => {
+test('knowledgeContextSummary mantém exatamente um consumidor no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bknowledgeContextSummary\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('const contextSummary = knowledgeContextSummary(entry, context);'));
+  assert.equal(kernel.includes('function knowledgeContextSummary('), false);
+  assert.ok(kernel.includes('const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });'));
 });
 
 test('knowledgeContextSummary retorna vazio quando não há contexto', () => {

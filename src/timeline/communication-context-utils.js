@@ -12,7 +12,27 @@
     return { previous: normalize(previous), current: normalize(current) };
   }
 
+  function createCommunicationContextUtils(options = {}) {
+    const canonicalKnowledgeCode = options.canonicalKnowledgeCode;
+    if (typeof canonicalKnowledgeCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode.');
+    }
+
+  function knowledgeContextSummary(entry, context) {
+    if (!context) return '';
+    const prefix = canonicalKnowledgeCode(entry.code) === 'RQP'
+      ? 'Neste RQP, os papéis são obtidos do endereçamento real do histórico, sem presumir que a solicitação partiu de uma TWR.'
+      : 'Endereçamento registrado neste evento.';
+    return `${prefix}
+Originador: ${context.originator}
+Destinatário(s): ${context.recipients}`;
+  }
+
+    return Object.freeze({ knowledgeContextSummary });
+  }
+
   window.FlightFlowCommunicationContextUtils = Object.freeze({
     internalTransitionDetails,
+    create: createCommunicationContextUtils,
   });
 })();
