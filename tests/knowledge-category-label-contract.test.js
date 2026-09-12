@@ -5,9 +5,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'knowledgeCategoryLabel';
 const EXPECTED_CONSUMERS = 4;
 const EXPECTED_SOURCE = [
@@ -33,7 +35,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -84,23 +86,26 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(labels, humanize) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'KNOWLEDGE_CATEGORY_LABELS',
-    'humanize',
-    `${source}\nreturn knowledgeCategoryLabel;`
-  )(labels, humanize);
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  return context.window.FlightFlowCommunicationContextUtils
+    .createKnowledgeCategoryLabeler({
+      knowledgeCategoryLabels: labels,
+      humanize,
+    })
+    .knowledgeCategoryLabel;
 }
 
-test('knowledgeCategoryLabel mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('knowledgeCategoryLabel mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('knowledgeCategoryLabel permanece puro e sem acoplamento de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -110,13 +115,15 @@ test('knowledgeCategoryLabel permanece puro e sem acoplamento de infraestrutura'
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('knowledgeCategoryLabel mantém exatamente quatro consumidores no núcleo', () => {
+test('knowledgeCategoryLabel mantém exatamente quatro consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bknowledgeCategoryLabel\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('escapeHtml(knowledgeCategoryLabel(entry.category))'));
   assert.ok(kernel.includes('knowledgeCategoryLabel(a.category).localeCompare(knowledgeCategoryLabel(b.category)'));
   assert.ok(kernel.includes('escapeHtml(knowledgeCategoryLabel(entry.category))}</span><b>'));
+  assert.equal(kernel.includes('function knowledgeCategoryLabel('), false);
+  assert.ok(kernel.includes('const { knowledgeCategoryLabel } = CommunicationContextUtils.createKnowledgeCategoryLabeler({'));
 });
 
 test('knowledgeCategoryLabel preserva rótulos conhecidos sem chamar fallback', () => {
