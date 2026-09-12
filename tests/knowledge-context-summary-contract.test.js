@@ -17,11 +17,11 @@ const EXPECTED_SOURCE = [
   "    const prefix = canonicalKnowledgeCode(entry.code) === 'RQP'",
   "      ? 'Neste RQP, os papéis são obtidos do endereçamento real do histórico, sem presumir que a solicitação partiu de uma TWR.'",
   "      : 'Endereçamento registrado neste evento.';",
-  '    return \`${prefix}',
+  '    return `${prefix}',
   'Originador: ${context.originator}',
-  'Destinatário(s): ${context.recipients}\`;',
+  'Destinatário(s): ${context.recipients}`;',
   '  }',
-].join('\\n');
+].join('\n');
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -49,7 +49,7 @@ function extractNamedFunction(source, name) {
     const c = source[i];
     if (quote) {
       if (escaped) escaped = false;
-      else if (c === '\\\\') escaped = true;
+      else if (c === '\\') escaped = true;
       else if (c === quote) quote = null;
       i += 1;
       continue;
@@ -64,7 +64,7 @@ function extractNamedFunction(source, name) {
   }
 
   let brace = i + 1;
-  while (/\\s/.test(source[brace] || '')) brace += 1;
+  while (/\s/.test(source[brace] || '')) brace += 1;
   assert.equal(source[brace], '{');
 
   depth = 0;
@@ -74,7 +74,7 @@ function extractNamedFunction(source, name) {
     const c = source[i];
     if (quote) {
       if (escaped) escaped = false;
-      else if (c === '\\\\') escaped = true;
+      else if (c === '\\') escaped = true;
       else if (c === quote) quote = null;
       continue;
     }
@@ -116,7 +116,7 @@ test('knowledgeContextSummary permanece puro e sem acoplamento de infraestrutura
 
 test('knowledgeContextSummary mantém exatamente um consumidor no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
-  const occurrences = [...kernel.matchAll(/\\bknowledgeContextSummary\\s*\\(/g)].length;
+  const occurrences = [...kernel.matchAll(/\bknowledgeContextSummary\s*\(/g)].length;
   assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('const contextSummary = knowledgeContextSummary(entry, context);'));
   assert.equal(kernel.includes('function knowledgeContextSummary('), false);
@@ -144,8 +144,8 @@ test('knowledgeContextSummary preserva texto especial para RQP', () => {
   );
 
   assert.equal(result,
-    'Neste RQP, os papéis são obtidos do endereçamento real do histórico, sem presumir que a solicitação partiu de uma TWR.\\n' +
-    'Originador: SBBRZTZX\\n' +
+    'Neste RQP, os papéis são obtidos do endereçamento real do histórico, sem presumir que a solicitação partiu de uma TWR.\n' +
+    'Originador: SBBRZTZX\n' +
     'Destinatário(s): SBCWZQZX · SBBSZTZX'
   );
   assert.deepEqual(calls, ['R-Q-P']);
@@ -155,7 +155,7 @@ test('knowledgeContextSummary preserva texto padrão para demais códigos', () =
   const fn = loadFunction(value => String(value || '').toUpperCase());
   assert.equal(
     fn({ code: 'FPL' }, { originator: 'A', recipients: 'B' }),
-    'Endereçamento registrado neste evento.\\nOriginador: A\\nDestinatário(s): B'
+    'Endereçamento registrado neste evento.\nOriginador: A\nDestinatário(s): B'
   );
 });
 
@@ -163,6 +163,6 @@ test('knowledgeContextSummary preserva interpolação literal dos campos do cont
   const fn = loadFunction(value => String(value || '').toUpperCase());
   assert.equal(
     fn({ code: 'DEP' }, { originator: '', recipients: undefined }),
-    'Endereçamento registrado neste evento.\\nOriginador: \\nDestinatário(s): undefined'
+    'Endereçamento registrado neste evento.\nOriginador: \nDestinatário(s): undefined'
   );
 });
