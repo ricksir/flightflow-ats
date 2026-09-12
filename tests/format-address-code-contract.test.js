@@ -10,7 +10,9 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'formatAddressCode';
-const EXPECTED_CONSUMERS = 2;
+const EXPECTED_KERNEL_CONSUMERS = 1;
+const EXPECTED_MODULE_CONSUMERS = 1;
+const EXPECTED_TOTAL_CONSUMERS = 2;
 const EXPECTED_SOURCE = [
   '  function formatAddressCode(code) {',
   '    const normalized = normalizeLocalityCode(code);',
@@ -111,12 +113,21 @@ test('formatAddressCode permanece sem acoplamento direto de infraestrutura', () 
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('formatAddressCode mantém exatamente dois consumidores no núcleo e não permanece inline', () => {
+test('formatAddressCode mantém dois consumidores distribuídos entre núcleo e módulo e não volta inline', () => {
   const kernel = kernelSource();
-  const occurrences = [...kernel.matchAll(/\bformatAddressCode\s*\(/g)].length;
-  assert.equal(occurrences, EXPECTED_CONSUMERS);
-  assert.ok(kernel.includes('return normalized ? formatAddressCode(normalized) : (raw || \'—\');'));
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+  const displaySource = extractNamedFunction(moduleSource, 'formatAddressDisplay');
+
+  const kernelOccurrences = [...kernel.matchAll(/\bformatAddressCode\s*\(/g)].length;
+  const moduleOccurrences = [...moduleSource.matchAll(/\bformatAddressCode\s*\(/g)].length - 1;
+
+  assert.equal(kernelOccurrences, EXPECTED_KERNEL_CONSUMERS);
+  assert.equal(moduleOccurrences, EXPECTED_MODULE_CONSUMERS);
+  assert.equal(kernelOccurrences + moduleOccurrences, EXPECTED_TOTAL_CONSUMERS);
+
   assert.ok(kernel.includes("return code ? formatAddressCode(code) : '—';"));
+  assert.ok(displaySource.includes("return normalized ? formatAddressCode(normalized) : (raw || '—');"));
+  assert.ok(displaySource.includes(".map(formatAddressCode).join(' · ')"));
   assert.equal(kernel.includes('function formatAddressCode('), false);
   assert.ok(kernel.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });'));
 });
