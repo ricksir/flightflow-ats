@@ -12,6 +12,13 @@
     return { previous: normalize(previous), current: normalize(current) };
   }
 
+  function knowledgeEntryDocumentKey(entry) {
+    const source = String(entry?.sourceDocument || entry?.source || '').toUpperCase();
+    if (source.includes('SAGITARIO ACC') || source.includes('DISCIPLINA II')) return 'SAGITARIO';
+    if (source.includes('MCA 100-27')) return 'MCA';
+    return 'CIRCEA';
+  }
+
   function createCommunicationContextUtils(options = {}) {
     const canonicalKnowledgeCode = options.canonicalKnowledgeCode;
     if (typeof canonicalKnowledgeCode !== 'function') {
@@ -114,6 +121,7 @@ Destinatário(s): ${context.recipients}`;
 
   window.FlightFlowCommunicationContextUtils = Object.freeze({
     internalTransitionDetails,
+    knowledgeEntryDocumentKey,
     create: createCommunicationContextUtils,
     createAddressFormatter,
     createAddressDisplayFormatter,
