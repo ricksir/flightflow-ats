@@ -4,9 +4,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'knowledgeEntryDocumentLabel';
 const EXPECTED_CONSUMERS = 5;
 const EXPECTED_SOURCE = [
@@ -30,7 +32,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -81,22 +83,25 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(labels, knowledgeEntryDocumentKey) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'KNOWLEDGE_DOCUMENT_LABELS',
-    'knowledgeEntryDocumentKey',
-    `${source}\nreturn knowledgeEntryDocumentLabel;`
-  )(labels, knowledgeEntryDocumentKey);
+  const source = fs.readFileSync(MODULE, 'utf8');
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  return context.window.FlightFlowCommunicationContextUtils
+    .createKnowledgeDocumentLabeler({
+      knowledgeDocumentLabels: labels,
+      knowledgeEntryDocumentKey,
+    })
+    .knowledgeEntryDocumentLabel;
 }
 
-test('knowledgeEntryDocumentLabel mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('knowledgeEntryDocumentLabel mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), Buffer.byteLength(EXPECTED_SOURCE, 'utf8'));
 });
 
 test('knowledgeEntryDocumentLabel permanece puro e sem acoplamento de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -106,14 +111,16 @@ test('knowledgeEntryDocumentLabel permanece puro e sem acoplamento de infraestru
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('knowledgeEntryDocumentLabel mantém exatamente cinco consumidores no núcleo', () => {
+test('knowledgeEntryDocumentLabel mantém exatamente cinco consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const occurrences = [...kernel.matchAll(/\bknowledgeEntryDocumentLabel\s*\(/g)].length;
-  assert.equal(occurrences - 1, EXPECTED_CONSUMERS);
+  assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('els.knowledgePopoverSource.textContent = knowledgeEntryDocumentLabel(entry);'));
   assert.ok(kernel.includes('escapeHtml(knowledgeEntryDocumentLabel(entry))'));
   assert.ok(kernel.includes('entry.source, knowledgeEntryDocumentLabel(entry)'));
   assert.ok(kernel.includes("const base=`${entry.title}${entry.short&&entry.short!==entry.title?` — ${entry.short}`:''} (${knowledgeEntryDocumentLabel(entry)}).`;"));
+  assert.equal(kernel.includes('function knowledgeEntryDocumentLabel('), false);
+  assert.ok(kernel.includes('const { knowledgeEntryDocumentLabel } = CommunicationContextUtils.createKnowledgeDocumentLabeler({'));
 });
 
 test('knowledgeEntryDocumentLabel preserva os três rótulos normativos conhecidos', () => {

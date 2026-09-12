@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 5292;
-const MODULE_SHA256 = '882c11ee39fccca8b44f42ccb19e19d14b25563dfc479711410c272dd8b20155';
+const MODULE_BYTES = 6106;
+const MODULE_SHA256 = '52d24bc4eac41a3468b39d2c0c779555f848dcf42d4cf0b45d133d722468a419';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -76,11 +76,27 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'knowledgeEntryDocumentKey', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'knowledgeEntryDocumentKey', 'createKnowledgeDocumentLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.knowledgeEntryDocumentKey, 'function');
   assert.equal(api.knowledgeEntryDocumentKey({ sourceDocument: 'MCA 100-27' }), 'MCA');
+  assert.equal(typeof api.createKnowledgeDocumentLabeler, 'function');
+  assert.throws(
+    () => api.createKnowledgeDocumentLabeler({}),
+    /FlightFlowCommunicationContextUtils requer knowledgeDocumentLabels/
+  );
+  assert.throws(
+    () => api.createKnowledgeDocumentLabeler({ knowledgeDocumentLabels: {} }),
+    /FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentKey para rótulos/
+  );
+  const labelScoped = api.createKnowledgeDocumentLabeler({
+    knowledgeDocumentLabels: { MCA: 'MCA 100-27/2025' },
+    knowledgeEntryDocumentKey: () => 'MCA',
+  });
+  assert.equal(Object.isFrozen(labelScoped), true);
+  assert.deepEqual(Object.keys(labelScoped), ['knowledgeEntryDocumentLabel']);
+  assert.equal(labelScoped.knowledgeEntryDocumentLabel({}), 'MCA 100-27/2025');
   assert.equal(typeof api.create, 'function');
   assert.equal(typeof api.createAddressFormatter, 'function');
   assert.equal(typeof api.createAddressDisplayFormatter, 'function');
@@ -191,6 +207,9 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes("if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');"));
   assert.ok(html.includes('const { internalTransitionDetails } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { knowledgeEntryDocumentKey } = CommunicationContextUtils;'));
+  assert.ok(html.includes('const { knowledgeEntryDocumentLabel } = CommunicationContextUtils.createKnowledgeDocumentLabeler({'));
+  assert.ok(html.includes('knowledgeDocumentLabels: KNOWLEDGE_DOCUMENT_LABELS,'));
+  assert.ok(html.includes('knowledgeEntryDocumentKey,'));
   assert.ok(html.includes('const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });'));
   assert.ok(html.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });'));
   assert.ok(html.includes('const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });'));
@@ -199,7 +218,7 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
 
 test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
   const source = fs.readFileSync(MODULE, 'utf8');
-  for (const name of ['internalTransitionDetails', 'knowledgeEntryDocumentKey', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay']) {
+  for (const name of ['internalTransitionDetails', 'knowledgeEntryDocumentKey', 'knowledgeEntryDocumentLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay']) {
     const target = functionSource(source, name);
     for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
       assert.equal(target.includes(token), false, `acoplamento inesperado em ${name}: ${token}`);
