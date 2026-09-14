@@ -6,16 +6,16 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1123864;
-const EXPECTED_SHA256 = '1dc9bba44da517ed2a7d07713d8efaed61e14efb646d0e71e29b71a264d244ca';
-const EXPECTED_LINES = 5145;
+const EXPECTED_BYTES = 1123732;
+const EXPECTED_SHA256 = 'ce0210bf67ff0a69687ee51ab2e6e4a8e8be81f8591178025d06181552a39f2f';
+const EXPECTED_LINES = 5141;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
 const EXTRACTED_RENDER_CURRENT = ['renderCurrent'];
 const EXTRACTED_CORE_UTILS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
-  'angleDifference', 'hashString', 'seeded', 'getPath', 'setPath'
+  'angleDifference', 'hashString', 'seeded', 'getPath', 'setPath', 'normalizeSearchText'
 ];
 const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 'fontLayoutDescription'];
 const EXTRACTED_OPERATIONAL_STATE_UTILS = ['themeSwatch', 'stripTheme', 'statusClass'];
@@ -100,7 +100,7 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const { planMotionTransition } = MotionTransitionPlanner.create({',
     'const CoreUtils = window.FlightFlowCoreUtils;',
     "if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');",
-    'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;',
+    'const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath, normalizeSearchText } = CoreUtils;',
     'const TypographyUtils = window.FlightFlowTypographyUtils;',
     "if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');",
     'const { normalizeFontScale, fontLayoutForScale, fontLayoutDescription } = TypographyUtils;',
@@ -220,8 +220,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 300);
-  assert.equal(counts.size, 300);
+  assert.equal(names.length, 299);
+  assert.equal(counts.size, 299);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,

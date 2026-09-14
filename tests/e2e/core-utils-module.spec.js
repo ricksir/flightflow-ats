@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 const PUBLIC_FUNCTIONS = [
   'shortMessageType', 'displayValue', 'cleanDisplay', 'humanize', 'clone', 'formatBytes',
-  'angleDifference', 'hashString', 'seeded', 'getPath', 'setPath'
+  'angleDifference', 'hashString', 'seeded', 'getPath', 'setPath', 'normalizeSearchText'
 ];
 
 test('FlightFlowCoreUtils carrega antes do núcleo como API congelada e completa', async ({ page }) => {
@@ -58,6 +58,7 @@ test('utilitários externos preservam comportamento no navegador real', async ({
       pathFirst: api.getPath(pathObject, 'route.points.0.ident'),
       missingFinalIsUndefined: api.getPath(pathObject, 'route.points.0.missing') === undefined,
       interruptedPath: api.getPath(pathObject, 'route.missing.ident'),
+      normalizedSearch: api.normalizeSearchText('AÇÃO / Brasília-DF'),
     };
   });
 
@@ -84,5 +85,6 @@ test('utilitários externos preservam comportamento no navegador real', async ({
     pathFirst: 'PADIL',
     missingFinalIsUndefined: true,
     interruptedPath: '',
+    normalizedSearch: 'acao / brasilia-df',
   });
 });

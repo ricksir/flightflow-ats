@@ -9,8 +9,8 @@ const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'core', 'core-utils.js');
 const ANCHOR = 'window.__FlightFlowFirBridge = Object.freeze({';
 const REFERENCE = '<script id="flightflow-core-utils" src="src/core/core-utils.js"></script>';
-const MODULE_BYTES = 2188;
-const MODULE_SHA256 = '9c3d540e55f3332ff04a828993cef10b03fc5869529bf52ce79858f13bfaf87a';
+const MODULE_BYTES = 2367;
+const MODULE_SHA256 = '9388afc824423c8434a0b4f300412b1294df6ba28c28a33cda8d01dd4dbd4a52';
 const EXPECTED = Object.freeze({
   shortMessageType: { bytes: 124, sha256: 'c61517a0039c41c02772b7d261d23925ad705fd5ef36dbbd6c47ef01d15b68c3' },
   displayValue: { bytes: 379, sha256: '79d5ccbcaec3caead3749f1defa25434e8d05b6f00cca3ac81fd6da66bbe341b' },
@@ -23,6 +23,7 @@ const EXPECTED = Object.freeze({
   seeded: { bytes: 107, sha256: 'e8a98352bd15958c19bfa524d389fa7f84ce3ab902bde82439dafee89dacfbc2' },
   getPath: { bytes: 138, sha256: '247f4a3dd072d9a76e62f80d3b247d7891c65d0b4a3c2082bb4f932dd67963ea' },
   setPath: { bytes: 345, sha256: 'b8e0c78106388a4ced70f669fff1012e9583f6fc1ecfff51e5b2da3a90db1c91' },
+  normalizeSearchText: { bytes: 151, sha256: '57a99fe512a7f7ffb1b25a5609ef1d377791418703ff89862b7dce8cf476422c' },
 });
 
 const FORBIDDEN_COUPLING = [
@@ -92,7 +93,7 @@ test('módulo core-utils mantém identidade estrutural completa', () => {
   assert.ok(source.endsWith('})();\n'));
 });
 
-test('onze utilitários preservam identidade byte a byte dentro do módulo', () => {
+test('doze utilitários preservam identidade byte a byte dentro do módulo', () => {
   const source = moduleSource();
   for (const [name, expected] of Object.entries(EXPECTED)) {
     const body = extractFunction(source, name);
@@ -112,7 +113,7 @@ test('módulo é carregado antes do IIFE e o núcleo usa aliases explícitos', (
   const kernel = kernelSource();
   assert.ok(kernel.includes('const CoreUtils = window.FlightFlowCoreUtils;'));
   assert.ok(kernel.includes("if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');"));
-  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;'));
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath, normalizeSearchText } = CoreUtils;'));
   for (const name of Object.keys(EXPECTED)) {
     assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar declarado inline`);
   }

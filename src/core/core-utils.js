@@ -44,6 +44,11 @@
     });
     cursor[parts[parts.length - 1]] = value;
   }
+
+  function normalizeSearchText(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  }
+
   window.FlightFlowCoreUtils = Object.freeze({
     shortMessageType,
     displayValue,
@@ -56,5 +61,6 @@
     seeded,
     getPath,
     setPath,
+    normalizeSearchText,
   });
 })();

@@ -5525,7 +5525,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
   const CoreUtils = window.FlightFlowCoreUtils;
   if (!CoreUtils) throw new Error('FlightFlowCoreUtils não foi carregado.');
-  const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;
+  const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath, normalizeSearchText } = CoreUtils;
 
   const TypographyUtils = window.FlightFlowTypographyUtils;
   if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');
@@ -10105,10 +10105,6 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
     els.originalEventTitle.textContent = `Evento ${state.index + 1} · ${event.operation}`;
     els.originalEventMeta.textContent = [event.timestamp, event.messageType, event.snapshot.status, event.source ? `Fonte: ${event.source}` : ''].filter(Boolean).join(' · ');
     els.originalEventText.textContent = event.rawBlock || event.content || 'Este evento não possui corpo textual original.';
-  }
-
-  function normalizeSearchText(value) {
-    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
   }
 
   const SearchExcerpt = window.FlightFlowSearchExcerpt;

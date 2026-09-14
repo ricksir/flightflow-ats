@@ -174,18 +174,19 @@ test('módulo permanece desacoplado de estado, DOM, storage, rota e movimento', 
   ]) assert.equal(SOURCE.includes(forbidden), false, `acoplamento inesperado: ${forbidden}`);
 });
 
-test('index carrega módulo antes do kernel e instancia após normalizeSearchText', () => {
+test('index carrega módulo antes do kernel e instancia após alias normalizeSearchText do CoreUtils', () => {
   const tag = '<script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>';
   const tagIndex = HTML.indexOf(tag);
   const kernelIndex = HTML.indexOf('const Parser = window.FlightParser;');
-  const normalizerIndex = HTML.indexOf('function normalizeSearchText(value)');
+  const normalizerIndex = HTML.indexOf('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath, normalizeSearchText } = CoreUtils;');
   const wiringIndex = HTML.indexOf('const SearchExcerpt = window.FlightFlowSearchExcerpt;');
   const excerptConsumerIndex = HTML.indexOf('excerpt: makeSearchExcerpt(event.rawBlock || searchable, query)');
   const highlightConsumerIndex = HTML.indexOf('highlightSearchExcerpt(excerpt, query)');
 
   assert.notEqual(tagIndex, -1, 'módulo deve estar referenciado');
   assert.ok(tagIndex < kernelIndex, 'módulo deve carregar antes do IIFE principal');
-  assert.ok(normalizerIndex >= 0 && wiringIndex > normalizerIndex, 'wiring deve ocorrer após normalizeSearchText existir');
+  assert.ok(normalizerIndex >= 0 && wiringIndex > normalizerIndex, 'wiring deve ocorrer após alias normalizeSearchText do CoreUtils existir');
+  assert.equal(HTML.includes('function normalizeSearchText(value)'), false, 'normalizeSearchText inline não pode voltar');
   assert.ok(excerptConsumerIndex > wiringIndex, 'makeSearchExcerpt deve estar inicializado antes do consumidor');
   assert.ok(highlightConsumerIndex > wiringIndex, 'highlightSearchExcerpt deve estar inicializado antes do consumidor');
 
