@@ -109,17 +109,17 @@
       throw new Error('FlightFlowCommunicationContextUtils requer escapeHtml para relacionados.');
     }
 
-  function relatedKnowledgeButtons(entry) {
-    const codes = Array.isArray(entry.related) ? entry.related : [];
-    const matches = [];
-    const seen = new Set();
-    codes.forEach(code => findKnowledgeEntriesByCode(code).forEach(item => {
-      if (item.key === entry.key || seen.has(item.key)) return;
-      seen.add(item.key); matches.push(item);
-    }));
-    if (!matches.length) return '';
-    return `<div class="knowledge-related">${matches.slice(0,12).map(item => `<button type="button" data-related-knowledge="${escapeHtml(item.key)}">${escapeHtml(item.code)} · ${escapeHtml(item.title)}</button>`).join('')}</div>`;
-  }
+    const relatedKnowledgeButtons = function (entry) {
+      const codes = Array.isArray(entry.related) ? entry.related : [];
+      const matches = [];
+      const seen = new Set();
+      codes.forEach(code => findKnowledgeEntriesByCode(code).forEach(item => {
+        if (item.key === entry.key || seen.has(item.key)) return;
+        seen.add(item.key); matches.push(item);
+      }));
+      if (!matches.length) return '';
+      return `<div class="knowledge-related">${matches.slice(0,12).map(item => `<button type="button" data-related-knowledge="${escapeHtml(item.key)}">${escapeHtml(item.code)} · ${escapeHtml(item.title)}</button>`).join('')}</div>`;
+    };
 
     return Object.freeze({ relatedKnowledgeButtons });
   }
