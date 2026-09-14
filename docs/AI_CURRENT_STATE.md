@@ -2,15 +2,16 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#139** e conclusão verde do workflow pós-merge **#367**.
+> Última verificação: **14/09/2026**, após o merge do PR **#143** e conclusão verde do workflow pós-merge **#375**.
 
 ## 1. Fonte de verdade atual
 
 - Repositório: `ricksir/flightflow-ats`.
+- Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `fc1a99b9f1aa36e64ee456ff91f11d94924eae8c`
-  — `refactor: extract normalize search text` (PR #139).
+  `b9300c0f13ea0d220ff1a7bc3926a252c1a06a9d`
+  — `refactor: extract normalize knowledge text` (PR #143).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -19,6 +20,84 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #142 — congelamento de `normalizeKnowledgeText`
+
+O PR **#142 — `test: freeze normalize knowledge text contract`** congelou a versão do kernel de `normalizeKnowledgeText` antes da extração, cobrindo:
+
+- identidade exata de **221 bytes**;
+- SHA-256 `eb60fdefec2aa5732c3a5d1ca9c74be3dad16613ab7ba0187bfb9f5216c768f2`;
+- pureza e ausência de acoplamento com infraestrutura;
+- exatamente **11 consumidores funcionais no núcleo**;
+- normalização NFD e remoção de diacríticos;
+- conversão para caixa alta;
+- normalização de travessões `–` e `—` para hífen ASCII;
+- preservação de hífen ASCII;
+- pontuação convertida em espaços;
+- compactação de espaços, tratamento de vazios e idempotência.
+
+O PR foi mergeado por squash em:
+
+`a8e10b8df52599f0a61c8f3a2532b670068f9835`
+
+Workflows:
+
+- PR: **#371** — sucesso;
+- pós-merge: **#372** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #143 — extração de `normalizeKnowledgeText`
+
+O PR **#143 — `refactor: extract normalize knowledge text`** moveu mecanicamente a função do IIFE principal para:
+
+`src/timeline/communication-context-utils.js`
+
+O wiring atual preserva:
+
+```js
+const { normalizeKnowledgeText } = CommunicationContextUtils;
+const { canonicalKnowledgeCode } =
+  CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });
+```
+
+A extração preservou exatamente:
+
+- corpo congelado de **221 bytes**;
+- SHA-256 `eb60fdefec2aa5732c3a5d1ca9c74be3dad16613ab7ba0187bfb9f5216c768f2`;
+- **11 consumidores funcionais no núcleo**;
+- 0 declarações inline no IIFE principal;
+- 1 alias explícito vindo do módulo;
+- injeção explícita em `createCanonicalKnowledgeCode({ normalizeKnowledgeText })`.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+O PR teve inicialmente bloqueio de infraestrutura do GitHub Actions enquanto o repositório ainda estava privado: os runs **#373** e **#374** falharam antes de qualquer step/runner. Após o repositório ser alterado para **público**, o run **#374** foi reexecutado no head exato:
+
+`00c3e26204afc7eb2649821850adc29899cb720b`
+
+Resultado final do PR:
+
+- Static audit ✅
+- Function declaration inventory ✅
+- Timeline and route regression tests ✅
+- Browser availability ✅
+- UI navigation regression tests / Playwright ✅
+- **46 passed (2.9m)**
+- **0 flaky**
+- **0 retry**
+- **0 `SPATIAL_EQ_DIAG`**
+
+O PR #143 foi mergeado por squash em:
+
+`b9300c0f13ea0d220ff1a7bc3926a252c1a06a9d`
+
+Pós-merge no `main`:
+
+- workflow **#375** no SHA exato acima — sucesso;
+- **46 passed (2.3m)**;
+- **0 flaky**;
+- **0 retry**;
+- **0 `SPATIAL_EQ_DIAG`**.
 
 ### PR #138 — congelamento de `normalizeSearchText`
 
@@ -114,13 +193,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #139:
+Conforme `tests/main-kernel-contract.test.js` após o PR #143:
 
-- **1.123.732 bytes**;
-- **5.141 linhas**;
+- **1.123.573 bytes**;
+- **5.138 linhas**;
 - SHA-256:
-  `ce0210bf67ff0a69687ee51ab2e6e4a8e8be81f8591178025d06181552a39f2f`;
-- **299 funções nomeadas** no núcleo protegido.
+  `f84e311134977270cd0ed61b363b3cc0d51b8aafb9c6c6d07ce195df9277f47d`;
+- **298 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -165,18 +244,20 @@ Conforme `tests/location-code-contract.test.js`:
 
 ### Communication Context Utils
 
-Conforme `tests/communication-context-utils-contract.test.js`:
+Conforme `tests/communication-context-utils-contract.test.js` após o PR #143:
 
 - arquivo: `src/timeline/communication-context-utils.js`;
-- **9.062 bytes**;
+- **9.313 bytes**;
 - SHA-256:
-  `7a4c48b70057936f71119fb91e6b74408476060143d3daba807987c224243a5d`.
+  `601e5280e299149b772b991550f4aaf2dc2118e44ce7aaa0ac337de3e64c3d73`;
+- **22 funções nomeadas**.
 
 A API pública congelada inclui:
 
 - `internalTransitionDetails`;
 - `parseAddresses`;
 - `knowledgeEntryDocumentKey`;
+- `normalizeKnowledgeText`;
 - `createCanonicalKnowledgeCode`;
 - `createKnowledgeEntryFinder`;
 - `createKnowledgeEntriesByCodeFinder`;
@@ -189,12 +270,13 @@ A API pública congelada inclui:
 
 ### Inventário global
 
-Após o PR #139:
+Após o PR #143:
 
 - **743 declarações function nomeadas** entre o HTML e scripts locais;
 - **732 nomes únicos**;
-- o IIFE principal contém **299 funções nomeadas**;
+- o IIFE principal contém **298 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
+- `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
   - `isLocationCode`.
@@ -211,18 +293,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #138:
-  - workflow **#363** — sucesso;
+- PR de contrato #142:
+  - workflow **#371** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#364** — sucesso;
+  - pós-merge no `main`: workflow **#372** — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #139:
-  - workflow **#365** no head antigo — **falha de contrato de alias**, sem merge;
-  - correção limitada a `tests/object-path-utils-contract.test.js`;
-  - novo workflow **#366** no head exato `921154a4c343dba6fbad09ba30a8ef318d706a1a` — sucesso;
+- PR de extração #143:
+  - runs **#373/#374** inicialmente bloqueados antes de qualquer step enquanto o repositório estava privado;
+  - após mudança de visibilidade para público, workflow **#374** reexecutado no head exato
+    `00c3e26204afc7eb2649821850adc29899cb720b` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#367** no SHA
-    `fc1a99b9f1aa36e64ee456ff91f11d94924eae8c` — sucesso;
+  - pós-merge no `main`: workflow **#375** no SHA
+    `b9300c0f13ea0d220ff1a7bc3926a252c1a06a9d` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -253,13 +335,13 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-O PR analítico descartável **#137** foi fechado **sem merge** depois de produzir um
-remapeamento fresco sobre o `main` pós-#136. Esse ranking agora também é histórico,
-porque `normalizeSearchText` já foi extraída no PR #139.
+O PR analítico descartável **#141** foi fechado **sem merge** depois de produzir um
+remapeamento fresco sobre o `main` pós-#140. Esse ranking agora é histórico,
+porque `normalizeKnowledgeText` já foi extraída no PR #143.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda aponta para o estado pós-#139 ou identificar alterações posteriores;
+1. confirmar que `main` ainda aponta para o estado pós-#143 ou identificar alterações posteriores;
 2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
 3. não considerar novamente como candidatos:
    - `knowledgeCategoryLabel`;
@@ -269,6 +351,7 @@ Próximo fluxo seguro:
    - `canonicalKnowledgeCode`;
    - `isLocationCode`;
    - `normalizeSearchText`;
+   - `normalizeKnowledgeText`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
