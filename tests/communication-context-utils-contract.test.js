@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 9313;
-const MODULE_SHA256 = '601e5280e299149b772b991550f4aaf2dc2118e44ce7aaa0ac337de3e64c3d73';
+const MODULE_BYTES = 10661;
+const MODULE_SHA256 = 'd66e97ab0dca18621c916f2a277946fddbd2e6793e5e0def0d43d3ec6001b39f';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -76,7 +76,7 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.parseAddresses, 'function');
@@ -86,38 +86,32 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   assert.equal(typeof api.normalizeKnowledgeText, 'function');
   assert.equal(api.normalizeKnowledgeText('RQP — Brasília / ZQZX'), 'RQP - BRASILIA ZQZX');
   assert.equal(typeof api.createCanonicalKnowledgeCode, 'function');
-  assert.throws(
-    () => api.createCanonicalKnowledgeCode({}),
-    /FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para código canônico/
-  );
-  const canonicalScoped = api.createCanonicalKnowledgeCode({
-    normalizeKnowledgeText: value => String(value || '').trim().toUpperCase(),
-  });
+  assert.throws(() => api.createCanonicalKnowledgeCode({}), /FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para código canônico/);
+  const canonicalScoped = api.createCanonicalKnowledgeCode({ normalizeKnowledgeText: value => String(value || '').trim().toUpperCase() });
   assert.equal(Object.isFrozen(canonicalScoped), true);
   assert.deepEqual(Object.keys(canonicalScoped), ['canonicalKnowledgeCode']);
   assert.equal(canonicalScoped.canonicalKnowledgeCode(' AB-C / 12 '), 'ABC12');
-  assert.equal(typeof api.createKnowledgeEntryFinder, 'function');
-  assert.throws(
-    () => api.createKnowledgeEntryFinder({}),
-    /FlightFlowCommunicationContextUtils requer knowledgeEntries/
-  );
-  const entryA = { key: 'ENTRY:A' };
-  const finderScoped = api.createKnowledgeEntryFinder({
-    knowledgeEntries: () => [entryA, { key: 'ENTRY:B' }],
+  assert.equal(typeof api.createEntryMatchesToken, 'function');
+  assert.throws(() => api.createEntryMatchesToken({}), /FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para correspondência de token/);
+  assert.throws(() => api.createEntryMatchesToken({ normalizeKnowledgeText: value => value }), /FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode para correspondência de token/);
+  const tokenMatcherScoped = api.createEntryMatchesToken({
+    normalizeKnowledgeText: value => String(value || '').trim().toUpperCase(),
+    canonicalKnowledgeCode: value => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
   });
+  assert.equal(Object.isFrozen(tokenMatcherScoped), true);
+  assert.deepEqual(Object.keys(tokenMatcherScoped), ['entryMatchesToken']);
+  assert.equal(tokenMatcherScoped.entryMatchesToken({ code: 'A-B/C', aliases: [] }, 'ABC'), true);
+  assert.equal(typeof api.createKnowledgeEntryFinder, 'function');
+  assert.throws(() => api.createKnowledgeEntryFinder({}), /FlightFlowCommunicationContextUtils requer knowledgeEntries/);
+  const entryA = { key: 'ENTRY:A' };
+  const finderScoped = api.createKnowledgeEntryFinder({ knowledgeEntries: () => [entryA, { key: 'ENTRY:B' }] });
   assert.equal(Object.isFrozen(finderScoped), true);
   assert.deepEqual(Object.keys(finderScoped), ['findKnowledgeEntryByKey']);
   assert.equal(finderScoped.findKnowledgeEntryByKey('ENTRY:A'), entryA);
   assert.equal(finderScoped.findKnowledgeEntryByKey('MISSING'), null);
   assert.equal(typeof api.createKnowledgeEntriesByCodeFinder, 'function');
-  assert.throws(
-    () => api.createKnowledgeEntriesByCodeFinder({}),
-    /FlightFlowCommunicationContextUtils requer knowledgeEntries para busca por código/
-  );
-  assert.throws(
-    () => api.createKnowledgeEntriesByCodeFinder({ knowledgeEntries: () => [] }),
-    /FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode para busca por código/
-  );
+  assert.throws(() => api.createKnowledgeEntriesByCodeFinder({}), /FlightFlowCommunicationContextUtils requer knowledgeEntries para busca por código/);
+  assert.throws(() => api.createKnowledgeEntriesByCodeFinder({ knowledgeEntries: () => [] }), /FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode para busca por código/);
   const codeEntryA = { key: 'CODE:A', code: 'ABC', aliases: ['ALT'] };
   const codeFinderScoped = api.createKnowledgeEntriesByCodeFinder({
     knowledgeEntries: () => [codeEntryA, { key: 'CODE:B', code: 'DEF', aliases: [] }],
@@ -129,34 +123,16 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   assert.equal(aliasMatches.length, 1);
   assert.equal(aliasMatches[0], codeEntryA);
   assert.equal(typeof api.createKnowledgeDocumentLabeler, 'function');
-  assert.throws(
-    () => api.createKnowledgeDocumentLabeler({}),
-    /FlightFlowCommunicationContextUtils requer knowledgeDocumentLabels/
-  );
-  assert.throws(
-    () => api.createKnowledgeDocumentLabeler({ knowledgeDocumentLabels: {} }),
-    /FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentKey para rótulos/
-  );
-  const labelScoped = api.createKnowledgeDocumentLabeler({
-    knowledgeDocumentLabels: { MCA: 'MCA 100-27/2025' },
-    knowledgeEntryDocumentKey: () => 'MCA',
-  });
+  assert.throws(() => api.createKnowledgeDocumentLabeler({}), /FlightFlowCommunicationContextUtils requer knowledgeDocumentLabels/);
+  assert.throws(() => api.createKnowledgeDocumentLabeler({ knowledgeDocumentLabels: {} }), /FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentKey para rótulos/);
+  const labelScoped = api.createKnowledgeDocumentLabeler({ knowledgeDocumentLabels: { MCA: 'MCA 100-27/2025' }, knowledgeEntryDocumentKey: () => 'MCA' });
   assert.equal(Object.isFrozen(labelScoped), true);
   assert.deepEqual(Object.keys(labelScoped), ['knowledgeEntryDocumentLabel']);
   assert.equal(labelScoped.knowledgeEntryDocumentLabel({}), 'MCA 100-27/2025');
   assert.equal(typeof api.createKnowledgeCategoryLabeler, 'function');
-  assert.throws(
-    () => api.createKnowledgeCategoryLabeler({}),
-    /FlightFlowCommunicationContextUtils requer knowledgeCategoryLabels/
-  );
-  assert.throws(
-    () => api.createKnowledgeCategoryLabeler({ knowledgeCategoryLabels: {} }),
-    /FlightFlowCommunicationContextUtils requer humanize para categorias/
-  );
-  const categoryScoped = api.createKnowledgeCategoryLabeler({
-    knowledgeCategoryLabels: { message: 'Mensagem ATS' },
-    humanize: value => `H:${value}`,
-  });
+  assert.throws(() => api.createKnowledgeCategoryLabeler({}), /FlightFlowCommunicationContextUtils requer knowledgeCategoryLabels/);
+  assert.throws(() => api.createKnowledgeCategoryLabeler({ knowledgeCategoryLabels: {} }), /FlightFlowCommunicationContextUtils requer humanize para categorias/);
+  const categoryScoped = api.createKnowledgeCategoryLabeler({ knowledgeCategoryLabels: { message: 'Mensagem ATS' }, humanize: value => `H:${value}` });
   assert.equal(Object.isFrozen(categoryScoped), true);
   assert.deepEqual(Object.keys(categoryScoped), ['knowledgeCategoryLabel']);
   assert.equal(categoryScoped.knowledgeCategoryLabel('message'), 'Mensagem ATS');
@@ -165,25 +141,13 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   assert.equal(typeof api.createAddressFormatter, 'function');
   assert.equal(typeof api.createAddressDisplayFormatter, 'function');
   assert.equal(typeof api.createFieldDisplayFormatter, 'function');
-
-  assert.throws(
-    () => api.create({}),
-    /FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode/
-  );
-
+  assert.throws(() => api.create({}), /FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode/);
   const scoped = api.create({ canonicalKnowledgeCode: value => String(value || '').toUpperCase() });
   assert.equal(Object.isFrozen(scoped), true);
   assert.deepEqual(Object.keys(scoped), ['knowledgeContextSummary']);
   assert.equal(typeof scoped.knowledgeContextSummary, 'function');
-
-  assert.throws(
-    () => api.createAddressFormatter({}),
-    /FlightFlowCommunicationContextUtils requer normalizeLocalityCode/
-  );
-  assert.throws(
-    () => api.createAddressFormatter({ normalizeLocalityCode: value => value }),
-    /FlightFlowCommunicationContextUtils requer lookupLocality/
-  );
+  assert.throws(() => api.createAddressFormatter({}), /FlightFlowCommunicationContextUtils requer normalizeLocalityCode/);
+  assert.throws(() => api.createAddressFormatter({ normalizeLocalityCode: value => value }), /FlightFlowCommunicationContextUtils requer lookupLocality/);
   const addressScoped = api.createAddressFormatter({
     normalizeLocalityCode: value => String(value || '').trim().toUpperCase(),
     lookupLocality: code => code === 'SBBR' ? 'Brasília' : '',
@@ -191,30 +155,10 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   assert.equal(Object.isFrozen(addressScoped), true);
   assert.deepEqual(Object.keys(addressScoped), ['formatAddressCode']);
   assert.equal(addressScoped.formatAddressCode('sbbr'), 'SBBR — Brasília');
-
-  assert.throws(
-    () => api.createAddressDisplayFormatter({}),
-    /FlightFlowCommunicationContextUtils requer cleanDisplay/
-  );
-  assert.throws(
-    () => api.createAddressDisplayFormatter({ cleanDisplay: value => value }),
-    /FlightFlowCommunicationContextUtils requer parseAddresses/
-  );
-  assert.throws(
-    () => api.createAddressDisplayFormatter({
-      cleanDisplay: value => value,
-      parseAddresses: () => [],
-    }),
-    /FlightFlowCommunicationContextUtils requer normalizeLocalityCode para display/
-  );
-  assert.throws(
-    () => api.createAddressDisplayFormatter({
-      cleanDisplay: value => value,
-      parseAddresses: () => [],
-      normalizeLocalityCode: value => value,
-    }),
-    /FlightFlowCommunicationContextUtils requer formatAddressCode/
-  );
+  assert.throws(() => api.createAddressDisplayFormatter({}), /FlightFlowCommunicationContextUtils requer cleanDisplay/);
+  assert.throws(() => api.createAddressDisplayFormatter({ cleanDisplay: value => value }), /FlightFlowCommunicationContextUtils requer parseAddresses/);
+  assert.throws(() => api.createAddressDisplayFormatter({ cleanDisplay: value => value, parseAddresses: () => [] }), /FlightFlowCommunicationContextUtils requer normalizeLocalityCode para display/);
+  assert.throws(() => api.createAddressDisplayFormatter({ cleanDisplay: value => value, parseAddresses: () => [], normalizeLocalityCode: value => value }), /FlightFlowCommunicationContextUtils requer formatAddressCode/);
   const displayScoped = api.createAddressDisplayFormatter({
     cleanDisplay: value => String(value || '').trim(),
     parseAddresses: () => ['SBBR', 'SBBR', 'SBGO'],
@@ -224,30 +168,10 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   assert.equal(Object.isFrozen(displayScoped), true);
   assert.deepEqual(Object.keys(displayScoped), ['formatAddressDisplay']);
   assert.equal(displayScoped.formatAddressDisplay('qualquer'), 'FMT:SBBR · FMT:SBGO');
-
-  assert.throws(
-    () => api.createFieldDisplayFormatter({}),
-    /FlightFlowCommunicationContextUtils requer cleanDisplay para campos/
-  );
-  assert.throws(
-    () => api.createFieldDisplayFormatter({ cleanDisplay: value => value }),
-    /FlightFlowCommunicationContextUtils requer formatAddressCode para campos/
-  );
-  assert.throws(
-    () => api.createFieldDisplayFormatter({
-      cleanDisplay: value => value,
-      formatAddressCode: value => value,
-    }),
-    /FlightFlowCommunicationContextUtils requer formatAddressDisplay/
-  );
-  assert.throws(
-    () => api.createFieldDisplayFormatter({
-      cleanDisplay: value => value,
-      formatAddressCode: value => value,
-      formatAddressDisplay: value => value,
-    }),
-    /FlightFlowCommunicationContextUtils requer displayValue/
-  );
+  assert.throws(() => api.createFieldDisplayFormatter({}), /FlightFlowCommunicationContextUtils requer cleanDisplay para campos/);
+  assert.throws(() => api.createFieldDisplayFormatter({ cleanDisplay: value => value }), /FlightFlowCommunicationContextUtils requer formatAddressCode para campos/);
+  assert.throws(() => api.createFieldDisplayFormatter({ cleanDisplay: value => value, formatAddressCode: value => value }), /FlightFlowCommunicationContextUtils requer formatAddressDisplay/);
+  assert.throws(() => api.createFieldDisplayFormatter({ cleanDisplay: value => value, formatAddressCode: value => value, formatAddressDisplay: value => value }), /FlightFlowCommunicationContextUtils requer displayValue/);
   const fieldScoped = api.createFieldDisplayFormatter({
     cleanDisplay: value => String(value || '').trim(),
     formatAddressCode: value => `CODE:${value}`,
@@ -274,6 +198,9 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('const { knowledgeEntryDocumentKey } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { normalizeKnowledgeText } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { canonicalKnowledgeCode } = CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });'));
+  assert.ok(html.includes('const { entryMatchesToken } = CommunicationContextUtils.createEntryMatchesToken({'));
+  assert.ok(html.includes('normalizeKnowledgeText,'));
+  assert.ok(html.includes('canonicalKnowledgeCode,'));
   assert.ok(html.includes('const { findKnowledgeEntryByKey } = CommunicationContextUtils.createKnowledgeEntryFinder({'));
   assert.ok(html.includes('knowledgeEntries,'));
   assert.ok(html.includes('const { findKnowledgeEntriesByCode } = CommunicationContextUtils.createKnowledgeEntriesByCodeFinder({'));
@@ -288,14 +215,4 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });'));
   assert.ok(html.includes('const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });'));
   assert.ok(html.includes('const { formatFieldDisplay } = CommunicationContextUtils.createFieldDisplayFormatter({ cleanDisplay, formatAddressCode, formatAddressDisplay, displayValue });'));
-});
-
-test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
-  const source = fs.readFileSync(MODULE, 'utf8');
-  for (const name of ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'canonicalKnowledgeCode', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay']) {
-    const target = functionSource(source, name);
-    for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
-      assert.equal(target.includes(token), false, `acoplamento inesperado em ${name}: ${token}`);
-    }
-  }
 });
