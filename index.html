@@ -5489,6 +5489,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-source-manager-controller" src="src/ui/source-manager-controller.js"></script>
 <script id="flightflow-field-layout-utils" src="src/ui/field-layout-utils.js"></script>
 <script id="flightflow-knowledge-entries" src="src/knowledge/knowledge-entries.js"></script>
+<script id="flightflow-knowledge-field-label-renderer" src="src/knowledge/knowledge-field-label-renderer.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
 <script id="flightflow-locality-utils" src="src/geo/locality-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
@@ -8964,12 +8965,13 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     };
   }
 
-  function renderKnowledgeFieldLabel(key, label, rawValue, event) {
-    if (!KNOWLEDGE_CLICK_FIELDS.has(key)) return escapeHtml(label);
-    const entry = resolveKnowledgeEntry(key, rawValue, event);
-    if (!entry) return escapeHtml(label);
-    return `<button type="button" class="field-knowledge-link" data-knowledge-key="${escapeHtml(entry.key)}" data-knowledge-field="${escapeHtml(key)}" title="Consultar ${escapeHtml(entry.code)} na base normativa ATM">${escapeHtml(label)}</button>`;
-  }
+  const KnowledgeFieldLabelRenderer = window.FlightFlowKnowledgeFieldLabelRenderer;
+  if (!KnowledgeFieldLabelRenderer) throw new Error('FlightFlowKnowledgeFieldLabelRenderer não foi carregado.');
+  const { renderKnowledgeFieldLabel } = KnowledgeFieldLabelRenderer.create({
+    knowledgeClickFields: KNOWLEDGE_CLICK_FIELDS,
+    escapeHtml,
+    resolveKnowledgeEntry,
+  });
 
   function handleKnowledgeFieldClick(event) {
     const trigger = event.target.closest('.field-knowledge-link');
