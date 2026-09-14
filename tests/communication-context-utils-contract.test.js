@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 11928;
-const MODULE_SHA256 = 'f0c9d6900e67695058dc065996b3fbed5af1f062fb749b2b36679fab7649ff9c';
+const MODULE_BYTES = 11896;
+const MODULE_SHA256 = '8e658223f1f1f788bdb7fd553efb76c0f52733ac4b40f8595433d3fb468f6e90';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -217,6 +217,9 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('knowledgeEntries,'));
   assert.ok(html.includes('const { findKnowledgeEntriesByCode } = CommunicationContextUtils.createKnowledgeEntriesByCodeFinder({'));
   assert.ok(html.includes('canonicalKnowledgeCode,'));
+  assert.ok(html.includes('const { relatedKnowledgeButtons } = CommunicationContextUtils.createRelatedKnowledgeButtons({'));
+  assert.ok(html.includes('findKnowledgeEntriesByCode,'));
+  assert.ok(html.includes('escapeHtml,'));
   assert.ok(html.includes('const { knowledgeEntryDocumentLabel } = CommunicationContextUtils.createKnowledgeDocumentLabeler({'));
   assert.ok(html.includes('knowledgeDocumentLabels: KNOWLEDGE_DOCUMENT_LABELS,'));
   assert.ok(html.includes('knowledgeEntryDocumentKey,'));
