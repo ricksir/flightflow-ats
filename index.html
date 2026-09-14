@@ -5488,6 +5488,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>
 <script id="flightflow-source-manager-controller" src="src/ui/source-manager-controller.js"></script>
 <script id="flightflow-field-layout-utils" src="src/ui/field-layout-utils.js"></script>
+<script id="flightflow-field-card-renderer" src="src/ui/field-card-renderer.js"></script>
 <script id="flightflow-knowledge-entries" src="src/knowledge/knowledge-entries.js"></script>
 <script id="flightflow-knowledge-field-label-renderer" src="src/knowledge/knowledge-field-label-renderer.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
@@ -9175,15 +9176,13 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     return `<div class="field-edit-controls"><div class="field-edit-moves"><button class="field-edit-btn" data-move-field="${escapeHtml(key)}" data-direction="up" title="Mover para cima">↑</button><button class="field-edit-btn" data-move-field="${escapeHtml(key)}" data-direction="left" title="Mover para a esquerda">←</button><button class="field-edit-btn" data-move-field="${escapeHtml(key)}" data-direction="right" title="Mover para a direita">→</button><button class="field-edit-btn" data-move-field="${escapeHtml(key)}" data-direction="down" title="Mover para baixo">↓</button></div><div class="field-edit-size"><button class="field-edit-btn size-btn" data-toggle-field-span="${escapeHtml(key)}" title="Alternar largura">${layout.span === 2 ? '↔' : '□'}</button><button class="field-edit-btn danger" data-remove-field="${escapeHtml(key)}" title="Ocultar campo">×</button></div></div>`;
   }
 
-  function fieldCardMarkup(key, def, valueHtml, labelHtml, before, changed) {
-    const layout = getFieldLayout(key);
-    return `<div class="field-card ${changed ? 'changed' : ''}" data-field="${escapeHtml(key)}" data-span="${layout.span}">${fieldEditControlsMarkup(key)}
-      ${changed ? '<span class="change-tag">ATUALIZADO</span>' : ''}
-      <div class="field-label">${labelHtml}</div>
-      <div class="field-value">${valueHtml}</div>
-      <div class="field-previous">${escapeHtml(before && before !== '—' ? before : '')}</div>
-    </div>`;
-  }
+  const FieldCardRenderer = window.FlightFlowFieldCardRenderer;
+  if (!FieldCardRenderer) throw new Error('FlightFlowFieldCardRenderer não foi carregado.');
+  const { fieldCardMarkup } = FieldCardRenderer.create({
+    getFieldLayout,
+    escapeHtml,
+    fieldEditControlsMarkup,
+  });
 
   function renderEmptyFields() {
     if (!els.fieldsGrid) return;
