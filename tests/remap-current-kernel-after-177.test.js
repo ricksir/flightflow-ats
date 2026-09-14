@@ -78,7 +78,7 @@ test('fresh remap of low-coupling kernel candidates after PR 177', () => {
     'goto','rendercurrent','timeline','scrubber','autoplay','dep','route','fix','aircraft',
     'planner','interpol','coordinate','runway','airport','aerodrome','ground',
     'bearing','centroid','polygon','polyline','bounds','progress','motion',
-    'realmapstate','leaflet','geometry','currentevent'
+    'realmap','googlemap','leaflet','geometry','currentevent'
   ];
   const infraForbidden = /(state\.|els\.|document\.|window\.|localStorage|sessionStorage|indexedDB|fetch\(|setTimeout\(|setInterval\(|requestAnimationFrame\(|navigator\.|google\.|L\.)/;
 
@@ -138,6 +138,36 @@ test('fresh remap of low-coupling kernel candidates after PR 177', () => {
   console.log('FRESH_REMAP_EXCLUDED_BEGIN');
   for (const row of excluded.slice(0, 80)) console.log('FRESH_REMAP_EXCLUDED|' + JSON.stringify(row));
   console.log('FRESH_REMAP_EXCLUDED_END');
+
+  // O primeiro resultado bruto, activateGoogleMapsMode, é rejeitado manualmente
+  // porque troca a base do mapa real. relatedKnowledgeButtons é a primeira fronteira
+  // restante pequena e sem acoplamento temporal/espacial aparente.
+  const candidateName = 'relatedKnowledgeButtons';
+  const candidateDecl = declarations.find(item => item[1] === candidateName);
+  const candidateSource = candidateDecl ? extractFunction(kernel, candidateName, candidateDecl.index) : null;
+  assert.ok(candidateSource, candidateName + ' deve existir para inspeção');
+
+  for (const token of [
+    'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
+    'fetch(', 'setTimeout(', 'setInterval(', 'requestAnimationFrame(', 'navigator.', 'google.', 'L.',
+    'goTo(', 'renderCurrent(', 'currentEvent(', 'route', 'planner', 'interpol', 'aircraft',
+    'timeline', 'scrubber', 'autoplay', 'DEP', 'realMapState', 'leaflet', 'geometry'
+  ]) {
+    assert.equal(candidateSource.includes(token), false, 'acoplamento inesperado em ' + candidateName + ': ' + token);
+  }
+
+  console.log('TARGET_INSPECT_SOURCE_BEGIN|' + candidateName);
+  console.log(candidateSource);
+  console.log('TARGET_INSPECT_SOURCE_END|' + candidateName);
+
+  const occurrenceRegex = new RegExp('\\b' + candidateName + '\\b', 'g');
+  const occurrences = [...kernel.matchAll(occurrenceRegex)];
+  console.log('TARGET_INSPECT_OCCURRENCES|' + candidateName + '|' + occurrences.length);
+  occurrences.forEach((match, index) => {
+    const start = Math.max(0, match.index - 700);
+    const end = Math.min(kernel.length, match.index + candidateName.length + 1000);
+    console.log('TARGET_INSPECT_CONTEXT|' + candidateName + '|' + index + '|' + kernel.slice(start, end).replace(/\\s+/g, ' '));
+  });
 
   assert.ok(rows.length > 0);
 });
