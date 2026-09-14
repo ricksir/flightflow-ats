@@ -77,7 +77,7 @@ test('fresh remap of low-coupling kernel candidates after PR 173', () => {
     'goto','rendercurrent','timeline','scrubber','autoplay','dep','route','fix','aircraft',
     'map','planner','interpol','coordinate','runway','airport','aerodrome','ground',
     'bearing','centroid','polygon','polyline','bounds','progress','motion',
-    'realmapstate','leaflet','geometry'
+    'realmapstate','leaflet','geometry','currentevent'
   ];
   const infraForbidden = /(state\.|els\.|document\.|window\.|localStorage|sessionStorage|indexedDB|fetch\(|setTimeout\(|setInterval\(|google\.|L\.)/;
 
@@ -85,10 +85,12 @@ test('fresh remap of low-coupling kernel candidates after PR 173', () => {
   for (const decl of declarations) {
     const name = decl[1];
     if (alreadyExtracted.has(name)) continue;
+    if (/^(handle|refresh)/.test(name)) continue;
+    if (['clamp','clamp01','normalizeLocalityCode','stripValueMeaning'].includes(name)) continue;
     const source = extractFunction(kernel, name, decl.index);
     if (!source) continue;
     const bytes = Buffer.byteLength(source, 'utf8');
-    if (bytes > 1600) continue;
+    if (bytes > 5000) continue;
     const haystack = (name + '\n' + source).toLowerCase();
     const sensitiveHits = sensitiveTerms.filter(term => haystack.includes(term));
     const infra = infraForbidden.test(source);
@@ -118,22 +120,24 @@ test('fresh remap of low-coupling kernel candidates after PR 173', () => {
   for (const row of rows.slice(0, 100)) console.log('FRESH_REMAP|' + JSON.stringify(row));
   console.log('FRESH_REMAP_END');
 
-  for (const row of rows.slice(0, 12)) {
-    const decl = declarations.find(item => item[1] === row.name);
-    const source = decl ? extractFunction(kernel, row.name, decl.index) : null;
-    console.log('TARGET_INSPECT_SOURCE_BEGIN|' + row.name);
-    console.log(source || '');
-    console.log('TARGET_INSPECT_SOURCE_END|' + row.name);
+  const candidateName = 'resolveKnowledgeEntry';
+  const candidate = rows.find(row => row.name === candidateName);
+  assert.ok(candidate, candidateName + ' deve permanecer elegível no remapeamento estendido');
+  const decl = declarations.find(item => item[1] === candidateName);
+  const source = decl ? extractFunction(kernel, candidateName, decl.index) : null;
+  assert.ok(source, candidateName + ' deve existir para inspeção');
+  console.log('TARGET_INSPECT_SOURCE_BEGIN|' + candidateName);
+  console.log(source);
+  console.log('TARGET_INSPECT_SOURCE_END|' + candidateName);
 
-    const occurrenceRegex = new RegExp('\\b' + row.name.replace(/[$]/g, '\\$&') + '\\b', 'g');
-    const occurrences = [...kernel.matchAll(occurrenceRegex)];
-    console.log('TARGET_INSPECT_OCCURRENCES|' + row.name + '|' + occurrences.length);
-    occurrences.forEach((match, index) => {
-      const start = Math.max(0, match.index - 260);
-      const end = Math.min(kernel.length, match.index + row.name.length + 360);
-      console.log('TARGET_INSPECT_CONTEXT|' + row.name + '|' + index + '|' + kernel.slice(start, end).replace(/\s+/g, ' '));
-    });
-  }
+  const occurrenceRegex = new RegExp('\\b' + candidateName + '\\b', 'g');
+  const occurrences = [...kernel.matchAll(occurrenceRegex)];
+  console.log('TARGET_INSPECT_OCCURRENCES|' + candidateName + '|' + occurrences.length);
+  occurrences.forEach((match, index) => {
+    const start = Math.max(0, match.index - 600);
+    const end = Math.min(kernel.length, match.index + candidateName.length + 900);
+    console.log('TARGET_INSPECT_CONTEXT|' + candidateName + '|' + index + '|' + kernel.slice(start, end).replace(/\s+/g, ' '));
+  });
 
   assert.ok(rows.length > 0);
 });
