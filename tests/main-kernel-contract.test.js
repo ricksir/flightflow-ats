@@ -6,8 +6,8 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1123573;
-const EXPECTED_SHA256 = 'f84e311134977270cd0ed61b363b3cc0d51b8aafb9c6c6d07ce195df9277f47d';
+const EXPECTED_BYTES = 1123780;
+const EXPECTED_SHA256 = '4499028755b2c921c74f25568669edb1a1f141063677eb3e8287d34e5f89f907';
 const EXPECTED_LINES = 5138;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
@@ -21,6 +21,7 @@ const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 
 const EXTRACTED_OPERATIONAL_STATE_UTILS = ['themeSwatch', 'stripTheme', 'statusClass'];
 const EXTRACTED_STRIP_COLOR_MEANING = ['stripColorMeaning'];
 const EXTRACTED_SEARCH_EXCERPT = ['makeSearchExcerpt', 'highlightSearchExcerpt'];
+const EXTRACTED_SOURCE_MANAGER = ['initSourceManager'];
 const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel', 'groundCentroid', 'groundMidpoint',
   'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode', 'polygonGeoCentroid', 'geoOffset'
@@ -113,6 +114,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const SearchExcerpt = window.FlightFlowSearchExcerpt;',
     "if (!SearchExcerpt) throw new Error('FlightFlowSearchExcerpt não foi carregado.');",
     'const { makeSearchExcerpt, highlightSearchExcerpt } = SearchExcerpt.create({ normalizeSearchText, escapeHtml });',
+    'const SourceManagerController = window.FlightFlowSourceManagerController;',
+    "if (!SourceManagerController) throw new Error('FlightFlowSourceManagerController não foi carregado.');",
+    'const { initSourceManager } = SourceManagerController.create({ renderSourceManager });',
     'const CoordinateUtils = window.FlightFlowCoordinateUtils;',
     "if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');",
     'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;',
@@ -221,8 +225,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 298);
-  assert.equal(counts.size, 298);
+  assert.equal(names.length, 297);
+  assert.equal(counts.size, 297);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -233,6 +237,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_OPERATIONAL_STATE_UTILS,
     ...EXTRACTED_STRIP_COLOR_MEANING,
     ...EXTRACTED_SEARCH_EXCERPT,
+    ...EXTRACTED_SOURCE_MANAGER,
     ...EXTRACTED_COORDINATE_UTILS,
     ...EXTRACTED_LOCALITY_UTILS,
     ...EXTRACTED_AIRPORT_GROUND_QUERY,
@@ -265,4 +270,5 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   assert.equal(counts.get('clamp'), 1, 'clamp deve permanecer inline neste corte');
   assert.equal(counts.get('clamp01'), 1, 'clamp01 deve permanecer inline neste corte');
   assert.equal(counts.get('repairTypographyLayout'), 1, 'repairTypographyLayout deve permanecer no IIFE');
+  assert.equal(counts.get('renderSourceManager'), 1, 'renderSourceManager deve permanecer no IIFE neste corte');
 });
