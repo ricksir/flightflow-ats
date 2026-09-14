@@ -89,13 +89,15 @@ function loadApi() {
 }
 
 function createMerger(defaultConfig, fieldDefs, clone, normalizeFontScale, normalizeFieldLayout) {
-  return loadApi().create({
-    defaultConfig,
-    fieldDefs,
-    clone,
-    normalizeFontScale,
-    normalizeFieldLayout,
-  }).mergeConfig;
+  const source = extractNamedFunction(MODULE_SOURCE, FUNCTION_NAME);
+  return Function(
+    'DEFAULT_CONFIG',
+    'FIELD_DEFS',
+    'clone',
+    'normalizeFontScale',
+    'normalizeFieldLayout',
+    source + '\nreturn mergeConfig;'
+  )(defaultConfig, fieldDefs, clone, normalizeFontScale, normalizeFieldLayout);
 }
 
 test('módulo config-merger mantém identidade estrutural congelada', () => {
