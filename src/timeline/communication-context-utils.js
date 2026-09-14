@@ -26,6 +26,10 @@
     return 'CIRCEA';
   }
 
+  function normalizeKnowledgeText(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[–—]/g,'-').replace(/[^A-Z0-9-]+/g,' ').replace(/\s+/g,' ').trim();
+  }
+
   function createCanonicalKnowledgeCode(options = {}) {
     const normalizeKnowledgeText = options.normalizeKnowledgeText;
     if (typeof normalizeKnowledgeText !== 'function') {
@@ -208,6 +212,7 @@ Destinatário(s): ${context.recipients}`;
     internalTransitionDetails,
     parseAddresses,
     knowledgeEntryDocumentKey,
+    normalizeKnowledgeText,
     createCanonicalKnowledgeCode,
     createKnowledgeEntryFinder,
     createKnowledgeEntriesByCodeFinder,

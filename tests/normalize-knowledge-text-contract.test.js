@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'normalizeKnowledgeText';
 const EXPECTED_CONSUMERS = 11;
 const EXPECTED_SOURCE = [
@@ -33,7 +34,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -84,19 +85,19 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction() {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(`${source}\nreturn normalizeKnowledgeText;`)();
 }
 
-test('normalizeKnowledgeText mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('normalizeKnowledgeText mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('normalizeKnowledgeText permanece puro e desacoplado de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'currentEvent(', 'setTimeout(',
@@ -108,12 +109,13 @@ test('normalizeKnowledgeText permanece puro e desacoplado de infraestrutura', ()
   assert.equal((source.match(/\.trim\(\)/g) || []).length, 1);
 });
 
-test('normalizeKnowledgeText mantém exatamente onze consumidores no núcleo', () => {
+test('normalizeKnowledgeText mantém onze consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const declarations = [...kernel.matchAll(/\bfunction\s+normalizeKnowledgeText\s*\(/g)].length;
   const references = [...kernel.matchAll(/\bnormalizeKnowledgeText\b/g)].length;
-  assert.equal(declarations, 1);
-  assert.equal(references - declarations, EXPECTED_CONSUMERS);
+  assert.equal(declarations, 0);
+  assert.equal(references, EXPECTED_CONSUMERS + 1);
+  assert.ok(kernel.includes('const { normalizeKnowledgeText } = CommunicationContextUtils;'));
 
   for (const token of [
     'CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText })',

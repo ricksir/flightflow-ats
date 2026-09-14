@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1123732;
-const EXPECTED_SHA256 = 'ce0210bf67ff0a69687ee51ab2e6e4a8e8be81f8591178025d06181552a39f2f';
-const EXPECTED_LINES = 5141;
+const EXPECTED_BYTES = 1123573;
+const EXPECTED_SHA256 = 'f84e311134977270cd0ed61b363b3cc0d51b8aafb9c6c6d07ce195df9277f47d';
+const EXPECTED_LINES = 5138;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -31,7 +31,7 @@ const EXTRACTED_STAND_HINT_UTILS = ['extractStandHint'];
 const EXTRACTED_AIRPORT_SURFACE_UTILS = ['airportSurfacePreset'];
 const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
 const EXTRACTED_ROUTE_REVISION_REASON = ['routeRevisionReason'];
-const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'canonicalKnowledgeCode', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
+const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'canonicalKnowledgeCode', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
 const EXTRACTED_KEYBOARD = ['handleKeyboard'];
@@ -139,6 +139,7 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const { internalTransitionDetails } = CommunicationContextUtils;',
     'const { parseAddresses } = CommunicationContextUtils;',
     'const { knowledgeEntryDocumentKey } = CommunicationContextUtils;',
+    'const { normalizeKnowledgeText } = CommunicationContextUtils;',
     'const { canonicalKnowledgeCode } = CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });',
     'const { findKnowledgeEntryByKey } = CommunicationContextUtils.createKnowledgeEntryFinder({',
     'const { findKnowledgeEntriesByCode } = CommunicationContextUtils.createKnowledgeEntriesByCodeFinder({',
@@ -220,8 +221,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 299);
-  assert.equal(counts.size, 299);
+  assert.equal(names.length, 298);
+  assert.equal(counts.size, 298);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
