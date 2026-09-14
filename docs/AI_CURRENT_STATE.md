@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#148** e conclusão verde do workflow pós-merge **#383**.
+> Última verificação: **14/09/2026**, após o merge do PR **#152** e conclusão verde do workflow pós-merge **#390**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `bf144ee5f9015ba0d3a38dab5b9d75b4c3c9ba70`
-  — `refactor: extract init source manager` (PR #148).
+  `7848fced701764f0c6b281df064e3bc1be4864b1`
+  — `refactor: extract normalize field layout` (PR #152).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,69 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #151 — congelamento de `normalizeFieldLayout`
+
+O PR **#151 — `test: freeze normalize field layout contract`** congelou a fronteira de `normalizeFieldLayout` antes da extração, cobrindo:
+
+- identidade exata de **305 bytes**;
+- SHA-256 `2c8020e2b246838efdd49aead1331b9167be70745f07799bb3b54623685a2eca`;
+- dependência única de `FIELD_DEFS`;
+- pureza e ausência de acoplamento com estado, DOM, storage, rede e núcleo temporal/espacial;
+- exatamente **2 consumidores executáveis** no núcleo;
+- saída limitada às chaves de `FIELD_DEFS`;
+- preservação da regra de `wide`;
+- coerção por `Number(span) === 2`;
+- ausência de mutação da entrada;
+- resultados novos em chamadas independentes.
+
+O PR foi mergeado por squash em:
+
+`87517a1c0015e2ce618d02a87a4b4bf2649ae2ad`
+
+Workflows:
+
+- PR: **#387** — sucesso;
+- pós-merge: **#388** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #152 — extração de `normalizeFieldLayout`
+
+O PR **#152 — `refactor: extract normalize field layout`** moveu mecanicamente a função para:
+
+`src/ui/field-layout-utils.js`
+
+A extração preservou exatamente:
+
+- corpo congelado de **305 bytes**;
+- SHA-256 `2c8020e2b246838efdd49aead1331b9167be70745f07799bb3b54623685a2eca`;
+- os 2 consumidores executáveis;
+- `FIELD_DEFS` permanece no núcleo e é injetado por
+  `FieldLayoutUtils.create({ fieldDefs: FIELD_DEFS })`;
+- 0 declarações inline de `normalizeFieldLayout` no IIFE principal.
+
+Novo módulo:
+
+- arquivo: `src/ui/field-layout-utils.js`;
+- **727 bytes**;
+- SHA-256 `59e8560f2cc7407023daa9b416a57bcd6448e986628a1079c793dd079a878da8`;
+- 2 funções nomeadas: `createFieldLayoutUtils` e `normalizeFieldLayout`.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+O PR #152 foi mergeado por squash em:
+
+`7848fced701764f0c6b281df064e3bc1be4864b1`
+
+Workflows:
+
+- PR: **#389** — sucesso;
+- pós-merge no `main`: **#390** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #150 — remapeamento analítico descartável
+
+O PR **#150** produziu um ranking fresco sobre o `main` pós-#149. O workflow **#386** terminou em 46/0/0/0 e o PR foi fechado sem merge. Os candidatos ligados a Google Maps, runway, ground, geometria e progresso permaneceram fora de escopo; `normalizeFieldLayout` foi selecionada como primeira fronteira limpa de UI/configuração.
 
 ### PR #147 — congelamento de `initSourceManager`
 
@@ -255,13 +318,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #148:
+Conforme `tests/main-kernel-contract.test.js` após o PR #152:
 
-- **1.123.780 bytes**;
-- **5.138 linhas**;
+- **1.123.713 bytes**;
+- **5.133 linhas**;
 - SHA-256:
-  `4499028755b2c921c74f25568669edb1a1f141063677eb3e8287d34e5f89f907`;
-- **297 funções nomeadas** no núcleo protegido.
+  `6536ab97dd64f3de3ebffc2ca402a14e160d57bc85db00a4af5107515fe172eb`;
+- **296 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -348,16 +411,35 @@ Conforme `tests/init-source-manager-contract.test.js` após o PR #148:
 - SHA-256 do corpo:
   `0b4e495f5f6fb8f779c9cd0e056ed3f7f6e0bbcaf5b82500186ad34b40461a94`.
 
+### Field Layout Utils
+
+Conforme `tests/normalize-field-layout-contract.test.js` após o PR #152:
+
+- arquivo: `src/ui/field-layout-utils.js`;
+- **727 bytes**;
+- SHA-256:
+  `59e8560f2cc7407023daa9b416a57bcd6448e986628a1079c793dd079a878da8`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ fieldDefs })`;
+- retorno congelado:
+  - `normalizeFieldLayout`;
+- corpo de `normalizeFieldLayout`: **305 bytes**;
+- SHA-256 do corpo:
+  `2c8020e2b246838efdd49aead1331b9167be70745f07799bb3b54623685a2eca`.
+
 ### Inventário global
 
-Após o PR #148:
+Após o PR #152:
 
-- **744 declarações function nomeadas** entre o HTML e scripts locais;
-- **733 nomes únicos**;
-- o IIFE principal contém **297 funções nomeadas**;
+- **745 declarações function nomeadas** entre o HTML e scripts locais;
+- **734 nomes únicos**;
+- o IIFE principal contém **296 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
+- `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
   - `isLocationCode`.
@@ -374,18 +456,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #147:
-  - workflow **#380** — sucesso;
+- PR de contrato #151:
+  - workflow **#387** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#381** no SHA
-    `97fe98f9064b3e7fd5fd822e891d5b6fe0d669db` — sucesso;
+  - pós-merge no `main`: workflow **#388** no SHA
+    `87517a1c0015e2ce618d02a87a4b4bf2649ae2ad` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #148:
-  - workflow **#382** no head exato
-    `966fce5ac248c014f18c474ac0a63eab70f08f40` — sucesso;
+- PR de extração #152:
+  - workflow **#389** no head exato
+    `45220de75bf2fd3601bd2a85a8dc2c252e74a221` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#383** no SHA
-    `bf144ee5f9015ba0d3a38dab5b9d75b4c3c9ba70` — sucesso;
+  - pós-merge no `main`: workflow **#390** no SHA
+    `7848fced701764f0c6b281df064e3bc1be4864b1` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -416,14 +498,11 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-Os PRs analíticos descartáveis **#145** e **#146** foram fechados **sem merge**.
-O #145 produziu um remapeamento fresco sobre o `main` pós-#144, e o #146 inspecionou
-`initSourceManager` em detalhe. Esse ranking já é histórico porque `initSourceManager`
-foi extraída no PR #148.
+O PR analítico descartável **#150** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#149. Esse ranking já é histórico porque `normalizeFieldLayout` foi extraída no PR #152.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda aponta para o estado pós-#148 ou identificar alterações posteriores;
+1. confirmar que `main` ainda aponta para o estado pós-#152 ou identificar alterações posteriores;
 2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
 3. não considerar novamente como candidatos:
    - `knowledgeCategoryLabel`;
@@ -435,6 +514,7 @@ Próximo fluxo seguro:
    - `normalizeSearchText`;
    - `normalizeKnowledgeText`;
    - `initSourceManager`;
+   - `normalizeFieldLayout`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
