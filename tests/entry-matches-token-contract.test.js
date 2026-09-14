@@ -93,14 +93,14 @@ test('entryMatchesToken permanece puro e só usa dependências de conhecimento',
     'dispatchEvent', 'addEventListener', 'querySelector', 'getElementById'
   ]) assert.equal(source.includes(token), false, 'acoplamento inesperado: ' + token);
 
-  assert.equal((source.match(/\\bnormalizeKnowledgeText\\b/g) || []).length, 1);
-  assert.equal((source.match(/\\bcanonicalKnowledgeCode\\s*\\(/g) || []).length, 2);
+  assert.equal((source.match(/\bnormalizeKnowledgeText\b/g) || []).length, 1);
+  assert.equal((source.match(/\bcanonicalKnowledgeCode\s*\(/g) || []).length, 2);
 });
 
 test('entryMatchesToken mantém exatamente um consumidor executável', () => {
   const kernel = kernelSource();
-  assert.equal((kernel.match(/\\bfunction\\s+entryMatchesToken\\s*\\(/g) || []).length, 1);
-  assert.equal((kernel.match(/\\bentryMatchesToken\\b/g) || []).length, 2);
+  assert.equal((kernel.match(/\bfunction\s+entryMatchesToken\s*\(/g) || []).length, 1);
+  assert.equal((kernel.match(/\bentryMatchesToken\b/g) || []).length, 2);
   assert.equal(
     kernel.split('entries.find(entry => entry.category === category && entryMatchesToken(entry, normalized));').length - 1,
     1
