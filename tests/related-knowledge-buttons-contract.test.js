@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'relatedKnowledgeButtons';
 const EXPECTED_BYTES = 630;
 const EXPECTED_SHA256 = '61ea15f4014d7872d74c62b4d2fcf8fc2079f7adc462c3f4959394db69a03c31';
@@ -27,7 +28,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = new RegExp('\\bfunction\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{', 'g');
   const match = marker.exec(source);
-  assert.ok(match, name + ' deve existir no núcleo antes da extração');
+  assert.ok(match, name + ' deve existir na fonte protegida');
   const start = match.index;
   const braceStart = start + match[0].length - 1;
   let depth = 0;
@@ -65,7 +66,7 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(findKnowledgeEntriesByCode, escapeHtml) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(
     'findKnowledgeEntriesByCode',
     'escapeHtml',
@@ -74,7 +75,7 @@ function loadFunction(findKnowledgeEntriesByCode, escapeHtml) {
 }
 
 test('relatedKnowledgeButtons congela exatamente a fronteira selecionada no remapeamento #178', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
   assert.ok(source.startsWith('function relatedKnowledgeButtons(entry) {'));
@@ -83,7 +84,7 @@ test('relatedKnowledgeButtons congela exatamente a fronteira selecionada no rema
 });
 
 test('relatedKnowledgeButtons permanece sem acoplamento temporal, espacial ou de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
     'fetch(', 'setTimeout(', 'setInterval(', 'requestAnimationFrame(', 'navigator.', 'google.', 'L.',
@@ -98,10 +99,15 @@ test('relatedKnowledgeButtons permanece sem acoplamento temporal, espacial ou de
   assert.equal(source.split('escapeHtml(').length - 1, 3);
 });
 
-test('relatedKnowledgeButtons mantém exatamente um consumidor funcional em knowledgeDetailMarkup', () => {
+test('relatedKnowledgeButtons sai do núcleo, preserva wiring e mantém um consumidor funcional em knowledgeDetailMarkup', () => {
   const kernel = kernelSource();
-  assert.equal(kernel.split('function relatedKnowledgeButtons(').length - 1, 1);
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+  assert.equal(kernel.split('function relatedKnowledgeButtons(').length - 1, 0);
+  assert.equal(moduleSource.split('function relatedKnowledgeButtons(').length - 1, 1);
   assert.equal(kernel.split('relatedKnowledgeButtons').length - 1, 2);
+  assert.ok(kernel.includes('const { relatedKnowledgeButtons } = CommunicationContextUtils.createRelatedKnowledgeButtons({'));
+  assert.ok(kernel.includes('findKnowledgeEntriesByCode,'));
+  assert.ok(kernel.includes('escapeHtml,'));
 
   const consumer = extractNamedFunction(kernel, 'knowledgeDetailMarkup');
   assert.equal(consumer.split('relatedKnowledgeButtons(').length - 1, 1);
