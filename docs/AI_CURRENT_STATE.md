@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#168** e conclusão verde do workflow pós-merge **#418**.
+> Última verificação: **14/09/2026**, após o merge do PR **#172** e conclusão verde do workflow pós-merge **#430**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `6231f2b94a46a4a42ed9e0824724d44e13c087ce`
-  — `refactor: extract strip cell` (PR #168).
+  `913d87b4573e75e79af4393f3a895cbe001e1fca`
+  — `refactor: extract merge config module` (PR #172).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,104 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #169 — checkpoint documental após `stripCell`
+
+O PR **#169 — `docs: update AI current state after PR 168`** consolidou o estado após o ciclo de `stripCell` e foi mergeado por squash em:
+
+`d54f5cc4a9058685ebe89633d52940aaa57d9c52`
+
+O workflow pós-merge **#420** terminou verde no SHA exato acima, com **46 passed**, **0 flaky**, **0 retry** e **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #170 — remapeamento analítico descartável
+
+O PR **#170 — `chore: fresh kernel remap after PR 169`** remapeou o kernel sobre o `main` documental `d54f5cc4a9058685ebe89633d52940aaa57d9c52`.
+
+A janela inicial de até 800 bytes voltou a apresentar apenas fronteiras já adiadas pela política de segurança, como helpers de refresh, handlers de clique, `clamp`/`clamp01` e `normalizeLocalityCode`. A janela de inspeção foi ampliada para até 1.600 bytes e apontou `mergeConfig` como primeira fronteira limpa restante.
+
+Dados congelados pelo remapeamento:
+
+- `mergeConfig`: **1.074 bytes**;
+- SHA-256: `ab55d30859ab0b89d96fb17c23703600ee4f34192e597729b0909e7556aaaefd`;
+- exatamente **2 consumidores executáveis**;
+- dependências diretas:
+  - `DEFAULT_CONFIG`;
+  - `FIELD_DEFS`;
+  - `clone`;
+  - `normalizeFontScale`;
+  - `normalizeFieldLayout`;
+- ausência de acesso direto a estado, DOM, storage, rede, timers e núcleo temporal/espacial.
+
+`stripValueMeaning` foi rejeitada porque alcança `currentEvent()` e contexto de conhecimento/evento.
+
+O head analítico final foi `ce9f3fcfc117811cef2102275faf2c8fe3792eda`. O workflow **#423** terminou verde em **46/0/0/0**. O PR foi fechado **sem merge**.
+
+### PR #171 — congelamento de `mergeConfig`
+
+O PR **#171 — `test: freeze merge config contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **1.074 bytes**;
+- SHA-256: `ab55d30859ab0b89d96fb17c23703600ee4f34192e597729b0909e7556aaaefd`;
+- exatamente **2 consumidores executáveis**;
+- dependências explicitamente limitadas a `DEFAULT_CONFIG`, `FIELD_DEFS`, `clone`, `normalizeFontScale` e `normalizeFieldLayout`;
+- sem acoplamento direto com estado, DOM, storage, rede, timers ou núcleo temporal/espacial;
+- regras de tema, escala tipográfica, campos visíveis, inserção de `idPlano`/`etn`, `customFields`, `fieldLayout` e `addressPatterns` protegidas;
+- não mutação da entrada e propagação de erros das dependências protegidas.
+
+Head do PR: `648b581da39ecdc6592bbf3d345e3d5762d9e654`.
+
+Workflows:
+
+- PR: **#424** — sucesso, **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- merge por squash: `37d67b61c3d44fef0d5f4387863dcf69d1267309`;
+- pós-merge: **#425** — sucesso, **46/0/0/0**.
+
+### PR #172 — extração de `mergeConfig`
+
+O PR **#172 — `refactor: extract merge config module`** moveu mecanicamente a fronteira para:
+
+`src/config/config-merger.js`
+
+A extração preservou exatamente:
+
+- corpo de `mergeConfig`: **1.074 bytes**;
+- SHA-256 do corpo:
+  `ab55d30859ab0b89d96fb17c23703600ee4f34192e597729b0909e7556aaaefd`;
+- exatamente **2 consumidores executáveis**:
+  - `applyAdvancedConfig`;
+  - `loadConfig`;
+- 0 declarações inline de `mergeConfig` no IIFE principal;
+- injeção explícita de:
+  - `DEFAULT_CONFIG`;
+  - `FIELD_DEFS`;
+  - `clone`;
+  - `normalizeFontScale`;
+  - `normalizeFieldLayout`.
+
+O wiring foi colocado depois da inicialização de `DEFAULT_CONFIG` e antes de `state.config = loadConfig()`, preservando a ordem de inicialização e evitando TDZ.
+
+Novo módulo:
+
+- arquivo: `src/config/config-merger.js`;
+- **2.078 bytes**;
+- SHA-256:
+  `a8e5658ad3b3e77534cf71035f3985a96b5ae4f42d1e19fb81ec673d3ac26ec6`;
+- 2 funções nomeadas:
+  - `createConfigMerger`;
+  - `mergeConfig`.
+
+Durante o primeiro run do PR, contratos antigos ainda esperavam `mergeConfig` e um consumidor de `normalizeFieldLayout` dentro do kernel. Esses contratos foram atualizados para refletir a nova fronteira, sem relaxar comportamento. Também foi eliminado um falso negativo de `deepStrictEqual` causado por valores criados em outro realm de `vm`, mantendo os testes comportamentais do corpo congelado no realm hospedeiro.
+
+Head final do PR: `cde8aec6fc127da9028500629f71e92b1d8d25d2`.
+
+Workflows:
+
+- PR: **#429** — sucesso, **46 passed (2.8m)**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
+- merge por squash no `main`: `913d87b4573e75e79af4393f3a895cbe001e1fca`;
+- pós-merge: **#430** — sucesso, **46 passed (2.9m)**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
 
 ### PR #166 — remapeamento analítico descartável
 
@@ -593,13 +691,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #168:
+Conforme `tests/main-kernel-contract.test.js` após o PR #172:
 
-- **1.123.088 bytes**;
-- **5.139 linhas**;
+- **1.122.326 bytes**;
+- **5.130 linhas**;
 - SHA-256:
-  `4bf6526598317315e55403d20cb94ba913847f8f034fa2ff40c1f9efbefafa12`;
-- **292 funções nomeadas** no núcleo protegido.
+  `3f2d7a5bd2596f1bd9832efac2e56809a7be4737ef9757bcab3e51cb51167342`;
+- **291 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -781,19 +879,40 @@ Conforme `tests/strip-cell-contract.test.js` após o PR #168:
 - consumidores funcionais no núcleo:
   - `renderStrip`, com **24 chamadas executáveis**.
 
+### Config Merger
+
+Conforme `tests/merge-config-contract.test.js` após o PR #172:
+
+- arquivo: `src/config/config-merger.js`;
+- **2.078 bytes**;
+- SHA-256:
+  `a8e5658ad3b3e77534cf71035f3985a96b5ae4f42d1e19fb81ec673d3ac26ec6`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ defaultConfig, fieldDefs, clone, normalizeFontScale, normalizeFieldLayout })`;
+- retorno congelado:
+  - `mergeConfig`;
+- corpo de `mergeConfig`: **1.074 bytes**;
+- SHA-256 do corpo:
+  `ab55d30859ab0b89d96fb17c23703600ee4f34192e597729b0909e7556aaaefd`;
+- consumidores executáveis no núcleo: **2**;
+- declaração inline no IIFE principal: **0**.
+
 ### Inventário global
 
-Após o PR #168:
+Após o PR #172:
 
-- **749 declarações function nomeadas** entre o HTML e scripts locais;
-- **738 nomes únicos**;
-- o IIFE principal contém **292 funções nomeadas**;
+- **750 declarações function nomeadas** entre o HTML e scripts locais;
+- **739 nomes únicos**;
+- o IIFE principal contém **291 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `src/ui/field-card-renderer.js` contém **2 funções nomeadas**;
 - `src/ui/strip-cell-renderer.js` contém **2 funções nomeadas**;
+- `src/config/config-merger.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-field-label-renderer.js` contém **2 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
@@ -809,6 +928,17 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 3. **Timeline and route regression tests / Node**;
 4. **Browser availability**;
 5. **UI navigation regression tests / Playwright**.
+
+Referência do ciclo mais recente:
+
+- PR de contrato #171:
+  - workflow **#424** no head exato `648b581da39ecdc6592bbf3d345e3d5762d9e654` — sucesso;
+  - pós-merge: workflow **#425** no SHA `37d67b61c3d44fef0d5f4387863dcf69d1267309` — sucesso;
+  - ambos em **46/0/0/0**.
+- PR de extração #172:
+  - workflow **#429** no head exato `cde8aec6fc127da9028500629f71e92b1d8d25d2` — sucesso;
+  - pós-merge: workflow **#430** no SHA `913d87b4573e75e79af4393f3a895cbe001e1fca` — sucesso;
+  - ambos em **46/0/0/0**.
 
 Referência do último ciclo:
 
@@ -851,10 +981,13 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `stripCell` está concluído em produção e validado no SHA
-`6231f2b94a46a4a42ed9e0824724d44e13c087ce`.
+O ciclo `mergeConfig` está concluído em produção e validado no SHA exato:
 
-**Não reutilizar o ranking do PR #166**, porque o kernel mudou com a extração do PR #168.
+`913d87b4573e75e79af4393f3a895cbe001e1fca`
+
+Workflow pós-merge correspondente: **#430**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+**Não reutilizar o ranking do PR #170**, porque o kernel mudou com a extração do PR #172.
 
 Próximo fluxo seguro:
 
@@ -878,6 +1011,7 @@ Próximo fluxo seguro:
    - `renderKnowledgeFieldLabel`;
    - `fieldCardMarkup`;
    - `stripCell`;
+   - `mergeConfig`;
 5. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
 6. inspecionar manualmente o melhor candidato restante;
