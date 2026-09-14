@@ -3,9 +3,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const crypto = require('node:crypto');
+const vm = require('node:vm');
 
-const HTML = fs.readFileSync('index.html', 'utf8');
+const ROOT = path.resolve(__dirname, '..');
+const HTML_PATH = path.join(ROOT, 'index.html');
+const MODULE_PATH = path.join(ROOT, 'src', 'knowledge', 'knowledge-entries.js');
+const HTML = fs.readFileSync(HTML_PATH, 'utf8');
+const MODULE_SOURCE = fs.readFileSync(MODULE_PATH, 'utf8');
 const scriptMatches = [...HTML.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
 const KERNEL = scriptMatches.map(match => match[1]).sort((a, b) => b.length - a.length)[0];
 
@@ -20,11 +26,13 @@ const EXPECTED_SOURCE = [
 ].join('\n');
 const EXPECTED_BYTES = 363;
 const EXPECTED_SHA256 = '1ed0db4735547d51112af91b9a4ade803d292b2f462a33271100cfb57b869730';
+const MODULE_BYTES = 944;
+const MODULE_SHA256 = 'dc641b7824391c617e359348e01422d8fd6267db6d92c38ed0100ff63d61d0bc';
 
 function extractNamedFunction(source, name) {
   const marker = new RegExp('\\bfunction\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{', 'g');
   const match = marker.exec(source);
-  assert.ok(match, name + ' deve existir no núcleo');
+  assert.ok(match, name + ' deve existir no módulo');
   const start = match.index;
   const braceStart = start + match[0].length - 1;
   let depth = 0;
@@ -63,25 +71,55 @@ function extractNamedFunction(source, name) {
   throw new Error('fim de ' + name + ' não encontrado');
 }
 
-function loadFunction(circea, mca, sagitario) {
-  const source = extractNamedFunction(KERNEL, FUNCTION_NAME);
-  return Function(
-    'CIRCEA_KNOWLEDGE',
-    'MCA_KNOWLEDGE',
-    'SAGITARIO_ACC_KNOWLEDGE',
-    source + '\nreturn knowledgeEntries;'
-  )(circea, mca, sagitario);
+function loadApi() {
+  const context = { window: {} };
+  vm.runInNewContext(MODULE_SOURCE, context);
+  return context.window.FlightFlowKnowledgeEntries;
 }
 
-test('knowledgeEntries mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(KERNEL, FUNCTION_NAME);
+test('módulo knowledge-entries mantém identidade estrutural congelada', () => {
+  assert.equal(Buffer.byteLength(MODULE_SOURCE, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(MODULE_SOURCE).digest('hex'), MODULE_SHA256);
+  assert.match(MODULE_SOURCE, /^\(function \(\) \{\n  'use strict';/);
+  assert.match(MODULE_SOURCE, /\}\)\(\);\n$/);
+});
+
+test('knowledgeEntries preserva exatamente o corpo congelado após a extração', () => {
+  const source = extractNamedFunction(MODULE_SOURCE, FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
-test('knowledgeEntries permanece puro e depende somente das três bases injetáveis', () => {
-  const source = extractNamedFunction(KERNEL, FUNCTION_NAME);
+test('API pública exige as três bases e retorna fronteira congelada', () => {
+  const api = loadApi();
+  assert.ok(api);
+  assert.equal(Object.isFrozen(api), true);
+  assert.deepEqual(Object.keys(api), ['create']);
+
+  assert.throws(
+    () => api.create({}),
+    /FlightFlowKnowledgeEntries requer as três bases de conhecimento/
+  );
+  assert.throws(
+    () => api.create({
+      circeaKnowledge: { entries: [] },
+      mcaKnowledge: { entries: [] },
+    }),
+    /FlightFlowKnowledgeEntries requer as três bases de conhecimento/
+  );
+
+  const scoped = api.create({
+    circeaKnowledge: { entries: [] },
+    mcaKnowledge: { entries: [] },
+    sagitarioKnowledge: { entries: [] },
+  });
+  assert.equal(Object.isFrozen(scoped), true);
+  assert.deepEqual(Object.keys(scoped), ['knowledgeEntries']);
+});
+
+test('knowledgeEntries permanece puro e depende somente das três bases injetadas', () => {
+  const source = extractNamedFunction(MODULE_SOURCE, FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
     'fetch(', 'setTimeout(', 'setInterval(', 'goTo(', 'renderCurrent(', 'currentEvent(',
@@ -99,14 +137,14 @@ test('knowledgeEntries concatena as três bases na ordem CIRCEA → MCA → SAGI
   const c2 = { key: 'c2' };
   const m1 = { key: 'm1' };
   const s1 = { key: 's1' };
-  const fn = loadFunction(
-    { entries: [c1, c2] },
-    { entries: [m1] },
-    { entries: [s1] }
-  );
+  const fn = loadApi().create({
+    circeaKnowledge: { entries: [c1, c2] },
+    mcaKnowledge: { entries: [m1] },
+    sagitarioKnowledge: { entries: [s1] },
+  }).knowledgeEntries;
   const result = fn();
 
-  assert.deepEqual(result, [c1, c2, m1, s1]);
+  assert.deepEqual(Array.from(result), [c1, c2, m1, s1]);
   assert.equal(result[0], c1);
   assert.equal(result[2], m1);
   assert.equal(result[3], s1);
@@ -114,25 +152,29 @@ test('knowledgeEntries concatena as três bases na ordem CIRCEA → MCA → SAGI
 
 test('knowledgeEntries ignora entries que não sejam arrays', () => {
   const m1 = { key: 'm1' };
-  const fn = loadFunction(
-    { entries: null },
-    { entries: [m1] },
-    { entries: 'invalid' }
-  );
-  assert.deepEqual(fn(), [m1]);
+  const fn = loadApi().create({
+    circeaKnowledge: { entries: null },
+    mcaKnowledge: { entries: [m1] },
+    sagitarioKnowledge: { entries: 'invalid' },
+  }).knowledgeEntries;
+  assert.deepEqual(Array.from(fn()), [m1]);
 
-  const empty = loadFunction({}, { entries: 42 }, { entries: null });
-  assert.deepEqual(empty(), []);
+  const empty = loadApi().create({
+    circeaKnowledge: {},
+    mcaKnowledge: { entries: 42 },
+    sagitarioKnowledge: { entries: null },
+  }).knowledgeEntries;
+  assert.deepEqual(Array.from(empty()), []);
 });
 
 test('knowledgeEntries cria novo array sem clonar as entradas', () => {
   const entry = { key: 'same-reference' };
   const sourceArray = [entry];
-  const fn = loadFunction(
-    { entries: sourceArray },
-    { entries: [] },
-    { entries: [] }
-  );
+  const fn = loadApi().create({
+    circeaKnowledge: { entries: sourceArray },
+    mcaKnowledge: { entries: [] },
+    sagitarioKnowledge: { entries: [] },
+  }).knowledgeEntries;
   const first = fn();
   const second = fn();
 
@@ -143,9 +185,24 @@ test('knowledgeEntries cria novo array sem clonar as entradas', () => {
   assert.deepEqual(sourceArray, [entry], 'array de origem não deve ser alterado');
 });
 
-test('knowledgeEntries mantém exatamente seis consumidores executáveis no núcleo', () => {
+test('index carrega módulo antes do IIFE e injeta as três bases explicitamente', () => {
+  const moduleScript = '<script id="flightflow-knowledge-entries" src="src/knowledge/knowledge-entries.js"></script>';
+  const parserBinding = 'const Parser = window.FlightParser;';
+  assert.ok(HTML.includes(moduleScript));
+  assert.ok(HTML.indexOf(moduleScript) < HTML.indexOf(parserBinding));
+
+  assert.ok(KERNEL.includes('const KnowledgeEntries = window.FlightFlowKnowledgeEntries;'));
+  assert.ok(KERNEL.includes("if (!KnowledgeEntries) throw new Error('FlightFlowKnowledgeEntries não foi carregado.');"));
+  assert.ok(KERNEL.includes('const { knowledgeEntries } = KnowledgeEntries.create({'));
+  assert.ok(KERNEL.includes('circeaKnowledge: CIRCEA_KNOWLEDGE,'));
+  assert.ok(KERNEL.includes('mcaKnowledge: MCA_KNOWLEDGE,'));
+  assert.ok(KERNEL.includes('sagitarioKnowledge: SAGITARIO_ACC_KNOWLEDGE,'));
+});
+
+test('núcleo mantém os seis consumidores e não redeclara knowledgeEntries', () => {
+  assert.equal((KERNEL.match(/\bfunction\s+knowledgeEntries\s*\(/g) || []).length, 0);
   assert.equal((KERNEL.match(/\bknowledgeEntries\b/g) || []).length, 7);
-  assert.equal((KERNEL.match(/\bknowledgeEntries\s*\(/g) || []).length, 5);
+  assert.equal((KERNEL.match(/\bknowledgeEntries\s*\(/g) || []).length, 4);
   assert.equal(KERNEL.split('knowledgeEntries,').length - 1, 2);
 
   assert.equal(KERNEL.split('return knowledgeEntries().map(entry => ({ ...entry }));').length - 1, 1);
