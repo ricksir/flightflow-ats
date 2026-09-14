@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#176** e conclusão verde do workflow pós-merge **#448**.
+> Última verificação: **14/09/2026**, após o merge do PR **#181** e conclusão verde do workflow pós-merge **#463**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `2f5a3d291597c77a0b414f812d078c6ccc4b6bd0`
-  — `refactor: extract entry token matcher (#176)` (PR #176).
+  `0eb8fe5101520219bed036c6a9aef8fc62fdeb97`
+  — `refactor: extract related knowledge buttons` (PR #181).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,129 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #177 — checkpoint documental após `entryMatchesToken`
+
+O PR **#177 — `docs: update AI current state after PR 176`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`fc519b836b2e057496dde36fe0397f41c77513db`
+
+Workflows:
+
+- PR: **#449** — sucesso;
+- pós-merge: **#450** — sucesso;
+- ambos em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+### PR #178 — remapeamento analítico descartável
+
+O PR **#178 — `chore: fresh kernel remap after PR 177`** remapeou o kernel sobre o `main` documental `fc519b836b2e057496dde36fe0397f41c77513db`.
+
+O primeiro resultado bruto, `activateGoogleMapsMode`, foi rejeitado manualmente por acoplamento direto com o mapa real. O filtro foi endurecido para `realmap`/`googlemap`, e a primeira fronteira limpa restante passou a ser `relatedKnowledgeButtons`:
+
+- corpo exato: **630 bytes**;
+- SHA-256: `61ea15f4014d7872d74c62b4d2fcf8fc2079f7adc462c3f4959394db69a03c31`;
+- exatamente **1 consumidor funcional**, em `knowledgeDetailMarkup`;
+- dependências externas funcionais restritas a:
+  - `findKnowledgeEntriesByCode`;
+  - `escapeHtml`;
+- sem estado, DOM, storage, rede, timers, `currentEvent`, rota, DEP, mapa, movimento, timeline, scrubber ou autoplay;
+- deduplicação por `item.key`, exclusão da própria entrada, ordem de encontro e limite de 12 botões preservados.
+
+Head analítico final:
+
+`ee92a1ec4e5d505a3a1e4e4a1768c2c1486aadf9`
+
+O workflow **#452** terminou verde em **46 passed (2.9m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**. O PR foi fechado **sem merge**.
+
+### PR #179 — congelamento de `relatedKnowledgeButtons`
+
+O PR **#179 — `test: freeze related knowledge buttons contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **630 bytes**;
+- SHA-256: `61ea15f4014d7872d74c62b4d2fcf8fc2079f7adc462c3f4959394db69a03c31`;
+- único consumidor funcional: `knowledgeDetailMarkup`;
+- dependências limitadas a `findKnowledgeEntriesByCode` e `escapeHtml`;
+- ausência de acoplamento temporal, espacial ou de infraestrutura;
+- exclusão da própria entrada, deduplicação, ordem, limite de 12, markup, não mutação e propagação de erros protegidos.
+
+Head final do PR:
+
+`1b684e8534da0d2f438c0f373368ce60d2ad819f`
+
+Merge por squash:
+
+`70c7b0fa6b7a9b14ca19581e66994d877895f700`
+
+Workflows:
+
+- PR: **#454** — sucesso, **46/0/0/0**;
+- pós-merge: **#455** — sucesso, **46/0/0/0**.
+
+### PR #180 — preparação da factory modular
+
+O PR **#180 — `refactor: prepare related knowledge buttons factory`** preparou a fronteira no módulo `src/timeline/communication-context-utils.js` antes do wiring final.
+
+A etapa foi deliberadamente intermediária:
+
+- adicionou `createRelatedKnowledgeButtons({ findKnowledgeEntriesByCode, escapeHtml })`;
+- manteve o consumidor inline do kernel intacto;
+- usou temporariamente função anônima interna para não criar declaração nomeada duplicada antes da remoção do original;
+- não alterou rota, DEP, `goTo()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay.
+
+Head final do PR:
+
+`d5172db36ef5428c5f5881f60f01dd0ce9e9530e`
+
+Merge por squash:
+
+`4f634edfd5960bbe91f3a853cee527f106131607`
+
+Workflows:
+
+- PR: **#460** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#461** — sucesso, **46 passed (2.3m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+### PR #181 — extração de `relatedKnowledgeButtons`
+
+O PR **#181 — `refactor: extract related knowledge buttons`** concluiu o wiring e removeu a declaração inline do IIFE principal.
+
+A extração preservou exatamente:
+
+- corpo de `relatedKnowledgeButtons`: **630 bytes**;
+- SHA-256:
+  `61ea15f4014d7872d74c62b4d2fcf8fc2079f7adc462c3f4959394db69a03c31`;
+- único consumidor funcional em `knowledgeDetailMarkup`;
+- injeção explícita de:
+  - `findKnowledgeEntriesByCode`;
+  - `escapeHtml`;
+- wiring por:
+  `CommunicationContextUtils.createRelatedKnowledgeButtons({ findKnowledgeEntriesByCode, escapeHtml })`;
+- 0 declarações inline de `relatedKnowledgeButtons` no IIFE principal.
+
+Baselines resultantes:
+
+- kernel: **1.121.283 bytes**, **5.116 linhas**, **289 funções nomeadas**;
+- SHA-256 do kernel:
+  `649f12177da2df98d4f3e5ad378eaa26869dce6379c774764fe0cc898cadc91c`;
+- `src/timeline/communication-context-utils.js`: **11.896 bytes**, **26 funções nomeadas**;
+- SHA-256 do módulo:
+  `8e658223f1f1f788bdb7fd553efb76c0f52733ac4b40f8595433d3fb468f6e90`;
+- inventário global: **752 declarações function nomeadas / 741 nomes únicos**.
+
+Head final do PR:
+
+`e1235544ff48946eef976ab6f6c4747d5f0b1d1b`
+
+Merge por squash no `main`:
+
+`0eb8fe5101520219bed036c6a9aef8fc62fdeb97`
+
+Workflows:
+
+- PR: **#462** — sucesso, **46 passed (2.9m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#463** — sucesso, **46 passed (3.1m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
 
 ### PR #173 — checkpoint documental após `mergeConfig`
 
@@ -786,13 +909,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #176:
+Conforme `tests/main-kernel-contract.test.js` após o PR #181:
 
-- **1.121.766 bytes**;
-- **5.123 linhas**;
+- **1.121.283 bytes**;
+- **5.116 linhas**;
 - SHA-256:
-  `c33d06e65f38771faf91d55c6e4f49a83167661c06e41069761e7428e0ff4d9e`;
-- **290 funções nomeadas** no núcleo protegido.
+  `649f12177da2df98d4f3e5ad378eaa26869dce6379c774764fe0cc898cadc91c`;
+- **289 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -837,13 +960,13 @@ Conforme `tests/location-code-contract.test.js`:
 
 ### Communication Context Utils
 
-Conforme `tests/communication-context-utils-contract.test.js` após o PR #176:
+Conforme `tests/communication-context-utils-contract.test.js` após o PR #181:
 
 - arquivo: `src/timeline/communication-context-utils.js`;
-- **10.661 bytes**;
+- **11.896 bytes**;
 - SHA-256:
-  `d66e97ab0dca18621c916f2a277946fddbd2e6793e5e0def0d43d3ec6001b39f`;
-- **24 funções nomeadas**.
+  `8e658223f1f1f788bdb7fd553efb76c0f52733ac4b40f8595433d3fb468f6e90`;
+- **26 funções nomeadas**.
 
 A API pública congelada inclui:
 
@@ -855,6 +978,7 @@ A API pública congelada inclui:
 - `createEntryMatchesToken`;
 - `createKnowledgeEntryFinder`;
 - `createKnowledgeEntriesByCodeFinder`;
+- `createRelatedKnowledgeButtons`;
 - `createKnowledgeDocumentLabeler`;
 - `createKnowledgeCategoryLabeler`;
 - `create`;
@@ -872,6 +996,18 @@ A API pública congelada inclui:
 - retorno congelado:
   `entryMatchesToken`;
 - consumidores executáveis no núcleo: **1**;
+- declaração inline no IIFE principal: **0**.
+
+`relatedKnowledgeButtons` permanece congelada dentro do módulo com:
+
+- corpo: **630 bytes**;
+- SHA-256:
+  `61ea15f4014d7872d74c62b4d2fcf8fc2079f7adc462c3f4959394db69a03c31`;
+- fábrica:
+  `createRelatedKnowledgeButtons({ findKnowledgeEntriesByCode, escapeHtml })`;
+- retorno congelado:
+  `relatedKnowledgeButtons`;
+- consumidor funcional no núcleo: **1**, em `knowledgeDetailMarkup`;
 - declaração inline no IIFE principal: **0**.
 
 ### Source Manager Controller
@@ -1009,13 +1145,13 @@ Conforme `tests/merge-config-contract.test.js` após o PR #172:
 
 ### Inventário global
 
-Após o PR #176:
+Após o PR #181:
 
-- **751 declarações function nomeadas** entre o HTML e scripts locais;
-- **740 nomes únicos**;
-- o IIFE principal contém **290 funções nomeadas**;
+- **752 declarações function nomeadas** entre o HTML e scripts locais;
+- **741 nomes únicos**;
+- o IIFE principal contém **289 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
-- `src/timeline/communication-context-utils.js` contém **24 funções nomeadas**;
+- `src/timeline/communication-context-utils.js` contém **26 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `src/ui/field-card-renderer.js` contém **2 funções nomeadas**;
@@ -1037,7 +1173,26 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 4. **Browser availability**;
 5. **UI navigation regression tests / Playwright**.
 
-Referência do ciclo mais recente:
+Referência do ciclo mais recente (`relatedKnowledgeButtons`):
+
+- remapeamento descartável #178:
+  - workflow **#452** no head exato `ee92a1ec4e5d505a3a1e4e4a1768c2c1486aadf9` — sucesso;
+  - **46/0/0/0**;
+  - fechado sem merge.
+- PR de contrato #179:
+  - workflow **#454** no head exato `1b684e8534da0d2f438c0f373368ce60d2ad819f` — sucesso;
+  - pós-merge: workflow **#455** no SHA `70c7b0fa6b7a9b14ca19581e66994d877895f700` — sucesso;
+  - ambos em **46/0/0/0**.
+- PR preparatório #180:
+  - workflow **#460** no head exato `d5172db36ef5428c5f5881f60f01dd0ce9e9530e` — sucesso;
+  - pós-merge: workflow **#461** no SHA `4f634edfd5960bbe91f3a853cee527f106131607` — sucesso;
+  - ambos em **46/0/0/0**.
+- PR de extração #181:
+  - workflow **#462** no head exato `e1235544ff48946eef976ab6f6c4747d5f0b1d1b` — sucesso;
+  - pós-merge: workflow **#463** no SHA `0eb8fe5101520219bed036c6a9aef8fc62fdeb97` — sucesso;
+  - ambos em **46/0/0/0**.
+
+Referência do ciclo anterior (`entryMatchesToken`):
 
 - remapeamento descartável #174:
   - workflow **#435** no head exato `bd612c2f3bdeb3cc8cc9469873eaec86e9e1ac07` — sucesso;
@@ -1104,13 +1259,13 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `entryMatchesToken` está concluído em produção e validado no SHA exato:
+O ciclo `relatedKnowledgeButtons` está concluído em produção e validado no SHA exato:
 
-`2f5a3d291597c77a0b414f812d078c6ccc4b6bd0`
+`0eb8fe5101520219bed036c6a9aef8fc62fdeb97`
 
-Workflow pós-merge correspondente: **#448**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+Workflow pós-merge correspondente: **#463**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
-**Não reutilizar o ranking do PR #174**, porque o kernel mudou com a extração do PR #176.
+**Não reutilizar o ranking do PR #178**, porque o kernel mudou com a extração do PR #181.
 
 Próximo fluxo seguro:
 
@@ -1136,6 +1291,7 @@ Próximo fluxo seguro:
    - `stripCell`;
    - `mergeConfig`;
    - `entryMatchesToken`;
+   - `relatedKnowledgeButtons`;
 5. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
 6. inspecionar manualmente o melhor candidato restante;
