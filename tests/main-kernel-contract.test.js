@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1123088;
-const EXPECTED_SHA256 = '4bf6526598317315e55403d20cb94ba913847f8f034fa2ff40c1f9efbefafa12';
-const EXPECTED_LINES = 5139;
+const EXPECTED_BYTES = 1122326;
+const EXPECTED_SHA256 = '3f2d7a5bd2596f1bd9832efac2e56809a7be4737ef9757bcab3e51cb51167342';
+const EXPECTED_LINES = 5130;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -46,6 +46,7 @@ const EXTRACTED_CONTROL_STATE = ['enableControls'];
 const EXTRACTED_TIMELINE_BUILDER = ['buildTimeline'];
 const EXTRACTED_SOURCE_CLASS = ['getSourceClass'];
 const EXTRACTED_CONFIG_VALIDATION = ['validateConfig'];
+const EXTRACTED_CONFIG_MERGER = ['mergeConfig'];
 const EXTRACTED_AIRCRAFT_VISUAL_UTILS = ['aircraftPixelSizeForZoom', 'planeIconHtml'];
 const EXTRACTED_AIRCRAFT_MARKER_CONTROLLER = ['updateLeafletAircraftMarker', 'googlePlaneSymbol', 'updateGoogleAircraftMarker'];
 const EXTRACTED_AIRCRAFT_MOTION_CONTROLLER = ['resetMotionController', 'motionRoute', 'applyMotionFrame', 'snapMotionTo', 'startMotionLoop'];
@@ -83,6 +84,10 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const ConfigValidation = window.FlightFlowConfigValidation;',
     "if (!ConfigValidation) throw new Error('FlightFlowConfigValidation não foi carregado.');",
     'const { validateConfig } = ConfigValidation;',
+    'const ConfigMerger = window.FlightFlowConfigMerger;',
+    "if (!ConfigMerger) throw new Error('FlightFlowConfigMerger não foi carregado.');",
+    'const { mergeConfig } = ConfigMerger.create({',
+    'defaultConfig: DEFAULT_CONFIG,',
     'const AircraftVisualUtils = window.FlightFlowAircraftVisualUtils;',
     "if (!AircraftVisualUtils) throw new Error('FlightFlowAircraftVisualUtils não foi carregado.');",
     'const { aircraftPixelSizeForZoom, planeIconHtml } = AircraftVisualUtils.create({ clamp, escapeHtml });',
@@ -246,8 +251,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 292);
-  assert.equal(counts.size, 292);
+  assert.equal(names.length, 291);
+  assert.equal(counts.size, 291);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -280,6 +285,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_TIMELINE_BUILDER,
     ...EXTRACTED_SOURCE_CLASS,
     ...EXTRACTED_CONFIG_VALIDATION,
+    ...EXTRACTED_CONFIG_MERGER,
     ...EXTRACTED_AIRCRAFT_VISUAL_UTILS,
     ...EXTRACTED_AIRCRAFT_MARKER_CONTROLLER,
     ...EXTRACTED_RADAR_TAG_CONTROLLER,

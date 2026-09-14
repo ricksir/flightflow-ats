@@ -12,6 +12,7 @@ const HTML_PATH = path.join(ROOT, 'index.html');
 const MODULE_PATH = path.join(ROOT, 'src', 'ui', 'field-layout-utils.js');
 const HTML = fs.readFileSync(HTML_PATH, 'utf8');
 const MODULE_SOURCE = fs.readFileSync(MODULE_PATH, 'utf8');
+const CONFIG_MERGER_SOURCE = fs.readFileSync(path.join(ROOT, 'src', 'config', 'config-merger.js'), 'utf8');
 const scriptMatches = [...HTML.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
 const KERNEL = scriptMatches.map(match => match[1]).sort((a, b) => b.length - a.length)[0];
 
@@ -195,9 +196,11 @@ test('index carrega módulo antes do IIFE e injeta FIELD_DEFS explicitamente', (
   assert.ok(KERNEL.includes('const FIELD_DEFS = Object.freeze({'));
 });
 
-test('núcleo mantém os dois consumidores e não redeclara normalizeFieldLayout', () => {
-  assert.equal(KERNEL.split('merged.fieldLayout = normalizeFieldLayout(merged.fieldLayout);').length - 1, 1);
+test('consumidores de normalizeFieldLayout permanecem divididos entre núcleo e config-merger sem redeclaração', () => {
+  assert.equal(CONFIG_MERGER_SOURCE.split('merged.fieldLayout = normalizeFieldLayout(merged.fieldLayout);').length - 1, 1);
   assert.equal(KERNEL.split('state.config.fieldLayout = normalizeFieldLayout(state.config.fieldLayout);').length - 1, 1);
   assert.equal((KERNEL.match(/\bfunction\s+normalizeFieldLayout\s*\(/g) || []).length, 0);
-  assert.equal((KERNEL.match(/\bnormalizeFieldLayout\s*\(/g) || []).length, 2);
+  assert.equal((CONFIG_MERGER_SOURCE.match(/\bfunction\s+normalizeFieldLayout\s*\(/g) || []).length, 0);
+  assert.equal((KERNEL.match(/\bnormalizeFieldLayout\s*\(/g) || []).length, 1);
+  assert.equal((CONFIG_MERGER_SOURCE.match(/\bnormalizeFieldLayout\s*\(/g) || []).length, 1);
 });
