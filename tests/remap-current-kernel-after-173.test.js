@@ -1,0 +1,139 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+
+const html = fs.readFileSync('index.html', 'utf8');
+const scriptMatches = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+const kernel = scriptMatches
+  .map(match => match[1])
+  .sort((a, b) => b.length - a.length)[0];
+
+function extractFunction(source, name, startIndex) {
+  const marker = new RegExp('\\bfunction\\s+' + name.replace(/[$]/g, '\\$&') + '\\s*\\([^)]*\\)\\s*\\{', 'g');
+  marker.lastIndex = startIndex || 0;
+  const match = marker.exec(source);
+  if (!match) return null;
+  const braceStart = match.index + match[0].length - 1;
+  let depth = 0;
+  let mode = 'code';
+  for (let i = braceStart; i < source.length; i++) {
+    const c = source[i];
+    const n = source[i + 1];
+    if (mode === 'code') {
+      if (c === "'") mode = 'sq';
+      else if (c === '"') mode = 'dq';
+      else if (c === '`') mode = 'tpl';
+      else if (c === '/' && n === '/') { mode = 'line'; i++; }
+      else if (c === '/' && n === '*') { mode = 'block'; i++; }
+      else if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) return source.slice(match.index, i + 1);
+      }
+    } else if (mode === 'sq') {
+      if (c === '\\') i++;
+      else if (c === "'") mode = 'code';
+    } else if (mode === 'dq') {
+      if (c === '\\') i++;
+      else if (c === '"') mode = 'code';
+    } else if (mode === 'tpl') {
+      if (c === '\\') i++;
+      else if (c === '`') mode = 'code';
+    } else if (mode === 'line') {
+      if (c === '\n') mode = 'code';
+    } else if (mode === 'block') {
+      if (c === '*' && n === '/') { mode = 'code'; i++; }
+    }
+  }
+  return null;
+}
+
+test('fresh remap of low-coupling kernel candidates after PR 173', () => {
+  assert.ok(kernel && kernel.length > 100000);
+
+  const declarations = [...kernel.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)];
+  const alreadyExtracted = new Set([
+    'knowledgeCategoryLabel',
+    'parseAddresses',
+    'findKnowledgeEntryByKey',
+    'findKnowledgeEntriesByCode',
+    'knowledgeEntryDocumentLabel',
+    'knowledgeEntryDocumentKey',
+    'canonicalKnowledgeCode',
+    'isLocationCode',
+    'normalizeSearchText',
+    'normalizeKnowledgeText',
+    'initSourceManager',
+    'normalizeFieldLayout',
+    'knowledgeEntries',
+    'renderKnowledgeFieldLabel',
+    'fieldCardMarkup',
+    'stripCell',
+    'mergeConfig'
+  ]);
+
+  const sensitiveTerms = [
+    'goto','rendercurrent','timeline','scrubber','autoplay','dep','route','fix','aircraft',
+    'map','planner','interpol','coordinate','runway','airport','aerodrome','ground',
+    'bearing','centroid','polygon','polyline','bounds','progress','motion',
+    'realmapstate','leaflet','geometry'
+  ];
+  const infraForbidden = /(state\.|els\.|document\.|window\.|localStorage|sessionStorage|indexedDB|fetch\(|setTimeout\(|setInterval\(|google\.|L\.)/;
+
+  const rows = [];
+  for (const decl of declarations) {
+    const name = decl[1];
+    if (alreadyExtracted.has(name)) continue;
+    const source = extractFunction(kernel, name, decl.index);
+    if (!source) continue;
+    const bytes = Buffer.byteLength(source, 'utf8');
+    if (bytes > 1600) continue;
+    const haystack = (name + '\n' + source).toLowerCase();
+    const sensitiveHits = sensitiveTerms.filter(term => haystack.includes(term));
+    const infra = infraForbidden.test(source);
+    if (sensitiveHits.length || infra) continue;
+
+    const occurrences = [...kernel.matchAll(new RegExp('\\b' + name.replace(/[$]/g, '\\$&') + '\\b', 'g'))].length;
+    const consumers = Math.max(0, occurrences - 1);
+    const calls = [...source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)]
+      .map(m => m[1])
+      .filter(x => !['function','if','for','while','switch','catch','String','Number','Boolean','Array','Object','Math','Date','RegExp','parseInt','parseFloat','isNaN','Set','Map'].includes(x));
+    const uniqueCalls = [...new Set(calls)].filter(x => x !== name);
+    const score = bytes + consumers * 30 + uniqueCalls.length * 45;
+
+    rows.push({
+      name,
+      bytes,
+      consumers,
+      deps: uniqueCalls,
+      sha256: crypto.createHash('sha256').update(source, 'utf8').digest('hex'),
+      score,
+      preview: source.replace(/\s+/g, ' ').slice(0, 280)
+    });
+  }
+
+  rows.sort((a, b) => a.score - b.score || a.bytes - b.bytes || a.name.localeCompare(b.name));
+  console.log('FRESH_REMAP_BEGIN');
+  for (const row of rows.slice(0, 100)) console.log('FRESH_REMAP|' + JSON.stringify(row));
+  console.log('FRESH_REMAP_END');
+
+  for (const row of rows.slice(0, 12)) {
+    const decl = declarations.find(item => item[1] === row.name);
+    const source = decl ? extractFunction(kernel, row.name, decl.index) : null;
+    console.log('TARGET_INSPECT_SOURCE_BEGIN|' + row.name);
+    console.log(source || '');
+    console.log('TARGET_INSPECT_SOURCE_END|' + row.name);
+
+    const occurrenceRegex = new RegExp('\\b' + row.name.replace(/[$]/g, '\\$&') + '\\b', 'g');
+    const occurrences = [...kernel.matchAll(occurrenceRegex)];
+    console.log('TARGET_INSPECT_OCCURRENCES|' + row.name + '|' + occurrences.length);
+    occurrences.forEach((match, index) => {
+      const start = Math.max(0, match.index - 260);
+      const end = Math.min(kernel.length, match.index + row.name.length + 360);
+      console.log('TARGET_INSPECT_CONTEXT|' + row.name + '|' + index + '|' + kernel.slice(start, end).replace(/\s+/g, ' '));
+    });
+  }
+
+  assert.ok(rows.length > 0);
+});
