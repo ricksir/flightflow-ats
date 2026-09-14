@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#172** e conclusão verde do workflow pós-merge **#430**.
+> Última verificação: **14/09/2026**, após o merge do PR **#176** e conclusão verde do workflow pós-merge **#448**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `913d87b4573e75e79af4393f3a895cbe001e1fca`
-  — `refactor: extract merge config module` (PR #172).
+  `2f5a3d291597c77a0b414f812d078c6ccc4b6bd0`
+  — `refactor: extract entry token matcher (#176)` (PR #176).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,101 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #173 — checkpoint documental após `mergeConfig`
+
+O PR **#173 — `docs: update AI current state after PR 172`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`cd92cca1ac67583bf1e142aa06c78b83bbfe4570`
+
+Workflows:
+
+- PR: **#431** — sucesso;
+- pós-merge: **#432** — sucesso;
+- ambos em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+### PR #174 — remapeamento analítico descartável
+
+O PR **#174 — `chore: fresh kernel remap after PR 173`** remapeou o kernel sobre o `main` documental `cd92cca1ac67583bf1e142aa06c78b83bbfe4570`.
+
+O ranking automático inicialmente descartou `entryMatchesToken` por um falso positivo textual de `.map()`, que na função é apenas `Array.map()` e não acoplamento cartográfico. A revisão manual confirmou a fronteira como candidata menor e limpa:
+
+- corpo: **703 bytes**;
+- SHA-256: `1786277e616ee1668872e61de46c48ebf4e3405961bcc11b912eb02e48fa8c9c`;
+- exatamente **1 consumidor executável**, dentro de `resolveKnowledgeEntry`;
+- dependências diretas restritas a:
+  - `normalizeKnowledgeText`;
+  - `canonicalKnowledgeCode`;
+- ausência de estado, DOM, storage, rede, timers e núcleo temporal/espacial.
+
+Head analítico final:
+
+`bd612c2f3bdeb3cc8cc9469873eaec86e9e1ac07`
+
+O workflow **#435** terminou verde em **46/0/0/0**. O PR foi fechado **sem merge**.
+
+### PR #175 — congelamento de `entryMatchesToken`
+
+O PR **#175 — `test: freeze entry token matcher contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **703 bytes**;
+- SHA-256: `1786277e616ee1668872e61de46c48ebf4e3405961bcc11b912eb02e48fa8c9c`;
+- exatamente **1 consumidor executável**;
+- dependências limitadas a `normalizeKnowledgeText` e `canonicalKnowledgeCode`;
+- correspondência exata, aliases e equivalência canônica protegidas;
+- fallback flexível entre espaço, hífen e barra protegido;
+- fronteiras alfanuméricas protegidas;
+- não mutação da entrada e propagação de erros das dependências protegidas;
+- ausência de acoplamento direto com estado, DOM, storage, rede, timers ou núcleo temporal/espacial.
+
+Head final do PR:
+
+`5036edbd0132e7b523f483bd3b67a851d3769f35`
+
+Merge por squash:
+
+`0a64bccbeb2d5977e9873fe3ab305d41a4100a81`
+
+Workflows:
+
+- PR: **#437** — sucesso, **46/0/0/0**;
+- pós-merge: **#438** — sucesso, **46/0/0/0**.
+
+### PR #176 — extração de `entryMatchesToken`
+
+O PR **#176 — `refactor: extract entry token matcher`** moveu mecanicamente a fronteira do IIFE principal para:
+
+`src/timeline/communication-context-utils.js`
+
+A extração preservou exatamente:
+
+- corpo de `entryMatchesToken`: **703 bytes**;
+- SHA-256 do corpo:
+  `1786277e616ee1668872e61de46c48ebf4e3405961bcc11b912eb02e48fa8c9c`;
+- exatamente **1 consumidor executável** em `resolveKnowledgeEntry`;
+- 0 declarações inline de `entryMatchesToken` no IIFE principal;
+- injeção explícita de:
+  - `normalizeKnowledgeText`;
+  - `canonicalKnowledgeCode`;
+- wiring por:
+  `CommunicationContextUtils.createEntryMatchesToken({ normalizeKnowledgeText, canonicalKnowledgeCode })`.
+
+Durante a adaptação dos contratos, consumidores de `canonicalKnowledgeCode` e `normalizeKnowledgeText` passaram a ser contabilizados também dentro do módulo, sem relaxar os contratos existentes. Um diagnóstico temporário de identidade do módulo foi removido antes do head final.
+
+Head final do PR:
+
+`9bd515a10eea286c438fe5b075e65327c99688ae`
+
+Merge por squash no `main`:
+
+`2f5a3d291597c77a0b414f812d078c6ccc4b6bd0`
+
+Workflows:
+
+- PR: **#447** — sucesso, **46 passed (2.4m)**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#448** — sucesso, **46 passed (2.9m)**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
 
 ### PR #169 — checkpoint documental após `stripCell`
 
@@ -691,13 +786,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #172:
+Conforme `tests/main-kernel-contract.test.js` após o PR #176:
 
-- **1.122.326 bytes**;
-- **5.130 linhas**;
+- **1.121.766 bytes**;
+- **5.123 linhas**;
 - SHA-256:
-  `3f2d7a5bd2596f1bd9832efac2e56809a7be4737ef9757bcab3e51cb51167342`;
-- **291 funções nomeadas** no núcleo protegido.
+  `c33d06e65f38771faf91d55c6e4f49a83167661c06e41069761e7428e0ff4d9e`;
+- **290 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -742,13 +837,13 @@ Conforme `tests/location-code-contract.test.js`:
 
 ### Communication Context Utils
 
-Conforme `tests/communication-context-utils-contract.test.js` após o PR #143:
+Conforme `tests/communication-context-utils-contract.test.js` após o PR #176:
 
 - arquivo: `src/timeline/communication-context-utils.js`;
-- **9.313 bytes**;
+- **10.661 bytes**;
 - SHA-256:
-  `601e5280e299149b772b991550f4aaf2dc2118e44ce7aaa0ac337de3e64c3d73`;
-- **22 funções nomeadas**.
+  `d66e97ab0dca18621c916f2a277946fddbd2e6793e5e0def0d43d3ec6001b39f`;
+- **24 funções nomeadas**.
 
 A API pública congelada inclui:
 
@@ -757,6 +852,7 @@ A API pública congelada inclui:
 - `knowledgeEntryDocumentKey`;
 - `normalizeKnowledgeText`;
 - `createCanonicalKnowledgeCode`;
+- `createEntryMatchesToken`;
 - `createKnowledgeEntryFinder`;
 - `createKnowledgeEntriesByCodeFinder`;
 - `createKnowledgeDocumentLabeler`;
@@ -765,6 +861,18 @@ A API pública congelada inclui:
 - `createAddressFormatter`;
 - `createAddressDisplayFormatter`;
 - `createFieldDisplayFormatter`.
+
+`entryMatchesToken` permanece congelada dentro do módulo com:
+
+- corpo: **703 bytes**;
+- SHA-256:
+  `1786277e616ee1668872e61de46c48ebf4e3405961bcc11b912eb02e48fa8c9c`;
+- fábrica:
+  `createEntryMatchesToken({ normalizeKnowledgeText, canonicalKnowledgeCode })`;
+- retorno congelado:
+  `entryMatchesToken`;
+- consumidores executáveis no núcleo: **1**;
+- declaração inline no IIFE principal: **0**.
 
 ### Source Manager Controller
 
@@ -901,13 +1009,13 @@ Conforme `tests/merge-config-contract.test.js` após o PR #172:
 
 ### Inventário global
 
-Após o PR #172:
+Após o PR #176:
 
-- **750 declarações function nomeadas** entre o HTML e scripts locais;
-- **739 nomes únicos**;
-- o IIFE principal contém **291 funções nomeadas**;
+- **751 declarações function nomeadas** entre o HTML e scripts locais;
+- **740 nomes únicos**;
+- o IIFE principal contém **290 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
-- `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
+- `src/timeline/communication-context-utils.js` contém **24 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `src/ui/field-card-renderer.js` contém **2 funções nomeadas**;
@@ -930,6 +1038,21 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 5. **UI navigation regression tests / Playwright**.
 
 Referência do ciclo mais recente:
+
+- remapeamento descartável #174:
+  - workflow **#435** no head exato `bd612c2f3bdeb3cc8cc9469873eaec86e9e1ac07` — sucesso;
+  - **46/0/0/0**;
+  - fechado sem merge.
+- PR de contrato #175:
+  - workflow **#437** no head exato `5036edbd0132e7b523f483bd3b67a851d3769f35` — sucesso;
+  - pós-merge: workflow **#438** no SHA `0a64bccbeb2d5977e9873fe3ab305d41a4100a81` — sucesso;
+  - ambos em **46/0/0/0**.
+- PR de extração #176:
+  - workflow **#447** no head exato `9bd515a10eea286c438fe5b075e65327c99688ae` — sucesso;
+  - pós-merge: workflow **#448** no SHA `2f5a3d291597c77a0b414f812d078c6ccc4b6bd0` — sucesso;
+  - ambos em **46/0/0/0**.
+
+Referência do ciclo anterior (`mergeConfig`):
 
 - PR de contrato #171:
   - workflow **#424** no head exato `648b581da39ecdc6592bbf3d345e3d5762d9e654` — sucesso;
@@ -981,13 +1104,13 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `mergeConfig` está concluído em produção e validado no SHA exato:
+O ciclo `entryMatchesToken` está concluído em produção e validado no SHA exato:
 
-`913d87b4573e75e79af4393f3a895cbe001e1fca`
+`2f5a3d291597c77a0b414f812d078c6ccc4b6bd0`
 
-Workflow pós-merge correspondente: **#430**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+Workflow pós-merge correspondente: **#448**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
-**Não reutilizar o ranking do PR #170**, porque o kernel mudou com a extração do PR #172.
+**Não reutilizar o ranking do PR #174**, porque o kernel mudou com a extração do PR #176.
 
 Próximo fluxo seguro:
 
@@ -1012,6 +1135,7 @@ Próximo fluxo seguro:
    - `fieldCardMarkup`;
    - `stripCell`;
    - `mergeConfig`;
+   - `entryMatchesToken`;
 5. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
 6. inspecionar manualmente o melhor candidato restante;
