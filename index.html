@@ -5485,6 +5485,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-strip-color-meaning" src="src/ui/strip-color-meaning.js"></script>
+<script id="flightflow-strip-cell-renderer" src="src/ui/strip-cell-renderer.js"></script>
 <script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>
 <script id="flightflow-source-manager-controller" src="src/ui/source-manager-controller.js"></script>
 <script id="flightflow-field-layout-utils" src="src/ui/field-layout-utils.js"></script>
@@ -9519,7 +9520,13 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
 
 
 
-  function stripCell(code,value,cls='',changed=false){const def=STRIP_FIELD_DEFS[code];return `<button type="button" class="strip-cell ${cls} ${changed?'updated':''}" data-strip-field="${code}" data-strip-value="${escapeHtml(displayValue(value,''))}" data-strip-updated="${changed?'true':'false'}" title="Consultar ${escapeHtml(def?def.label:code)} e o significado da cor"><span class="strip-code">${code}</span><span class="strip-value">${escapeHtml(displayValue(value,''))}</span></button>`;}
+  const StripCellRenderer = window.FlightFlowStripCellRenderer;
+  if (!StripCellRenderer) throw new Error('FlightFlowStripCellRenderer não foi carregado.');
+  const { stripCell } = StripCellRenderer.create({
+    stripFieldDefs: STRIP_FIELD_DEFS,
+    escapeHtml,
+    displayValue,
+  });
 
   function renderStrip(event) {
     if(!event||!els.stripCanvas)return;const s=event.snapshot||{};const changedKeys=new Set((event.changes||[]).map(c=>c.key));const theme=stripTheme(event);const changed=(keys)=>state.stripAcknowledgedIndex!==state.index&&keys.some(k=>changedKeys.has(k));
