@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#143** e conclusão verde do workflow pós-merge **#375**.
+> Última verificação: **14/09/2026**, após o merge do PR **#148** e conclusão verde do workflow pós-merge **#383**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `b9300c0f13ea0d220ff1a7bc3926a252c1a06a9d`
-  — `refactor: extract normalize knowledge text` (PR #143).
+  `bf144ee5f9015ba0d3a38dab5b9d75b4c3c9ba70`
+  — `refactor: extract init source manager` (PR #148).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,68 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #147 — congelamento de `initSourceManager`
+
+O PR **#147 — `test: freeze init source manager contract`** congelou a fronteira de `initSourceManager` antes da extração, cobrindo:
+
+- identidade exata de **61 bytes**;
+- SHA-256 `0b4e495f5f6fb8f779c9cd0e056ed3f7f6e0bbcaf5b82500186ad34b40461a94`;
+- dependência única de `renderSourceManager()`;
+- ausência de acoplamento com rota, DEP, `goTo()`, mapa, movimento, timeline, scrubber, autoplay, storage, rede e DOM;
+- único consumidor executável via `safeInit('gerenciador de fontes', initSourceManager)`;
+- uma chamada de `renderSourceManager` por invocação;
+- retorno `undefined`;
+- propagação de erros sem interceptação.
+
+O PR foi mergeado por squash em:
+
+`97fe98f9064b3e7fd5fd822e891d5b6fe0d669db`
+
+Workflows:
+
+- PR: **#380** — sucesso;
+- pós-merge: **#381** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #148 — extração de `initSourceManager`
+
+O PR **#148 — `refactor: extract init source manager`** moveu mecanicamente a função do IIFE principal para:
+
+`src/ui/source-manager-controller.js`
+
+A extração preservou exatamente:
+
+- corpo congelado de **61 bytes**;
+- SHA-256 `0b4e495f5f6fb8f779c9cd0e056ed3f7f6e0bbcaf5b82500186ad34b40461a94`;
+- único consumidor executável via `safeInit`;
+- `renderSourceManager` permanece no núcleo e é injetado explicitamente por
+  `SourceManagerController.create({ renderSourceManager })`;
+- 0 declarações inline de `initSourceManager` no IIFE principal.
+
+Novo módulo:
+
+- arquivo: `src/ui/source-manager-controller.js`;
+- **533 bytes**;
+- SHA-256 `0118b418018537dbbbdb6e8279e10858598fa4207e74ffe25b07b4033c8ff551`;
+- 2 funções nomeadas: `createSourceManagerController` e `initSourceManager`.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+O PR #148 foi mergeado por squash em:
+
+`bf144ee5f9015ba0d3a38dab5b9d75b4c3c9ba70`
+
+Workflows:
+
+- PR: **#382** — sucesso;
+- pós-merge no `main`: **#383** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PRs analíticos descartáveis #145/#146
+
+- PR **#145**: remapeamento fresco após o ciclo #143/#144; fechado sem merge após workflow **#378** verde em 46/0/0/0.
+- PR **#146**: inspeção específica de `initSourceManager`; confirmou 61 bytes, SHA congelado, dependência única de `renderSourceManager` e ausência de tokens sensíveis; workflow **#379** verde em 46/0/0/0; fechado sem merge.
 
 ### PR #142 — congelamento de `normalizeKnowledgeText`
 
@@ -193,13 +255,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #143:
+Conforme `tests/main-kernel-contract.test.js` após o PR #148:
 
-- **1.123.573 bytes**;
+- **1.123.780 bytes**;
 - **5.138 linhas**;
 - SHA-256:
-  `f84e311134977270cd0ed61b363b3cc0d51b8aafb9c6c6d07ce195df9277f47d`;
-- **298 funções nomeadas** no núcleo protegido.
+  `4499028755b2c921c74f25568669edb1a1f141063677eb3e8287d34e5f89f907`;
+- **297 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -268,15 +330,34 @@ A API pública congelada inclui:
 - `createAddressDisplayFormatter`;
 - `createFieldDisplayFormatter`.
 
+### Source Manager Controller
+
+Conforme `tests/init-source-manager-contract.test.js` após o PR #148:
+
+- arquivo: `src/ui/source-manager-controller.js`;
+- **533 bytes**;
+- SHA-256:
+  `0118b418018537dbbbdb6e8279e10858598fa4207e74ffe25b07b4033c8ff551`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ renderSourceManager })`;
+- retorno congelado:
+  - `initSourceManager`;
+- corpo de `initSourceManager`: **61 bytes**;
+- SHA-256 do corpo:
+  `0b4e495f5f6fb8f779c9cd0e056ed3f7f6e0bbcaf5b82500186ad34b40461a94`.
+
 ### Inventário global
 
-Após o PR #143:
+Após o PR #148:
 
-- **743 declarações function nomeadas** entre o HTML e scripts locais;
-- **732 nomes únicos**;
-- o IIFE principal contém **298 funções nomeadas**;
+- **744 declarações function nomeadas** entre o HTML e scripts locais;
+- **733 nomes únicos**;
+- o IIFE principal contém **297 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
+- `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
   - `isLocationCode`.
@@ -293,18 +374,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #142:
-  - workflow **#371** — sucesso;
+- PR de contrato #147:
+  - workflow **#380** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#372** — sucesso;
+  - pós-merge no `main`: workflow **#381** no SHA
+    `97fe98f9064b3e7fd5fd822e891d5b6fe0d669db` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #143:
-  - runs **#373/#374** inicialmente bloqueados antes de qualquer step enquanto o repositório estava privado;
-  - após mudança de visibilidade para público, workflow **#374** reexecutado no head exato
-    `00c3e26204afc7eb2649821850adc29899cb720b` — sucesso;
+- PR de extração #148:
+  - workflow **#382** no head exato
+    `966fce5ac248c014f18c474ac0a63eab70f08f40` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#375** no SHA
-    `b9300c0f13ea0d220ff1a7bc3926a252c1a06a9d` — sucesso;
+  - pós-merge no `main`: workflow **#383** no SHA
+    `bf144ee5f9015ba0d3a38dab5b9d75b4c3c9ba70` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -335,13 +416,14 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-O PR analítico descartável **#141** foi fechado **sem merge** depois de produzir um
-remapeamento fresco sobre o `main` pós-#140. Esse ranking agora é histórico,
-porque `normalizeKnowledgeText` já foi extraída no PR #143.
+Os PRs analíticos descartáveis **#145** e **#146** foram fechados **sem merge**.
+O #145 produziu um remapeamento fresco sobre o `main` pós-#144, e o #146 inspecionou
+`initSourceManager` em detalhe. Esse ranking já é histórico porque `initSourceManager`
+foi extraída no PR #148.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda aponta para o estado pós-#143 ou identificar alterações posteriores;
+1. confirmar que `main` ainda aponta para o estado pós-#148 ou identificar alterações posteriores;
 2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
 3. não considerar novamente como candidatos:
    - `knowledgeCategoryLabel`;
@@ -352,6 +434,7 @@ Próximo fluxo seguro:
    - `isLocationCode`;
    - `normalizeSearchText`;
    - `normalizeKnowledgeText`;
+   - `initSourceManager`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
