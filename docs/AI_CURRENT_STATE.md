@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#164** e conclusão verde do workflow pós-merge **#411**.
+> Última verificação: **14/09/2026**, após o merge do PR **#168** e conclusão verde do workflow pós-merge **#418**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `223ae3e7b4ec57ee60406b5ab3f802b5c76bc5c6`
-  — `refactor: extract field card markup` (PR #164).
+  `6231f2b94a46a4a42ed9e0824724d44e13c087ce`
+  — `refactor: extract strip cell` (PR #168).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,82 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #166 — remapeamento analítico descartável
+
+O PR **#166 — `chore: fresh kernel remap after PR 165`** remapeou novamente o kernel sobre o `main` documental
+`d835f56cc36572d45dbe616cbccc39ccbf935156`, já após a extração de `fieldCardMarkup`.
+
+- head analítico: `897db339695e978c15ad2609b37766ce7ba4ab9b`;
+- workflow **#414** — sucesso;
+- **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
+- PR fechado **sem merge**.
+
+A inspeção descartou novamente fronteiras de maior acoplamento, incluindo `refreshLocalizedViews`,
+`refreshFieldCards`, `clamp01`, `clamp`, `normalizeLocalityCode` e handlers de clique.
+O próximo candidato limpo selecionado foi `stripCell`.
+
+### PR #167 — congelamento de `stripCell`
+
+O PR **#167 — `test: freeze strip cell contract`** congelou a fronteira antes da extração:
+
+- corpo exato de **492 bytes**;
+- SHA-256 `955b9c7f2e44a4d125a446c31816357fc082ac2209c691bfe5c126cd81729dd4`;
+- dependências:
+  - `STRIP_FIELD_DEFS`;
+  - `escapeHtml`;
+  - `displayValue`;
+- **24 chamadas executáveis**, todas pertencentes ao único consumidor funcional `renderStrip`;
+- markup, classes, marcador `updated`, fallback de título, escaping, não mutação e propagação de erros congelados;
+- ausência de acoplamento direto com estado, DOM, storage, rede e núcleo temporal/espacial.
+
+O PR foi mergeado por squash em:
+
+`990a32354a4849f2133c87b895cc92cc277c4819`
+
+Workflows:
+
+- PR: **#415** — sucesso;
+- pós-merge: **#416** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #168 — extração de `stripCell`
+
+O PR **#168 — `refactor: extract strip cell`** moveu mecanicamente a função para:
+
+`src/ui/strip-cell-renderer.js`
+
+A extração preservou:
+
+- corpo de `stripCell`: **492 bytes**;
+- SHA-256 do corpo:
+  `955b9c7f2e44a4d125a446c31816357fc082ac2209c691bfe5c126cd81729dd4`;
+- as **24 chamadas executáveis** dentro de `renderStrip`;
+- `STRIP_FIELD_DEFS`, `escapeHtml` e `displayValue` permanecem no núcleo e são injetados explicitamente;
+- 0 declarações inline de `stripCell` no IIFE principal.
+
+Novo módulo:
+
+- arquivo: `src/ui/strip-cell-renderer.js`;
+- **1.086 bytes**;
+- SHA-256:
+  `a7c35321091617905045854b32c93b2623a7f548e7a302a4fb1d9c467e41c5d4`;
+- 2 funções nomeadas:
+  - `createStripCellRenderer`;
+  - `stripCell`.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa,
+movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+O PR #168 foi mergeado por squash em:
+
+`6231f2b94a46a4a42ed9e0824724d44e13c087ce`
+
+Workflows:
+
+- PR: **#417** — sucesso;
+- pós-merge no `main`: **#418** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 ### PR #163 — congelamento de `fieldCardMarkup`
 
@@ -517,13 +593,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #164:
+Conforme `tests/main-kernel-contract.test.js` após o PR #168:
 
-- **1.123.296 bytes**;
-- **5.133 linhas**;
+- **1.123.088 bytes**;
+- **5.139 linhas**;
 - SHA-256:
-  `c70de2876574c9f58bb2697f176f4069452ab938ef5ce5790a612fe3a90637bd`;
-- **293 funções nomeadas** no núcleo protegido.
+  `4bf6526598317315e55403d20cb94ba913847f8f034fa2ff40c1f9efbefafa12`;
+- **292 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -685,18 +761,39 @@ Conforme `tests/field-card-markup-contract.test.js` após o PR #164:
   `4fc03165e4914b6b1f917826e7492019b6bee80efcbf834b8b260ad1cefcb39e`;
 - consumidores no núcleo: **2**.
 
+### Strip Cell Renderer
+
+Conforme `tests/strip-cell-contract.test.js` após o PR #168:
+
+- arquivo: `src/ui/strip-cell-renderer.js`;
+- **1.086 bytes**;
+- SHA-256:
+  `a7c35321091617905045854b32c93b2623a7f548e7a302a4fb1d9c467e41c5d4`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ stripFieldDefs, escapeHtml, displayValue })`;
+- retorno congelado:
+  - `stripCell`;
+- corpo de `stripCell`: **492 bytes**;
+- SHA-256 do corpo:
+  `955b9c7f2e44a4d125a446c31816357fc082ac2209c691bfe5c126cd81729dd4`;
+- consumidores funcionais no núcleo:
+  - `renderStrip`, com **24 chamadas executáveis**.
+
 ### Inventário global
 
-Após o PR #164:
+Após o PR #168:
 
-- **748 declarações function nomeadas** entre o HTML e scripts locais;
-- **737 nomes únicos**;
-- o IIFE principal contém **293 funções nomeadas**;
+- **749 declarações function nomeadas** entre o HTML e scripts locais;
+- **738 nomes únicos**;
+- o IIFE principal contém **292 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `src/ui/field-card-renderer.js` contém **2 funções nomeadas**;
+- `src/ui/strip-cell-renderer.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-field-label-renderer.js` contém **2 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
@@ -715,19 +812,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #163:
-  - workflow **#408** — sucesso;
+- remapeamento descartável #166:
+  - workflow **#414** no head exato `897db339695e978c15ad2609b37766ce7ba4ab9b` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#409** no SHA
-    `387c62dccf5a0f7ebf8b25bd75f5895a9cfd5e24` — sucesso;
-  - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #164:
-  - workflow **#410** no head exato
-    `52b901f2cc821ad10650d621fd90c15bb059310f` — sucesso;
-  - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#411** no SHA
-    `223ae3e7b4ec57ee60406b5ab3f802b5c76bc5c6` — sucesso;
-  - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+  - fechado sem merge.
+- PR de contrato #167:
+  - workflow **#415** no head exato `c441f2cb416d51b90afee74f9bc278b857449bd1` — sucesso;
+  - pós-merge: workflow **#416** no SHA `990a32354a4849f2133c87b895cc92cc277c4819` — sucesso;
+  - ambos em **46/0/0/0**.
+- PR de extração #168:
+  - workflow **#417** no head exato `4d87f65a9012673a50c416f170416042af83965d` — sucesso;
+  - pós-merge: workflow **#418** no SHA `6231f2b94a46a4a42ed9e0824724d44e13c087ce` — sucesso;
+  - ambos em **46/0/0/0**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
 
@@ -755,19 +851,23 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-**Não reutilizar rankings antigos nem branches antigas de análise.**
+O ciclo `stripCell` está concluído em produção e validado no SHA
+`6231f2b94a46a4a42ed9e0824724d44e13c087ce`.
 
-O PR analítico descartável **#162** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#161. Esse ranking já é histórico porque `fieldCardMarkup` foi extraída no PR #164.
+**Não reutilizar o ranking do PR #166**, porque o kernel mudou com a extração do PR #168.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda aponta para o estado pós-#164 ou identificar alterações posteriores;
-2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
-3. não considerar novamente como candidatos:
+1. mergear este checkpoint documental somente com todos os gates verdes;
+2. validar novamente o workflow `push` no SHA documental resultante de `main`;
+3. criar um **novo remapeamento fresco e descartável** sobre esse `main`;
+4. manter fora da seleção todas as fronteiras já extraídas, incluindo:
    - `knowledgeCategoryLabel`;
    - `parseAddresses`;
    - `findKnowledgeEntryByKey`;
    - `findKnowledgeEntriesByCode`;
+   - `knowledgeEntryDocumentLabel`;
+   - `knowledgeEntryDocumentKey`;
    - `canonicalKnowledgeCode`;
    - `isLocationCode`;
    - `normalizeSearchText`;
@@ -777,19 +877,16 @@ Próximo fluxo seguro:
    - `knowledgeEntries`;
    - `renderKnowledgeFieldLabel`;
    - `fieldCardMarkup`;
-4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
-5. abrir primeiro um PR **somente de contrato**, congelando:
-   - corpo/bytes/SHA quando aplicável;
-   - consumidores;
-   - comportamento;
-   - pureza/acoplamentos;
-6. executar todos os gates e mergear o contrato somente se estiver tudo verde;
-7. abrir um segundo PR separado para a **extração mecânica**;
-8. atualizar os contratos afetados sem relaxar expectativas;
-9. executar todos os gates novamente;
-10. somente depois do merge validar também o workflow de `main`.
+   - `stripCell`;
+5. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
+   planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
+6. inspecionar manualmente o melhor candidato restante;
+7. abrir primeiro PR **somente de contrato**;
+8. validar no SHA exato e exigir **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+9. só depois iniciar a extração mecânica em PR separado.
 
-Regra central: **congelar contrato → merge verde → extrair → merge verde**.
+Regra central:
+**remapeamento fresco → inspeção → contrato → gates verdes → merge do contrato → pós-merge verde → extração mecânica → gates verdes → merge → pós-merge verde → documentação → gates verdes → merge → pós-merge verde → novo remapeamento fresco**.
 
 ## 7. Documentos históricos
 
