@@ -2,15 +2,15 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#135** e conclusão verde do workflow pós-merge **#359**.
+> Última verificação: **14/09/2026**, após o merge do PR **#139** e conclusão verde do workflow pós-merge **#367**.
 
 ## 1. Fonte de verdade atual
 
 - Repositório: `ricksir/flightflow-ats`.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `b223415d625d4cab0be401e6ec367be26cfb025a`
-  — `refactor: extract location code validation` (PR #135).
+  `fc1a99b9f1aa36e64ee456ff91f11d94924eae8c`
+  — `refactor: extract normalize search text` (PR #139).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,46 +20,61 @@ Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o tr
 
 ## 2. Último ciclo concluído
 
-### PR #134 — congelamento de `isLocationCode`
+### PR #138 — congelamento de `normalizeSearchText`
 
-O PR **#134 — `test: freeze location code contract`** congelou
-`isLocationCode` antes da extração, cobrindo:
+O PR **#138 — `test: freeze normalize search text contract`** congelou
+a versão do kernel de `normalizeSearchText` antes da extração, cobrindo:
 
-- identidade exata de **101 bytes**;
-- SHA-256 `0d264e32e3464949d6fcd3b6db0daf0bd1d51567a158d92103ed73dff846608b`;
-- pureza e ausência de acoplamento de infraestrutura;
-- dependência única de `normalizeLocalityCode`;
-- exatamente **4 consumidores** no núcleo;
-- exatamente uma normalização por chamada;
-- aceitação apenas de código normalizado alfanumérico entre 4 e 16 caracteres;
-- decisão baseada na saída de `normalizeLocalityCode`, não no valor bruto.
+- identidade exata de **151 bytes**;
+- SHA-256 `57a99fe512a7f7ffb1b25a5609ef1d377791418703ff89862b7dce8cf476422c`;
+- pureza e ausência de acoplamento com estado, DOM, storage, rede, mapa, parser e navegação;
+- exatamente **6 consumidores** no núcleo;
+- remoção de diacríticos via NFD;
+- conversão para minúsculas com locale `pt-BR`;
+- preservação de pontuação, separadores e dígitos;
+- tratamento de valores vazios;
+- idempotência.
 
-### PR #135 — extração de `isLocationCode`
+O inventário confirmou implementações homônimas independentes em
+`src/parser/flight-parser.js` e `src/ai/ai-engine.js`; elas permaneceram fora do escopo.
 
-O PR **#135 — `refactor: extract location code validation`** foi mergeado por squash.
+### PR #139 — extração de `normalizeSearchText`
+
+O PR **#139 — `refactor: extract normalize search text`** foi mergeado por squash.
 
 A função saiu do IIFE principal e passou para:
 
-`src/geo/locality-utils.js`
-
-A nova API pública é:
-
-`FlightFlowLocalityUtils.create({ normalizeLocalityCode })`
+`src/core/core-utils.js`
 
 Distribuição atual:
 
-- `isLocationCode`: **4 consumidores no núcleo**, sem declaração inline;
-- corpo congelado de 101 bytes preservado byte a byte no módulo;
-- `normalizeLocalityCode` é injetada explicitamente;
-- o objeto de módulo e o objeto retornado pela fábrica permanecem congelados;
-- o módulo é carregado antes do IIFE principal;
-- o wiring explícito é:
-  `const { isLocationCode } = LocalityUtils.create({ normalizeLocalityCode });`.
+- corpo congelado de **151 bytes** preservado byte a byte;
+- SHA-256 preservado:
+  `57a99fe512a7f7ffb1b25a5609ef1d377791418703ff89862b7dce8cf476422c`;
+- continua com **6 consumidores funcionais no núcleo**;
+- não existe mais declaração inline de `normalizeSearchText` no IIFE principal;
+- `FlightFlowCoreUtils` agora exporta também `normalizeSearchText`;
+- o alias explícito do kernel passou a incluir:
+  `normalizeSearchText`;
+- `SearchExcerpt.create({ normalizeSearchText, escapeHtml })` continua recebendo a mesma função por injeção;
+- as implementações de `flight-parser.js` e `ai-engine.js` não foram alteradas.
 
-Nenhum dos quatro consumidores originais foi alterado.
+Durante o primeiro workflow do PR, o run **#365** falhou apenas porque
+`tests/object-path-utils-contract.test.js` ainda fixava literalmente a linha antiga
+de aliases de `FlightFlowCoreUtils`. A lógica de produção e os testes específicos
+de `normalizeSearchText` estavam verdes. O contrato foi atualizado sem relaxar
+comportamento, gerando novo head e workflow **#366**, que passou integralmente.
 
 Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação,
 mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse ciclo.
+
+### Ciclo anterior — PRs #134/#135
+
+- `isLocationCode`: 101 bytes;
+- SHA-256 `0d264e32e3464949d6fcd3b6db0daf0bd1d51567a158d92103ed73dff846608b`;
+- 4 consumidores;
+- extraída para `src/geo/locality-utils.js` por
+  `FlightFlowLocalityUtils.create({ normalizeLocalityCode })`.
 
 ### Ciclo anterior — PRs #130/#131
 
@@ -99,13 +114,39 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #135:
+Conforme `tests/main-kernel-contract.test.js` após o PR #139:
 
-- **1.123.864 bytes**;
-- **5.145 linhas**;
+- **1.123.732 bytes**;
+- **5.141 linhas**;
 - SHA-256:
-  `1dc9bba44da517ed2a7d07713d8efaed61e14efb646d0e71e29b71a264d244ca`;
-- **300 funções nomeadas** no núcleo protegido.
+  `ce0210bf67ff0a69687ee51ab2e6e4a8e8be81f8591178025d06181552a39f2f`;
+- **299 funções nomeadas** no núcleo protegido.
+
+### Core Utils
+
+Conforme `tests/core-utils-contract.test.js` após o PR #139:
+
+- arquivo: `src/core/core-utils.js`;
+- **2.367 bytes**;
+- SHA-256:
+  `9388afc824423c8434a0b4f300412b1294df6ba28c28a33cda8d01dd4dbd4a52`;
+- **12 funções nomeadas**;
+- API pública congelada inclui:
+  - `shortMessageType`;
+  - `displayValue`;
+  - `cleanDisplay`;
+  - `humanize`;
+  - `clone`;
+  - `formatBytes`;
+  - `angleDifference`;
+  - `hashString`;
+  - `seeded`;
+  - `getPath`;
+  - `setPath`;
+  - `normalizeSearchText`.
+
+`normalizeSearchText` mantém no módulo os mesmos **151 bytes** e o mesmo
+SHA-256 congelado no PR #138.
 
 ### Locality Utils
 
@@ -148,11 +189,13 @@ A API pública congelada inclui:
 
 ### Inventário global
 
-Após o PR #135:
+Após o PR #139:
 
 - **743 declarações function nomeadas** entre o HTML e scripts locais;
 - **732 nomes únicos**;
-- `flightflow-locality-utils` contém 2 funções nomeadas:
+- o IIFE principal contém **299 funções nomeadas**;
+- `src/core/core-utils.js` contém **12 funções nomeadas**;
+- `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
   - `isLocationCode`.
 
@@ -168,15 +211,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #134:
-  - workflow **#356** — sucesso;
+- PR de contrato #138:
+  - workflow **#363** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#357** — sucesso;
+  - pós-merge no `main`: workflow **#364** — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #135:
-  - workflow **#358** — sucesso;
+- PR de extração #139:
+  - workflow **#365** no head antigo — **falha de contrato de alias**, sem merge;
+  - correção limitada a `tests/object-path-utils-contract.test.js`;
+  - novo workflow **#366** no head exato `921154a4c343dba6fbad09ba30a8ef318d706a1a` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#359** — sucesso;
+  - pós-merge no `main`: workflow **#367** no SHA
+    `fc1a99b9f1aa36e64ee456ff91f11d94924eae8c` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -207,12 +253,14 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-O PR analítico descartável **#133** foi fechado **sem merge**. Ele foi baseado no estado anterior à extração de `isLocationCode`; portanto, seu ranking já é histórico após o PR #135.
+O PR analítico descartável **#137** foi fechado **sem merge** depois de produzir um
+remapeamento fresco sobre o `main` pós-#136. Esse ranking agora também é histórico,
+porque `normalizeSearchText` já foi extraída no PR #139.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda contém o baseline acima ou identificar alterações posteriores;
-2. remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
+1. confirmar que `main` ainda aponta para o estado pós-#139 ou identificar alterações posteriores;
+2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
 3. não considerar novamente como candidatos:
    - `knowledgeCategoryLabel`;
    - `parseAddresses`;
@@ -220,6 +268,7 @@ Próximo fluxo seguro:
    - `findKnowledgeEntriesByCode`;
    - `canonicalKnowledgeCode`;
    - `isLocationCode`;
+   - `normalizeSearchText`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
