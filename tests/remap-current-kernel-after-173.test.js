@@ -120,12 +120,15 @@ test('fresh remap of low-coupling kernel candidates after PR 173', () => {
   for (const row of rows.slice(0, 100)) console.log('FRESH_REMAP|' + JSON.stringify(row));
   console.log('FRESH_REMAP_END');
 
-  const candidateName = 'resolveKnowledgeEntry';
-  const candidate = rows.find(row => row.name === candidateName);
-  assert.ok(candidate, candidateName + ' deve permanecer elegível no remapeamento estendido');
+  // Revisão manual: entryMatchesToken é removido pelo filtro textual apenas porque usa Array.map().
+  // O ".map" aqui não pertence ao domínio cartográfico; por isso a fronteira é inspecionada explicitamente.
+  const candidateName = 'entryMatchesToken';
   const decl = declarations.find(item => item[1] === candidateName);
   const source = decl ? extractFunction(kernel, candidateName, decl.index) : null;
   assert.ok(source, candidateName + ' deve existir para inspeção');
+  for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'setTimeout(', 'setInterval(', 'goTo(', 'renderCurrent(', 'currentEvent(', 'route', 'planner', 'interpol', 'aircraft', 'timeline', 'scrubber', 'autoplay', 'DEP', 'realMapState', 'leaflet', 'geometry']) {
+    assert.equal(source.includes(token), false, 'acoplamento inesperado em ' + candidateName + ': ' + token);
+  }
   console.log('TARGET_INSPECT_SOURCE_BEGIN|' + candidateName);
   console.log(source);
   console.log('TARGET_INSPECT_SOURCE_END|' + candidateName);
