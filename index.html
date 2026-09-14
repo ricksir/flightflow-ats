@@ -5507,6 +5507,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-control-state-controller" src="src/timeline/control-state-controller.js"></script>
 <script id="flightflow-timeline-builder-controller" src="src/timeline/timeline-builder-controller.js"></script>
 <script id="flightflow-config-validation" src="src/config/config-validation.js"></script>
+<script id="flightflow-config-merger" src="src/config/config-merger.js"></script>
 <script id="flightflow-aircraft-visual-utils" src="src/map/aircraft-visual-utils.js"></script>
 <script src="src/map/aircraft-marker-controller.js"></script>
 <script src="src/map/radar-tag-controller.js"></script>
@@ -7115,6 +7116,16 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
       { node: 'twr', label: 'TWR', pattern: 'ZTZX' }
     ],
     customFields: []
+  });
+
+  const ConfigMerger = window.FlightFlowConfigMerger;
+  if (!ConfigMerger) throw new Error('FlightFlowConfigMerger não foi carregado.');
+  const { mergeConfig } = ConfigMerger.create({
+    defaultConfig: DEFAULT_CONFIG,
+    fieldDefs: FIELD_DEFS,
+    clone,
+    normalizeFontScale,
+    normalizeFieldLayout,
   });
 
   const NODE_POSITIONS = Object.freeze({
@@ -10276,25 +10287,6 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
       fallback.theme = 'light';
       return fallback;
     }
-  }
-
-  function mergeConfig(input) {
-    const merged = Object.assign({}, clone(DEFAULT_CONFIG), input || {});
-    merged.theme = merged.theme === 'light' ? 'light' : 'dark';
-    merged.fontScale = normalizeFontScale(merged.fontScale);
-    merged.visibleFields = (merged.visibleFields || []).filter(key => FIELD_DEFS[key]);
-    if (!merged.visibleFields.includes('idPlano')) {
-      const callsignIndex = merged.visibleFields.indexOf('callsign');
-      merged.visibleFields.splice(callsignIndex >= 0 ? callsignIndex + 1 : 0, 0, 'idPlano');
-    }
-    if (!merged.visibleFields.includes('etn')) {
-      const eobtIndex = merged.visibleFields.indexOf('eobt');
-      merged.visibleFields.splice(eobtIndex >= 0 ? eobtIndex + 1 : merged.visibleFields.length, 0, 'etn');
-    }
-    merged.customFields = Array.isArray(merged.customFields) ? merged.customFields : [];
-    merged.fieldLayout = normalizeFieldLayout(merged.fieldLayout);
-    merged.addressPatterns = Array.isArray(merged.addressPatterns) ? merged.addressPatterns : clone(DEFAULT_CONFIG.addressPatterns);
-    return merged;
   }
 
   function saveConfig() {
