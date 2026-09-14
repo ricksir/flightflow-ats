@@ -116,5 +116,23 @@ test('fresh remap of low-coupling kernel candidates after PR 169', () => {
   console.log('FRESH_REMAP_BEGIN');
   for (const row of rows.slice(0, 100)) console.log('FRESH_REMAP|' + JSON.stringify(row));
   console.log('FRESH_REMAP_END');
+
+  const candidateName = 'mergeConfig';
+  const candidateDecl = declarations.find(decl => decl[1] === candidateName);
+  const candidateSource = candidateDecl ? extractFunction(kernel, candidateName, candidateDecl.index) : null;
+  assert.ok(candidateSource, 'mergeConfig must exist for targeted inspection');
+  console.log('TARGET_INSPECT_SOURCE_BEGIN|' + candidateName);
+  console.log(candidateSource);
+  console.log('TARGET_INSPECT_SOURCE_END|' + candidateName);
+
+  const occurrenceRegex = new RegExp('\\\\b' + candidateName + '\\\\b', 'g');
+  const occurrences = [...kernel.matchAll(occurrenceRegex)];
+  console.log('TARGET_INSPECT_OCCURRENCES|' + candidateName + '|' + occurrences.length);
+  occurrences.forEach((match, index) => {
+    const start = Math.max(0, match.index - 260);
+    const end = Math.min(kernel.length, match.index + candidateName.length + 360);
+    console.log('TARGET_INSPECT_CONTEXT|' + candidateName + '|' + index + '|' + kernel.slice(start, end).replace(/\\s+/g, ' '));
+  });
+
   assert.ok(rows.length > 0);
 });
