@@ -169,7 +169,9 @@
     const prefix = canonicalKnowledgeCode(entry.code) === 'RQP'
       ? 'Neste RQP, os papéis são obtidos do endereçamento real do histórico, sem presumir que a solicitação partiu de uma TWR.'
       : 'Endereçamento registrado neste evento.';
-    return `${prefix}\nOriginador: ${context.originator}\nDestinatário(s): ${context.recipients}`;
+    return `${prefix}
+Originador: ${context.originator}
+Destinatário(s): ${context.recipients}`;
   }
 
     return Object.freeze({ knowledgeContextSummary });
