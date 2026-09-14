@@ -6,8 +6,8 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1123746;
-const EXPECTED_SHA256 = '46faecca9864bc9895ca1f7dd8135eb8e01304d639078580aab8d343119e9132';
+const EXPECTED_BYTES = 1123864;
+const EXPECTED_SHA256 = '1dc9bba44da517ed2a7d07713d8efaed61e14efb646d0e71e29b71a264d244ca';
 const EXPECTED_LINES = 5145;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
@@ -25,6 +25,7 @@ const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel', 'groundCentroid', 'groundMidpoint',
   'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode', 'polygonGeoCentroid', 'geoOffset'
 ];
+const EXTRACTED_LOCALITY_UTILS = ['isLocationCode'];
 const EXTRACTED_AIRPORT_GROUND_QUERY = ['airportGroundQuery'];
 const EXTRACTED_STAND_HINT_UTILS = ['extractStandHint'];
 const EXTRACTED_AIRPORT_SURFACE_UTILS = ['airportSurfacePreset'];
@@ -115,6 +116,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const CoordinateUtils = window.FlightFlowCoordinateUtils;',
     "if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');",
     'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;',
+    'const LocalityUtils = window.FlightFlowLocalityUtils;',
+    "if (!LocalityUtils) throw new Error('FlightFlowLocalityUtils não foi carregado.');",
+    'const { isLocationCode } = LocalityUtils.create({ normalizeLocalityCode });',
     'const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;',
     "if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');",
     'const { airportGroundQuery } = AirportGroundQueryModule;',
@@ -216,8 +220,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 301);
-  assert.equal(counts.size, 301);
+  assert.equal(names.length, 300);
+  assert.equal(counts.size, 300);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -229,6 +233,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_STRIP_COLOR_MEANING,
     ...EXTRACTED_SEARCH_EXCERPT,
     ...EXTRACTED_COORDINATE_UTILS,
+    ...EXTRACTED_LOCALITY_UTILS,
     ...EXTRACTED_AIRPORT_GROUND_QUERY,
     ...EXTRACTED_STAND_HINT_UTILS,
     ...EXTRACTED_AIRPORT_SURFACE_UTILS,

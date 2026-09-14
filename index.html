@@ -5487,6 +5487,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-strip-color-meaning" src="src/ui/strip-color-meaning.js"></script>
 <script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
+<script id="flightflow-locality-utils" src="src/geo/locality-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
 <script id="flightflow-stand-hint-utils" src="src/geo/stand-hint-utils.js"></script>
 <script id="flightflow-airport-surface-utils" src="src/geo/airport-surface-utils.js"></script>
@@ -5535,6 +5536,10 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const CoordinateUtils = window.FlightFlowCoordinateUtils;
   if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');
   const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;
+
+  const LocalityUtils = window.FlightFlowLocalityUtils;
+  if (!LocalityUtils) throw new Error('FlightFlowLocalityUtils não foi carregado.');
+  const { isLocationCode } = LocalityUtils.create({ normalizeLocalityCode });
 
   const AirportGroundQueryModule = window.FlightFlowAirportGroundQuery;
   if (!AirportGroundQueryModule) throw new Error('FlightFlowAirportGroundQuery não foi carregado.');
@@ -10381,10 +10386,6 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
   function aerodromeSearchLabel(code){
     const name=lookupLocality(code);
     return [code,name,'aeroporto aeródromo Brasil'].filter(Boolean).join(' ');
-  }
-
-  function isLocationCode(code){
-    return /^[A-Z0-9]{4,16}$/.test(normalizeLocalityCode(code));
   }
 
   function openLocalityLocationEditor(code){
