@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1123713;
-const EXPECTED_SHA256 = '6536ab97dd64f3de3ebffc2ca402a14e160d57bc85db00a4af5107515fe172eb';
-const EXPECTED_LINES = 5133;
+const EXPECTED_BYTES = 1123685;
+const EXPECTED_SHA256 = 'dedc3d0c604a031a0921b0974e0965d0126635e2ad5c27176dc8b13a9b4584c3';
+const EXPECTED_LINES = 5134;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -23,6 +23,7 @@ const EXTRACTED_STRIP_COLOR_MEANING = ['stripColorMeaning'];
 const EXTRACTED_SEARCH_EXCERPT = ['makeSearchExcerpt', 'highlightSearchExcerpt'];
 const EXTRACTED_SOURCE_MANAGER = ['initSourceManager'];
 const EXTRACTED_FIELD_LAYOUT_UTILS = ['normalizeFieldLayout'];
+const EXTRACTED_KNOWLEDGE_ENTRIES = ['knowledgeEntries'];
 const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel', 'groundCentroid', 'groundMidpoint',
   'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode', 'polygonGeoCentroid', 'geoOffset'
@@ -121,6 +122,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const FieldLayoutUtils = window.FlightFlowFieldLayoutUtils;',
     "if (!FieldLayoutUtils) throw new Error('FlightFlowFieldLayoutUtils não foi carregado.');",
     'const { normalizeFieldLayout } = FieldLayoutUtils.create({ fieldDefs: FIELD_DEFS });',
+    'const KnowledgeEntries = window.FlightFlowKnowledgeEntries;',
+    "if (!KnowledgeEntries) throw new Error('FlightFlowKnowledgeEntries não foi carregado.');",
+    'const { knowledgeEntries } = KnowledgeEntries.create({',
     'const CoordinateUtils = window.FlightFlowCoordinateUtils;',
     "if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');",
     'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;',
@@ -229,8 +233,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 296);
-  assert.equal(counts.size, 296);
+  assert.equal(names.length, 295);
+  assert.equal(counts.size, 295);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -243,6 +247,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_SEARCH_EXCERPT,
     ...EXTRACTED_SOURCE_MANAGER,
     ...EXTRACTED_FIELD_LAYOUT_UTILS,
+    ...EXTRACTED_KNOWLEDGE_ENTRIES,
     ...EXTRACTED_COORDINATE_UTILS,
     ...EXTRACTED_LOCALITY_UTILS,
     ...EXTRACTED_AIRPORT_GROUND_QUERY,
