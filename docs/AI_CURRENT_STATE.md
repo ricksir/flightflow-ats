@@ -2,15 +2,15 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **12/09/2026**, após o merge do PR **#131** e conclusão verde do workflow pós-merge **#352**.
+> Última verificação: **14/09/2026**, após o merge do PR **#135** e conclusão verde do workflow pós-merge **#359**.
 
 ## 1. Fonte de verdade atual
 
 - Repositório: `ricksir/flightflow-ats`.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `2acd64d4e27637c39dede914471dea2bb8caff7c`
-  — `refactor: extract canonical knowledge code` (PR #131).
+  `b223415d625d4cab0be401e6ec367be26cfb025a`
+  — `refactor: extract location code validation` (PR #135).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,79 +20,107 @@ Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o tr
 
 ## 2. Último ciclo concluído
 
-### PR #130 — congelamento de `canonicalKnowledgeCode`
+### PR #134 — congelamento de `isLocationCode`
 
-O PR **#130 — `test: freeze canonical knowledge code contract`** congelou
-`canonicalKnowledgeCode` antes da extração, cobrindo:
+O PR **#134 — `test: freeze location code contract`** congelou
+`isLocationCode` antes da extração, cobrindo:
 
-- identidade exata de **114 bytes**;
-- SHA-256 `2758c3035fc2ce162a5470d7da91e4695f979636cae2499426ce178bd98ac229`;
+- identidade exata de **101 bytes**;
+- SHA-256 `0d264e32e3464949d6fcd3b6db0daf0bd1d51567a158d92103ed73dff846608b`;
 - pureza e ausência de acoplamento de infraestrutura;
-- dependência única de `normalizeKnowledgeText`;
-- exatamente **9 consumidores** no núcleo;
+- dependência única de `normalizeLocalityCode`;
+- exatamente **4 consumidores** no núcleo;
 - exatamente uma normalização por chamada;
-- remoção de caracteres que não sejam `A-Z` ou `0-9` após a normalização;
-- preservação da saída alfanumérica da dependência.
+- aceitação apenas de código normalizado alfanumérico entre 4 e 16 caracteres;
+- decisão baseada na saída de `normalizeLocalityCode`, não no valor bruto.
 
-### PR #131 — extração de `canonicalKnowledgeCode`
+### PR #135 — extração de `isLocationCode`
 
-O PR **#131 — `refactor: extract canonical knowledge code`** foi mergeado por squash.
+O PR **#135 — `refactor: extract location code validation`** foi mergeado por squash.
 
-A função saiu do IIFE principal e passou para
-`src/timeline/communication-context-utils.js`, encapsulada pela fábrica:
+A função saiu do IIFE principal e passou para:
 
-`createCanonicalKnowledgeCode({ normalizeKnowledgeText })`
+`src/geo/locality-utils.js`
+
+A nova API pública é:
+
+`FlightFlowLocalityUtils.create({ normalizeLocalityCode })`
 
 Distribuição atual:
 
-- `canonicalKnowledgeCode`: **9 consumidores no núcleo**, sem declaração inline;
-- corpo congelado de 114 bytes preservado byte a byte no módulo;
-- `normalizeKnowledgeText` é injetada explicitamente;
-- o objeto retornado pela fábrica permanece congelado;
-- o wiring foi colocado no bloco inicial de `CommunicationContextUtils`, preservando a disponibilidade que antes era garantida pelo hoisting da function declaration.
+- `isLocationCode`: **4 consumidores no núcleo**, sem declaração inline;
+- corpo congelado de 101 bytes preservado byte a byte no módulo;
+- `normalizeLocalityCode` é injetada explicitamente;
+- o objeto de módulo e o objeto retornado pela fábrica permanecem congelados;
+- o módulo é carregado antes do IIFE principal;
+- o wiring explícito é:
+  `const { isLocationCode } = LocalityUtils.create({ normalizeLocalityCode });`.
+
+Nenhum dos quatro consumidores originais foi alterado.
 
 Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação,
 mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse ciclo.
 
+### Ciclo anterior — PRs #130/#131
+
+- PR **#130** congelou `canonicalKnowledgeCode`:
+  - 114 bytes;
+  - SHA-256 `2758c3035fc2ce162a5470d7da91e4695f979636cae2499426ce178bd98ac229`;
+  - 9 consumidores;
+  - dependência única de `normalizeKnowledgeText`.
+- PR **#131** extraiu a função para
+  `src/timeline/communication-context-utils.js` por
+  `createCanonicalKnowledgeCode({ normalizeKnowledgeText })`.
+
 ### Ciclo anterior — PRs #126/#127
 
-- PR **#126** congelou `findKnowledgeEntriesByCode`:
-  - 285 bytes;
-  - SHA-256 `7166b261151e266666ff3fbfb9c88f64f988eeb401b1b7cd92cd632c062564bb`;
-  - 2 consumidores.
-- PR **#127** extraiu a função por
+- `findKnowledgeEntriesByCode`: 285 bytes, 2 consumidores;
+- SHA-256 `7166b261151e266666ff3fbfb9c88f64f988eeb401b1b7cd92cd632c062564bb`;
+- extraída por
   `createKnowledgeEntriesByCodeFinder({ knowledgeEntries, canonicalKnowledgeCode })`.
 
 ### Ciclo anterior — PRs #123/#124
 
-- `findKnowledgeEntryByKey`: **5 consumidores no núcleo**, sem declaração inline;
-- corpo congelado de 117 bytes preservado no módulo;
-- extração por `createKnowledgeEntryFinder({ knowledgeEntries })`.
+- `findKnowledgeEntryByKey`: 117 bytes, 5 consumidores;
+- extraída por `createKnowledgeEntryFinder({ knowledgeEntries })`.
 
 ### Ciclo anterior — PRs #120/#121
 
-- `parseAddresses`: **4 consumidores no núcleo**, sem declaração inline;
-- corpo congelado de 325 bytes preservado no módulo.
+- `parseAddresses`: 325 bytes, 4 consumidores;
+- extraída para `src/timeline/communication-context-utils.js`.
 
 ### Ciclos anteriores — PRs #117/#118 e #114/#115
 
-- `knowledgeCategoryLabel`: **4 consumidores no núcleo**, sem declaração inline,
-  extraída por `createKnowledgeCategoryLabeler(...)`;
-- `knowledgeEntryDocumentLabel`: **5 consumidores no núcleo**, sem declaração inline,
-  extraída por `createKnowledgeDocumentLabeler(...)`;
+- `knowledgeCategoryLabel`: 4 consumidores, sem declaração inline;
+- `knowledgeEntryDocumentLabel`: 5 consumidores, sem declaração inline;
 - `knowledgeEntryDocumentKey`: 1 consumidor no núcleo e 1 no módulo.
 
 ## 3. Baselines atuais protegidos
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #131:
+Conforme `tests/main-kernel-contract.test.js` após o PR #135:
 
-- **1.123.746 bytes**;
+- **1.123.864 bytes**;
 - **5.145 linhas**;
 - SHA-256:
-  `46faecca9864bc9895ca1f7dd8135eb8e01304d639078580aab8d343119e9132`;
-- **301 funções nomeadas** no núcleo protegido.
+  `1dc9bba44da517ed2a7d07713d8efaed61e14efb646d0e71e29b71a264d244ca`;
+- **300 funções nomeadas** no núcleo protegido.
+
+### Locality Utils
+
+Conforme `tests/location-code-contract.test.js`:
+
+- arquivo: `src/geo/locality-utils.js`;
+- **536 bytes**;
+- SHA-256:
+  `76ebc1bf46bd8f9e7a38e2f2b4e6228546fb8a5d5c61b4e827721c807078aa01`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ normalizeLocalityCode })`;
+- retorno congelado:
+  - `isLocationCode`.
 
 ### Communication Context Utils
 
@@ -118,7 +146,15 @@ A API pública congelada inclui:
 - `createAddressDisplayFormatter`;
 - `createFieldDisplayFormatter`.
 
-O inventário global após a extração registra **742 declarações function nomeadas** entre o HTML e os módulos locais; o núcleo principal permanece com 301.
+### Inventário global
+
+Após o PR #135:
+
+- **743 declarações function nomeadas** entre o HTML e scripts locais;
+- **732 nomes únicos**;
+- `flightflow-locality-utils` contém 2 funções nomeadas:
+  - `createLocalityUtils`;
+  - `isLocationCode`.
 
 ## 4. Gates de segurança obrigatórios
 
@@ -132,15 +168,15 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #130:
-  - workflow **#349** — sucesso;
+- PR de contrato #134:
+  - workflow **#356** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#350** — sucesso;
+  - pós-merge no `main`: workflow **#357** — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #131:
-  - workflow **#351** — sucesso;
+- PR de extração #135:
+  - workflow **#358** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#352** — sucesso;
+  - pós-merge no `main`: workflow **#359** — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -171,7 +207,7 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-O PR analítico descartável **#129** foi fechado sem merge após produzir o remapeamento que levou ao ciclo #130/#131.
+O PR analítico descartável **#133** foi fechado **sem merge**. Ele foi baseado no estado anterior à extração de `isLocationCode`; portanto, seu ranking já é histórico após o PR #135.
 
 Próximo fluxo seguro:
 
@@ -183,6 +219,7 @@ Próximo fluxo seguro:
    - `findKnowledgeEntryByKey`;
    - `findKnowledgeEntriesByCode`;
    - `canonicalKnowledgeCode`;
+   - `isLocationCode`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
