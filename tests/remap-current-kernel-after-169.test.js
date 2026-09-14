@@ -87,7 +87,7 @@ test('fresh remap of low-coupling kernel candidates after PR 169', () => {
     const source = extractFunction(kernel, name, decl.index);
     if (!source) continue;
     const bytes = Buffer.byteLength(source, 'utf8');
-    if (bytes > 800) continue;
+    if (bytes > 1600) continue;
     const haystack = (name + '\n' + source).toLowerCase();
     const sensitiveHits = sensitiveTerms.filter(term => haystack.includes(term));
     const infra = infraForbidden.test(source);
@@ -114,7 +114,7 @@ test('fresh remap of low-coupling kernel candidates after PR 169', () => {
 
   rows.sort((a, b) => a.score - b.score || a.bytes - b.bytes || a.name.localeCompare(b.name));
   console.log('FRESH_REMAP_BEGIN');
-  for (const row of rows.slice(0, 50)) console.log('FRESH_REMAP|' + JSON.stringify(row));
+  for (const row of rows.slice(0, 100)) console.log('FRESH_REMAP|' + JSON.stringify(row));
   console.log('FRESH_REMAP_END');
   assert.ok(rows.length > 0);
 });
