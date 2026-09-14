@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#152** e conclusão verde do workflow pós-merge **#390**.
+> Última verificação: **14/09/2026**, após o merge do PR **#156** e conclusão verde do workflow pós-merge **#397**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `7848fced701764f0c6b281df064e3bc1be4864b1`
-  — `refactor: extract normalize field layout` (PR #152).
+  `3027e997256d3c1f30d365916a35a542a6c4adaa`
+  — `refactor: extract knowledge entries` (PR #156).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,72 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #155 — congelamento de `knowledgeEntries`
+
+O PR **#155 — `test: freeze knowledge entries contract`** congelou a fronteira de `knowledgeEntries` antes da extração, cobrindo:
+
+- identidade exata de **363 bytes**;
+- SHA-256 `1ed0db4735547d51112af91b9a4ade803d292b2f462a33271100cfb57b869730`;
+- dependências restritas às três bases normativas:
+  - `CIRCEA_KNOWLEDGE`;
+  - `MCA_KNOWLEDGE`;
+  - `SAGITARIO_ACC_KNOWLEDGE`;
+- exatamente **6 consumidores executáveis** no núcleo;
+- concatenação na ordem CIRCEA → MCA → SAGITARIO;
+- descarte de `entries` que não sejam arrays;
+- criação de um novo array a cada chamada;
+- preservação das referências rasas das entradas;
+- ausência de mutação das bases;
+- ausência de acoplamento com estado, DOM, storage, rede e núcleo temporal/espacial.
+
+O PR foi mergeado por squash em:
+
+`8f06006f2e31ec932f2431b286655a83a5fecb0b`
+
+Workflows:
+
+- PR: **#394** — sucesso;
+- pós-merge: **#395** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #156 — extração de `knowledgeEntries`
+
+O PR **#156 — `refactor: extract knowledge entries`** moveu mecanicamente a função para:
+
+`src/knowledge/knowledge-entries.js`
+
+A extração preservou exatamente:
+
+- corpo congelado de **363 bytes**;
+- SHA-256 `1ed0db4735547d51112af91b9a4ade803d292b2f462a33271100cfb57b869730`;
+- os **6 consumidores executáveis** no núcleo;
+- as três bases continuam definidas no núcleo e são injetadas por
+  `KnowledgeEntries.create({ circeaKnowledge, mcaKnowledge, sagitarioKnowledge })`;
+- 0 declarações inline de `knowledgeEntries` no IIFE principal.
+
+Novo módulo:
+
+- arquivo: `src/knowledge/knowledge-entries.js`;
+- **944 bytes**;
+- SHA-256 `dc641b7824391c617e359348e01422d8fd6267db6d92c38ed0100ff63d61d0bc`;
+- 2 funções nomeadas: `createKnowledgeEntries` e `knowledgeEntries`.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+O PR #156 foi mergeado por squash em:
+
+`3027e997256d3c1f30d365916a35a542a6c4adaa`
+
+Workflows:
+
+- PR: **#396** — sucesso;
+- pós-merge no `main`: **#397** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #154 — remapeamento analítico descartável
+
+O PR **#154** produziu um ranking fresco sobre o `main` pós-#153. O workflow **#393** terminou em 46/0/0/0 e o PR foi fechado sem merge. Candidatos ligados a Google Maps, runway, ground, geometria, progresso/timeline e handlers de UI mais acoplados permaneceram fora de escopo; `knowledgeEntries` foi selecionada como próxima fronteira limpa do domínio de conhecimento.
 
 ### PR #151 — congelamento de `normalizeFieldLayout`
 
@@ -318,13 +384,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #152:
+Conforme `tests/main-kernel-contract.test.js` após o PR #156:
 
-- **1.123.713 bytes**;
-- **5.133 linhas**;
+- **1.123.685 bytes**;
+- **5.134 linhas**;
 - SHA-256:
-  `6536ab97dd64f3de3ebffc2ca402a14e160d57bc85db00a4af5107515fe172eb`;
-- **296 funções nomeadas** no núcleo protegido.
+  `dedc3d0c604a031a0921b0974e0965d0126635e2ad5c27176dc8b13a9b4584c3`;
+- **295 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -429,17 +495,37 @@ Conforme `tests/normalize-field-layout-contract.test.js` após o PR #152:
 - SHA-256 do corpo:
   `2c8020e2b246838efdd49aead1331b9167be70745f07799bb3b54623685a2eca`.
 
+### Knowledge Entries
+
+Conforme `tests/knowledge-entries-contract.test.js` após o PR #156:
+
+- arquivo: `src/knowledge/knowledge-entries.js`;
+- **944 bytes**;
+- SHA-256:
+  `dc641b7824391c617e359348e01422d8fd6267db6d92c38ed0100ff63d61d0bc`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ circeaKnowledge, mcaKnowledge, sagitarioKnowledge })`;
+- retorno congelado:
+  - `knowledgeEntries`;
+- corpo de `knowledgeEntries`: **363 bytes**;
+- SHA-256 do corpo:
+  `1ed0db4735547d51112af91b9a4ade803d292b2f462a33271100cfb57b869730`;
+- consumidores no núcleo: **6**.
+
 ### Inventário global
 
-Após o PR #152:
+Após o PR #156:
 
-- **745 declarações function nomeadas** entre o HTML e scripts locais;
-- **734 nomes únicos**;
-- o IIFE principal contém **296 funções nomeadas**;
+- **746 declarações function nomeadas** entre o HTML e scripts locais;
+- **735 nomes únicos**;
+- o IIFE principal contém **295 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
+- `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
   - `isLocationCode`.
@@ -456,18 +542,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #151:
-  - workflow **#387** — sucesso;
+- PR de contrato #155:
+  - workflow **#394** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#388** no SHA
-    `87517a1c0015e2ce618d02a87a4b4bf2649ae2ad` — sucesso;
+  - pós-merge no `main`: workflow **#395** no SHA
+    `8f06006f2e31ec932f2431b286655a83a5fecb0b` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #152:
-  - workflow **#389** no head exato
-    `45220de75bf2fd3601bd2a85a8dc2c252e74a221` — sucesso;
+- PR de extração #156:
+  - workflow **#396** no head exato
+    `e5399ba5623b1d44a9b07dd2889f25b432b4d48f` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#390** no SHA
-    `7848fced701764f0c6b281df064e3bc1be4864b1` — sucesso;
+  - pós-merge no `main`: workflow **#397** no SHA
+    `3027e997256d3c1f30d365916a35a542a6c4adaa` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -498,11 +584,11 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-O PR analítico descartável **#150** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#149. Esse ranking já é histórico porque `normalizeFieldLayout` foi extraída no PR #152.
+O PR analítico descartável **#154** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#153. Esse ranking já é histórico porque `knowledgeEntries` foi extraída no PR #156.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda aponta para o estado pós-#152 ou identificar alterações posteriores;
+1. confirmar que `main` ainda aponta para o estado pós-#156 ou identificar alterações posteriores;
 2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
 3. não considerar novamente como candidatos:
    - `knowledgeCategoryLabel`;
@@ -515,6 +601,7 @@ Próximo fluxo seguro:
    - `normalizeKnowledgeText`;
    - `initSourceManager`;
    - `normalizeFieldLayout`;
+   - `knowledgeEntries`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
