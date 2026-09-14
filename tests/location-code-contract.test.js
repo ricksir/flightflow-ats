@@ -5,9 +5,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'geo', 'locality-utils.js');
+const MODULE_BYTES = 536;
+const MODULE_SHA256 = '76ebc1bf46bd8f9e7a38e2f2b4e6228546fb8a5d5c61b4e827721c807078aa01';
 const FUNCTION_NAME = 'isLocationCode';
 const EXPECTED_CONSUMERS = 4;
 const EXPECTED_SOURCE = [
@@ -33,7 +37,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no módulo após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -84,22 +88,22 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(normalizeLocalityCode) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(
     'normalizeLocalityCode',
     `${source}\nreturn isLocationCode;`
   )(normalizeLocalityCode);
 }
 
-test('isLocationCode mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('isLocationCode mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('isLocationCode permanece puro e depende somente de normalizeLocalityCode', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'stopPlayback(', 'setTimeout(',
@@ -110,16 +114,43 @@ test('isLocationCode permanece puro e depende somente de normalizeLocalityCode',
   assert.equal((source.match(/\bnormalizeLocalityCode\s*\(/g) || []).length, 1);
 });
 
-test('isLocationCode mantém exatamente quatro consumidores no núcleo', () => {
+test('isLocationCode mantém quatro consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const declarations = [...kernel.matchAll(/\bfunction\s+isLocationCode\s*\(/g)].length;
   const references = [...kernel.matchAll(/\bisLocationCode\b/g)].length;
-  assert.equal(declarations, 1);
-  assert.equal(references - declarations, EXPECTED_CONSUMERS);
+  assert.equal(declarations, 0);
+  assert.equal(references, EXPECTED_CONSUMERS + 1);
+  assert.ok(kernel.includes('const { isLocationCode } = LocalityUtils.create({ normalizeLocalityCode });'));
   assert.ok(kernel.includes('if(!isLocationCode(code)||!Number.isFinite(lat)||!Number.isFinite(lon))return;'));
   assert.ok(kernel.includes('if(!isLocationCode(normalized)){'));
   assert.ok(kernel.includes('(codes||[]).map(normalizeLocalityCode).filter(isLocationCode).forEach(code=>{'));
   assert.ok(kernel.includes("if(!isLocationCode(code)||!validAerodromeCoordinate(lat,lon))throw new Error('Localidade ou coordenadas inválidas');"));
+});
+
+test('locality-utils mantém módulo e fábrica mínimos e congelados', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  assert.equal(Buffer.byteLength(source, 'utf8'), MODULE_BYTES);
+  assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), MODULE_SHA256);
+
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  const api = context.window.FlightFlowLocalityUtils;
+  assert.ok(api);
+  assert.equal(Object.isFrozen(api), true);
+  assert.deepEqual(Object.keys(api), ['create']);
+  assert.throws(
+    () => api.create({}),
+    /FlightFlowLocalityUtils requer normalizeLocalityCode/
+  );
+  const scoped = api.create({ normalizeLocalityCode: value => String(value || '').trim().toUpperCase() });
+  assert.equal(Object.isFrozen(scoped), true);
+  assert.deepEqual(Object.keys(scoped), ['isLocationCode']);
+  assert.equal(scoped.isLocationCode(' sbbr '), true);
+
+  const html = fs.readFileSync(HTML, 'utf8');
+  assert.ok(html.includes('<script id="flightflow-locality-utils" src="src/geo/locality-utils.js"></script>'));
+  assert.ok(html.includes("const LocalityUtils = window.FlightFlowLocalityUtils;"));
+  assert.ok(html.includes("if (!LocalityUtils) throw new Error('FlightFlowLocalityUtils não foi carregado.');"));
 });
 
 test('isLocationCode consulta normalizeLocalityCode exatamente uma vez por chamada', () => {
