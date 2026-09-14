@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#160** e conclusão verde do workflow pós-merge **#404**.
+> Última verificação: **14/09/2026**, após o merge do PR **#164** e conclusão verde do workflow pós-merge **#411**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `6af98946a0604ebe4587df4752e6fea4c66af0cd`
-  — `refactor: extract render knowledge field label` (PR #160).
+  `223ae3e7b4ec57ee60406b5ab3f802b5c76bc5c6`
+  — `refactor: extract field card markup` (PR #164).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,73 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #163 — congelamento de `fieldCardMarkup`
+
+O PR **#163 — `test: freeze field card markup contract`** congelou a fronteira de `fieldCardMarkup` antes da extração, cobrindo:
+
+- identidade exata de **552 bytes**;
+- SHA-256 `4fc03165e4914b6b1f917826e7492019b6bee80efcbf834b8b260ad1cefcb39e`;
+- dependências restritas a:
+  - `getFieldLayout`;
+  - `escapeHtml`;
+  - `fieldEditControlsMarkup`;
+- exatamente **2 consumidores executáveis** no núcleo;
+- markup exato dos cards com e sem alteração;
+- classe e tag `ATUALIZADO`;
+- supressão do valor anterior vazio ou igual a `—`;
+- preservação de `valueHtml` e `labelHtml` já preparados;
+- escaping de chave e valor anterior nos pontos existentes;
+- propagação de erros das dependências;
+- ausência de acoplamento direto com estado, DOM, storage, rede e núcleo temporal/espacial.
+
+O PR foi mergeado por squash em:
+
+`387c62dccf5a0f7ebf8b25bd75f5895a9cfd5e24`
+
+Workflows:
+
+- PR: **#408** — sucesso;
+- pós-merge: **#409** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #164 — extração de `fieldCardMarkup`
+
+O PR **#164 — `refactor: extract field card markup`** moveu mecanicamente a função para:
+
+`src/ui/field-card-renderer.js`
+
+A extração preservou exatamente:
+
+- corpo congelado de **552 bytes**;
+- SHA-256 `4fc03165e4914b6b1f917826e7492019b6bee80efcbf834b8b260ad1cefcb39e`;
+- os **2 consumidores executáveis** no núcleo;
+- `getFieldLayout`, `escapeHtml` e `fieldEditControlsMarkup` permanecem no núcleo e são injetados por
+  `FieldCardRenderer.create({ getFieldLayout, escapeHtml, fieldEditControlsMarkup })`;
+- 0 declarações inline de `fieldCardMarkup` no IIFE principal.
+
+Novo módulo:
+
+- arquivo: `src/ui/field-card-renderer.js`;
+- **1.213 bytes**;
+- SHA-256 `e637279721a61c4b557740f1ae8edc6da30aa3f1ab71904c82d096849688da39`;
+- 2 funções nomeadas: `createFieldCardRenderer` e `fieldCardMarkup`.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+O PR #164 foi mergeado por squash em:
+
+`223ae3e7b4ec57ee60406b5ab3f802b5c76bc5c6`
+
+Workflows:
+
+- PR: **#410** — sucesso;
+- pós-merge no `main`: **#411** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #162 — remapeamento analítico descartável
+
+O PR **#162** produziu um ranking fresco sobre o `main` pós-#161. O workflow **#407** terminou em 46/0/0/0 e o PR foi fechado sem merge. Candidatos com leitura do evento atual, handlers de clique, helpers `clamp` e fronteiras de maior alcance permaneceram fora de escopo; `fieldCardMarkup` foi selecionada como próxima fronteira limpa de UI.
 
 ### PR #159 — congelamento de `renderKnowledgeFieldLabel`
 
@@ -450,13 +517,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #160:
+Conforme `tests/main-kernel-contract.test.js` após o PR #164:
 
-- **1.123.565 bytes**;
-- **5.135 linhas**;
+- **1.123.296 bytes**;
+- **5.133 linhas**;
 - SHA-256:
-  `48af1b2ccd6ec0b94debc3172d5da479f5af35763c76ae2fe6f4a25f5cdd0c25`;
-- **294 funções nomeadas** no núcleo protegido.
+  `c70de2876574c9f58bb2697f176f4069452ab938ef5ce5790a612fe3a90637bd`;
+- **293 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -599,17 +666,37 @@ Conforme `tests/render-knowledge-field-label-contract.test.js` após o PR #160:
   `ce1b96ba294b91abb5db41098c9106b57570e37560948d33c7c8cb15224e78e4`;
 - consumidores no núcleo: **1**.
 
+### Field Card Renderer
+
+Conforme `tests/field-card-markup-contract.test.js` após o PR #164:
+
+- arquivo: `src/ui/field-card-renderer.js`;
+- **1.213 bytes**;
+- SHA-256:
+  `e637279721a61c4b557740f1ae8edc6da30aa3f1ab71904c82d096849688da39`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ getFieldLayout, escapeHtml, fieldEditControlsMarkup })`;
+- retorno congelado:
+  - `fieldCardMarkup`;
+- corpo de `fieldCardMarkup`: **552 bytes**;
+- SHA-256 do corpo:
+  `4fc03165e4914b6b1f917826e7492019b6bee80efcbf834b8b260ad1cefcb39e`;
+- consumidores no núcleo: **2**.
+
 ### Inventário global
 
-Após o PR #160:
+Após o PR #164:
 
-- **747 declarações function nomeadas** entre o HTML e scripts locais;
-- **736 nomes únicos**;
-- o IIFE principal contém **294 funções nomeadas**;
+- **748 declarações function nomeadas** entre o HTML e scripts locais;
+- **737 nomes únicos**;
+- o IIFE principal contém **293 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
+- `src/ui/field-card-renderer.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-field-label-renderer.js` contém **2 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
@@ -628,18 +715,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #159:
-  - workflow **#401** — sucesso;
+- PR de contrato #163:
+  - workflow **#408** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#402** no SHA
-    `7bdc9ab3a7d4a29ed526d5ec5c9738d81f318279` — sucesso;
+  - pós-merge no `main`: workflow **#409** no SHA
+    `387c62dccf5a0f7ebf8b25bd75f5895a9cfd5e24` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #160:
-  - workflow **#403** no head exato
-    `df633742792b09789b113c60871e50fdde3bf665` — sucesso;
+- PR de extração #164:
+  - workflow **#410** no head exato
+    `52b901f2cc821ad10650d621fd90c15bb059310f` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#404** no SHA
-    `6af98946a0604ebe4587df4752e6fea4c66af0cd` — sucesso;
+  - pós-merge no `main`: workflow **#411** no SHA
+    `223ae3e7b4ec57ee60406b5ab3f802b5c76bc5c6` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -670,11 +757,11 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-O PR analítico descartável **#158** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#157. Esse ranking já é histórico porque `renderKnowledgeFieldLabel` foi extraída no PR #160.
+O PR analítico descartável **#162** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#161. Esse ranking já é histórico porque `fieldCardMarkup` foi extraída no PR #164.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda aponta para o estado pós-#160 ou identificar alterações posteriores;
+1. confirmar que `main` ainda aponta para o estado pós-#164 ou identificar alterações posteriores;
 2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
 3. não considerar novamente como candidatos:
    - `knowledgeCategoryLabel`;
@@ -689,6 +776,7 @@ Próximo fluxo seguro:
    - `normalizeFieldLayout`;
    - `knowledgeEntries`;
    - `renderKnowledgeFieldLabel`;
+   - `fieldCardMarkup`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
