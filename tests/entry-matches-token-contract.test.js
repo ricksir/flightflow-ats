@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'entryMatchesToken';
 const EXPECTED_BYTES = 703;
 const EXPECTED_SHA256 = '1786277e616ee1668872e61de46c48ebf4e3405961bcc11b912eb02e48fa8c9c';
@@ -65,15 +66,15 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(normalizeKnowledgeText, canonicalKnowledgeCode) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function('normalizeKnowledgeText', 'canonicalKnowledgeCode', source + '\nreturn entryMatchesToken;')(
     normalizeKnowledgeText,
     canonicalKnowledgeCode
   );
 }
 
-test('entryMatchesToken congela identidade estrutural antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('entryMatchesToken preserva identidade estrutural após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
   assert.ok(source.startsWith('function entryMatchesToken(entry, normalizedText) {'));
@@ -84,7 +85,7 @@ test('entryMatchesToken congela identidade estrutural antes da extração', () =
 });
 
 test('entryMatchesToken permanece puro e só usa dependências de conhecimento', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
     'fetch(', 'setTimeout(', 'setInterval(', 'requestAnimationFrame(', 'navigator.', 'google.', 'L.',
@@ -97,10 +98,13 @@ test('entryMatchesToken permanece puro e só usa dependências de conhecimento',
   assert.equal((source.match(/\bcanonicalKnowledgeCode\s*\(/g) || []).length, 2);
 });
 
-test('entryMatchesToken mantém exatamente um consumidor executável', () => {
+test('entryMatchesToken mantém exatamente um consumidor executável e não permanece inline', () => {
   const kernel = kernelSource();
-  assert.equal((kernel.match(/\bfunction\s+entryMatchesToken\s*\(/g) || []).length, 1);
+  assert.equal((kernel.match(/\bfunction\s+entryMatchesToken\s*\(/g) || []).length, 0);
   assert.equal((kernel.match(/\bentryMatchesToken\b/g) || []).length, 2);
+  assert.ok(kernel.includes('const { entryMatchesToken } = CommunicationContextUtils.createEntryMatchesToken({'));
+  assert.ok(kernel.includes('normalizeKnowledgeText,'));
+  assert.ok(kernel.includes('canonicalKnowledgeCode,'));
   assert.equal(
     kernel.split('entries.find(entry => entry.category === category && entryMatchesToken(entry, normalized));').length - 1,
     1
