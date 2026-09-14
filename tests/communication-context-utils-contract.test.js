@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 11895;
-const MODULE_SHA256 = '01c173a42e9d25ec25f12436ae1a004fd43665a2016e918cb99f7dd72bf424b6';
+const MODULE_BYTES = 11896;
+const MODULE_SHA256 = '8e658223f1f1f788bdb7fd553efb76c0f52733ac4b40f8595433d3fb468f6e90';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
