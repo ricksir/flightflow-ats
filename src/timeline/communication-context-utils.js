@@ -120,6 +120,7 @@
     if (!matches.length) return '';
     return `<div class="knowledge-related">${matches.slice(0,12).map(item => `<button type="button" data-related-knowledge="${escapeHtml(item.key)}">${escapeHtml(item.code)} · ${escapeHtml(item.title)}</button>`).join('')}</div>`;
   }
+
     return Object.freeze({ relatedKnowledgeButtons });
   }
 
