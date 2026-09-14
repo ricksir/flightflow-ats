@@ -43,6 +43,31 @@
     return Object.freeze({ canonicalKnowledgeCode });
   }
 
+  function createEntryMatchesToken(options = {}) {
+    const normalizeKnowledgeText = options.normalizeKnowledgeText;
+    const canonicalKnowledgeCode = options.canonicalKnowledgeCode;
+    if (typeof normalizeKnowledgeText !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para correspondência de token.');
+    }
+    if (typeof canonicalKnowledgeCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode para correspondência de token.');
+    }
+
+  function entryMatchesToken(entry, normalizedText) {
+    const candidates = [entry.code, ...(entry.aliases || [])].map(normalizeKnowledgeText).filter(Boolean);
+    const normalizedCanonical = canonicalKnowledgeCode(normalizedText);
+    return candidates.some(candidate => {
+      if (normalizedText === candidate || normalizedCanonical === canonicalKnowledgeCode(candidate)) return true;
+      const parts = candidate.split(/[\s\-/]+/).filter(Boolean).map(part => part.replace(/[.*+?^$\{}()|[\]\\]/g, '\\  function createKnowledgeEntryFinder(options = {}) {'));
+      if (!parts.length) return false;
+      const flexible = parts.join('[\\s\-/]*');
+      return new RegExp(`(?:^|[^A-Z0-9])${flexible}(?:$|[^A-Z0-9])`, 'i').test(normalizedText);
+    });
+  }
+
+    return Object.freeze({ entryMatchesToken });
+  }
+
   function createKnowledgeEntryFinder(options = {}) {
     const knowledgeEntries = options.knowledgeEntries;
     if (typeof knowledgeEntries !== 'function') {
@@ -214,6 +239,7 @@ Destinatário(s): ${context.recipients}`;
     knowledgeEntryDocumentKey,
     normalizeKnowledgeText,
     createCanonicalKnowledgeCode,
+    createEntryMatchesToken,
     createKnowledgeEntryFinder,
     createKnowledgeEntriesByCodeFinder,
     createKnowledgeDocumentLabeler,
