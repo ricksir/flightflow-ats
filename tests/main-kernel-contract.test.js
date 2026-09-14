@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1123565;
-const EXPECTED_SHA256 = '48af1b2ccd6ec0b94debc3172d5da479f5af35763c76ae2fe6f4a25f5cdd0c25';
-const EXPECTED_LINES = 5135;
+const EXPECTED_BYTES = 1123296;
+const EXPECTED_SHA256 = 'c70de2876574c9f58bb2697f176f4069452ab938ef5ce5790a612fe3a90637bd';
+const EXPECTED_LINES = 5133;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -23,6 +23,7 @@ const EXTRACTED_STRIP_COLOR_MEANING = ['stripColorMeaning'];
 const EXTRACTED_SEARCH_EXCERPT = ['makeSearchExcerpt', 'highlightSearchExcerpt'];
 const EXTRACTED_SOURCE_MANAGER = ['initSourceManager'];
 const EXTRACTED_FIELD_LAYOUT_UTILS = ['normalizeFieldLayout'];
+const EXTRACTED_FIELD_CARD_RENDERER = ['fieldCardMarkup'];
 const EXTRACTED_KNOWLEDGE_ENTRIES = ['knowledgeEntries'];
 const EXTRACTED_KNOWLEDGE_FIELD_LABEL_RENDERER = ['renderKnowledgeFieldLabel'];
 const EXTRACTED_COORDINATE_UTILS = [
@@ -123,6 +124,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const FieldLayoutUtils = window.FlightFlowFieldLayoutUtils;',
     "if (!FieldLayoutUtils) throw new Error('FlightFlowFieldLayoutUtils não foi carregado.');",
     'const { normalizeFieldLayout } = FieldLayoutUtils.create({ fieldDefs: FIELD_DEFS });',
+    'const FieldCardRenderer = window.FlightFlowFieldCardRenderer;',
+    "if (!FieldCardRenderer) throw new Error('FlightFlowFieldCardRenderer não foi carregado.');",
+    'const { fieldCardMarkup } = FieldCardRenderer.create({',
     'const KnowledgeEntries = window.FlightFlowKnowledgeEntries;',
     "if (!KnowledgeEntries) throw new Error('FlightFlowKnowledgeEntries não foi carregado.');",
     'const { knowledgeEntries } = KnowledgeEntries.create({',
@@ -237,8 +241,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 294);
-  assert.equal(counts.size, 294);
+  assert.equal(names.length, 293);
+  assert.equal(counts.size, 293);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -251,6 +255,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_SEARCH_EXCERPT,
     ...EXTRACTED_SOURCE_MANAGER,
     ...EXTRACTED_FIELD_LAYOUT_UTILS,
+    ...EXTRACTED_FIELD_CARD_RENDERER,
     ...EXTRACTED_KNOWLEDGE_ENTRIES,
     ...EXTRACTED_KNOWLEDGE_FIELD_LABEL_RENDERER,
     ...EXTRACTED_COORDINATE_UTILS,
