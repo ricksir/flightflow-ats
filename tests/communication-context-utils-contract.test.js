@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 10661;
-const MODULE_SHA256 = 'd66e97ab0dca18621c916f2a277946fddbd2e6793e5e0def0d43d3ec6001b39f';
+const MODULE_BYTES = 11928;
+const MODULE_SHA256 = 'f0c9d6900e67695058dc065996b3fbed5af1f062fb749b2b36679fab7649ff9c';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -70,13 +70,13 @@ test('internalTransitionDetails preserva exatamente os bytes congelados dentro d
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), TARGET_SHA256);
 });
 
-test('API pública preserva contratos existentes e expõe fábrica isolada de formatação', () => {
+test('API pública preserva contratos existentes e expõe fábricas isoladas', () => {
   const source = fs.readFileSync(MODULE, 'utf8');
   const context = { window: {} };
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createRelatedKnowledgeButtons', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.parseAddresses, 'function');
@@ -122,6 +122,18 @@ test('API pública preserva contratos existentes e expõe fábrica isolada de fo
   const aliasMatches = codeFinderScoped.findKnowledgeEntriesByCode(' alt ');
   assert.equal(aliasMatches.length, 1);
   assert.equal(aliasMatches[0], codeEntryA);
+  assert.equal(typeof api.createRelatedKnowledgeButtons, 'function');
+  assert.throws(() => api.createRelatedKnowledgeButtons({}), /FlightFlowCommunicationContextUtils requer findKnowledgeEntriesByCode para relacionados/);
+  assert.throws(() => api.createRelatedKnowledgeButtons({ findKnowledgeEntriesByCode: () => [] }), /FlightFlowCommunicationContextUtils requer escapeHtml para relacionados/);
+  const relatedEntry = { key: 'REL:A', code: 'ABC', title: 'Alpha' };
+  const relatedScoped = api.createRelatedKnowledgeButtons({
+    findKnowledgeEntriesByCode: code => code === 'ABC' ? [relatedEntry] : [],
+    escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+  });
+  assert.equal(Object.isFrozen(relatedScoped), true);
+  assert.deepEqual(Object.keys(relatedScoped), ['relatedKnowledgeButtons']);
+  assert.equal(relatedScoped.relatedKnowledgeButtons({ key: 'ROOT', related: ['ABC'] }), '<div class="knowledge-related"><button type="button" data-related-knowledge="REL:A">ABC · Alpha</button></div>');
+  assert.equal(relatedScoped.relatedKnowledgeButtons({ key: 'REL:A', related: ['ABC'] }), '');
   assert.equal(typeof api.createKnowledgeDocumentLabeler, 'function');
   assert.throws(() => api.createKnowledgeDocumentLabeler({}), /FlightFlowCommunicationContextUtils requer knowledgeDocumentLabels/);
   assert.throws(() => api.createKnowledgeDocumentLabeler({ knowledgeDocumentLabels: {} }), /FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentKey para rótulos/);
