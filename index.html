@@ -5486,6 +5486,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-strip-color-meaning" src="src/ui/strip-color-meaning.js"></script>
 <script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>
+<script id="flightflow-source-manager-controller" src="src/ui/source-manager-controller.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
 <script id="flightflow-locality-utils" src="src/geo/locality-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
@@ -8836,9 +8837,6 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
   // Mas isso é opcional.
 
   // Inicialização da UI de fontes
-  function initSourceManager() {
-    renderSourceManager();
-  }
 
   // Chamar initSourceManager no início
   // Já está sendo chamado no init? Vamos adicionar no final do init.
@@ -10107,6 +10105,9 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
   const SearchExcerpt = window.FlightFlowSearchExcerpt;
   if (!SearchExcerpt) throw new Error('FlightFlowSearchExcerpt não foi carregado.');
   const { makeSearchExcerpt, highlightSearchExcerpt } = SearchExcerpt.create({ normalizeSearchText, escapeHtml });
+  const SourceManagerController = window.FlightFlowSourceManagerController;
+  if (!SourceManagerController) throw new Error('FlightFlowSourceManagerController não foi carregado.');
+  const { initSourceManager } = SourceManagerController.create({ renderSourceManager });
 
   function searchOriginalHistory() {
     if (!state.parsed) { toast('Carregue um histórico antes de pesquisar.', 'error'); return; }
