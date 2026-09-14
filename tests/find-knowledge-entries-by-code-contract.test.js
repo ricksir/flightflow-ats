@@ -10,7 +10,7 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'findKnowledgeEntriesByCode';
-const EXPECTED_CONSUMERS = 2;
+const EXPECTED_KERNEL_CONSUMERS = 1;
 const EXPECTED_SOURCE = [
   '  function findKnowledgeEntriesByCode(code) {',
   '    const normalized = canonicalKnowledgeCode(code);',
@@ -118,11 +118,13 @@ test('findKnowledgeEntriesByCode permanece puro e sem acoplamento de infraestrut
   assert.equal((source.match(/\bcanonicalKnowledgeCode\s*\(/g) || []).length, 3);
 });
 
-test('findKnowledgeEntriesByCode mantém exatamente dois consumidores no núcleo e não permanece inline', () => {
+test('findKnowledgeEntriesByCode mantém um consumidor no núcleo e move o consumidor de relacionados para o módulo', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const occurrences = [...kernel.matchAll(/\bfindKnowledgeEntriesByCode\s*\(/g)].length;
-  assert.equal(occurrences, EXPECTED_CONSUMERS);
-  assert.ok(kernel.includes('codes.forEach(code => findKnowledgeEntriesByCode(code).forEach(item => {'));
+  assert.equal(occurrences, EXPECTED_KERNEL_CONSUMERS);
+  assert.equal(kernel.includes('codes.forEach(code => findKnowledgeEntriesByCode(code).forEach(item => {'), false);
+  assert.ok(moduleSource.includes('codes.forEach(code => findKnowledgeEntriesByCode(code).forEach(item => {'));
   assert.ok(kernel.includes('const matches=findKnowledgeEntriesByCode(value).sort((a,b)=>{'));
   assert.equal(kernel.includes('function findKnowledgeEntriesByCode('), false);
   assert.ok(kernel.includes('const { findKnowledgeEntriesByCode } = CommunicationContextUtils.createKnowledgeEntriesByCodeFinder({'));
