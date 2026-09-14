@@ -96,7 +96,7 @@ test('getPath e setPath preservam identidade byte a byte dentro de CoreUtils', (
 
 test('núcleo consome o par por alias de FlightFlowCoreUtils e não o redeclara', () => {
   const kernel = kernelSource();
-  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;'));
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath, normalizeSearchText } = CoreUtils;'));
   for (const name of Object.keys(EXPECTED)) {
     assert.equal(new RegExp(`function\\s+${name}\\s*\\(`).test(kernel), false, `${name} não deve continuar inline`);
   }
