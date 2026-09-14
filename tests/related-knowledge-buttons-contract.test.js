@@ -94,17 +94,17 @@ test('relatedKnowledgeButtons permanece sem acoplamento temporal, espacial ou de
     assert.equal(source.includes(token), false, 'acoplamento inesperado: ' + token);
   }
 
-  assert.equal((source.match(/\\bfindKnowledgeEntriesByCode\\s*\\(/g) || []).length, 1);
-  assert.equal((source.match(/\\bescapeHtml\\s*\\(/g) || []).length, 3);
+  assert.equal(source.split('findKnowledgeEntriesByCode(').length - 1, 1);
+  assert.equal(source.split('escapeHtml(').length - 1, 3);
 });
 
 test('relatedKnowledgeButtons mantém exatamente um consumidor funcional em knowledgeDetailMarkup', () => {
   const kernel = kernelSource();
-  assert.equal((kernel.match(/\\bfunction\\s+relatedKnowledgeButtons\\s*\\(/g) || []).length, 1);
-  assert.equal((kernel.match(/\\brelatedKnowledgeButtons\\b/g) || []).length, 2);
+  assert.equal(kernel.split('function relatedKnowledgeButtons(').length - 1, 1);
+  assert.equal(kernel.split('relatedKnowledgeButtons').length - 1, 2);
 
   const consumer = extractNamedFunction(kernel, 'knowledgeDetailMarkup');
-  assert.equal((consumer.match(/\\brelatedKnowledgeButtons\\s*\\(/g) || []).length, 1);
+  assert.equal(consumer.split('relatedKnowledgeButtons(').length - 1, 1);
 });
 
 test('relatedKnowledgeButtons retorna vazio sem relacionados resolvidos', () => {
