@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **14/09/2026**, após o merge do PR **#156** e conclusão verde do workflow pós-merge **#397**.
+> Última verificação: **14/09/2026**, após o merge do PR **#160** e conclusão verde do workflow pós-merge **#404**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `3027e997256d3c1f30d365916a35a542a6c4adaa`
-  — `refactor: extract knowledge entries` (PR #156).
+  `6af98946a0604ebe4587df4752e6fea4c66af0cd`
+  — `refactor: extract render knowledge field label` (PR #160).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,72 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #159 — congelamento de `renderKnowledgeFieldLabel`
+
+O PR **#159 — `test: freeze render knowledge field label contract`** congelou a fronteira de `renderKnowledgeFieldLabel` antes da extração, cobrindo:
+
+- identidade exata de **491 bytes**;
+- SHA-256 `ce1b96ba294b91abb5db41098c9106b57570e37560948d33c7c8cb15224e78e4`;
+- dependências restritas a:
+  - `KNOWLEDGE_CLICK_FIELDS`;
+  - `escapeHtml`;
+  - `resolveKnowledgeEntry`;
+- exatamente **1 consumidor executável** no núcleo;
+- fallback de label escapado para campos não clicáveis;
+- fallback de label escapado quando nenhuma entrada normativa é resolvida;
+- markup exato do botão normativo;
+- escaping de chave, campo, código e label;
+- propagação de erros das dependências;
+- ausência de acoplamento com estado, DOM, storage, rede e núcleo temporal/espacial.
+
+O PR foi mergeado por squash em:
+
+`7bdc9ab3a7d4a29ed526d5ec5c9738d81f318279`
+
+Workflows:
+
+- PR: **#401** — sucesso;
+- pós-merge: **#402** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #160 — extração de `renderKnowledgeFieldLabel`
+
+O PR **#160 — `refactor: extract render knowledge field label`** moveu mecanicamente a função para:
+
+`src/knowledge/knowledge-field-label-renderer.js`
+
+A extração preservou exatamente:
+
+- corpo congelado de **491 bytes**;
+- SHA-256 `ce1b96ba294b91abb5db41098c9106b57570e37560948d33c7c8cb15224e78e4`;
+- o único consumidor executável;
+- `KNOWLEDGE_CLICK_FIELDS`, `escapeHtml` e `resolveKnowledgeEntry` permanecem no núcleo e são injetados por
+  `KnowledgeFieldLabelRenderer.create({ knowledgeClickFields, escapeHtml, resolveKnowledgeEntry })`;
+- 0 declarações inline de `renderKnowledgeFieldLabel` no IIFE principal.
+
+Novo módulo:
+
+- arquivo: `src/knowledge/knowledge-field-label-renderer.js`;
+- **1.338 bytes**;
+- SHA-256 `92aa1e4a96b8d0fff402b0c093dd6b0d8ee49c61f37dbbe0d11bc360ded44729`;
+- 2 funções nomeadas: `createKnowledgeFieldLabelRenderer` e `renderKnowledgeFieldLabel`.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+O PR #160 foi mergeado por squash em:
+
+`6af98946a0604ebe4587df4752e6fea4c66af0cd`
+
+Workflows:
+
+- PR: **#403** — sucesso;
+- pós-merge no `main`: **#404** — sucesso;
+- ambos com **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
+
+### PR #158 — remapeamento analítico descartável
+
+O PR **#158** produziu um ranking fresco sobre o `main` pós-#157 usando filtro mais rigoroso para termos sensíveis também dentro de nomes camelCase. O workflow **#400** terminou em 46/0/0/0 e o PR foi fechado sem merge. Helpers espaciais/temporais e handlers mais acoplados permaneceram fora de escopo; `renderKnowledgeFieldLabel` foi selecionada como próxima fronteira limpa.
 
 ### PR #155 — congelamento de `knowledgeEntries`
 
@@ -384,13 +450,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #156:
+Conforme `tests/main-kernel-contract.test.js` após o PR #160:
 
-- **1.123.685 bytes**;
-- **5.134 linhas**;
+- **1.123.565 bytes**;
+- **5.135 linhas**;
 - SHA-256:
-  `dedc3d0c604a031a0921b0974e0965d0126635e2ad5c27176dc8b13a9b4584c3`;
-- **295 funções nomeadas** no núcleo protegido.
+  `48af1b2ccd6ec0b94debc3172d5da479f5af35763c76ae2fe6f4a25f5cdd0c25`;
+- **294 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -514,18 +580,38 @@ Conforme `tests/knowledge-entries-contract.test.js` após o PR #156:
   `1ed0db4735547d51112af91b9a4ade803d292b2f462a33271100cfb57b869730`;
 - consumidores no núcleo: **6**.
 
+### Knowledge Field Label Renderer
+
+Conforme `tests/render-knowledge-field-label-contract.test.js` após o PR #160:
+
+- arquivo: `src/knowledge/knowledge-field-label-renderer.js`;
+- **1.338 bytes**;
+- SHA-256:
+  `92aa1e4a96b8d0fff402b0c093dd6b0d8ee49c61f37dbbe0d11bc360ded44729`;
+- API pública congelada:
+  - `create`;
+- fábrica:
+  - `create({ knowledgeClickFields, escapeHtml, resolveKnowledgeEntry })`;
+- retorno congelado:
+  - `renderKnowledgeFieldLabel`;
+- corpo de `renderKnowledgeFieldLabel`: **491 bytes**;
+- SHA-256 do corpo:
+  `ce1b96ba294b91abb5db41098c9106b57570e37560948d33c7c8cb15224e78e4`;
+- consumidores no núcleo: **1**.
+
 ### Inventário global
 
-Após o PR #156:
+Após o PR #160:
 
-- **746 declarações function nomeadas** entre o HTML e scripts locais;
-- **735 nomes únicos**;
-- o IIFE principal contém **295 funções nomeadas**;
+- **747 declarações function nomeadas** entre o HTML e scripts locais;
+- **736 nomes únicos**;
+- o IIFE principal contém **294 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **22 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
+- `src/knowledge/knowledge-field-label-renderer.js` contém **2 funções nomeadas**;
 - `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
   - `isLocationCode`.
@@ -542,18 +628,18 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 
 Referência do último ciclo:
 
-- PR de contrato #155:
-  - workflow **#394** — sucesso;
+- PR de contrato #159:
+  - workflow **#401** — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#395** no SHA
-    `8f06006f2e31ec932f2431b286655a83a5fecb0b` — sucesso;
+  - pós-merge no `main`: workflow **#402** no SHA
+    `7bdc9ab3a7d4a29ed526d5ec5c9738d81f318279` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
-- PR de extração #156:
-  - workflow **#396** no head exato
-    `e5399ba5623b1d44a9b07dd2889f25b432b4d48f` — sucesso;
+- PR de extração #160:
+  - workflow **#403** no head exato
+    `df633742792b09789b113c60871e50fdde3bf665` — sucesso;
   - **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**;
-  - pós-merge no `main`: workflow **#397** no SHA
-    `3027e997256d3c1f30d365916a35a542a6c4adaa` — sucesso;
+  - pós-merge no `main`: workflow **#404** no SHA
+    `6af98946a0604ebe4587df4752e6fea4c66af0cd` — sucesso;
   - pós-merge: **46 passed**, **0 flaky**, **0 retry**, **0 `SPATIAL_EQ_DIAG`**.
 
 Só fazer merge depois de conferir o workflow correspondente ao **SHA atual do head do PR**. Nunca confiar em workflow de SHA antigo.
@@ -584,11 +670,11 @@ Também preservar:
 
 **Não reutilizar rankings antigos nem branches antigas de análise.**
 
-O PR analítico descartável **#154** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#153. Esse ranking já é histórico porque `knowledgeEntries` foi extraída no PR #156.
+O PR analítico descartável **#158** foi fechado **sem merge** após produzir um remapeamento fresco sobre o `main` pós-#157. Esse ranking já é histórico porque `renderKnowledgeFieldLabel` foi extraída no PR #160.
 
 Próximo fluxo seguro:
 
-1. confirmar que `main` ainda aponta para o estado pós-#156 ou identificar alterações posteriores;
+1. confirmar que `main` ainda aponta para o estado pós-#160 ou identificar alterações posteriores;
 2. após o checkpoint documental deste ciclo, remapear novamente no **`main` atual** os candidatos restantes de baixo acoplamento;
 3. não considerar novamente como candidatos:
    - `knowledgeCategoryLabel`;
@@ -602,6 +688,7 @@ Próximo fluxo seguro:
    - `initSourceManager`;
    - `normalizeFieldLayout`;
    - `knowledgeEntries`;
+   - `renderKnowledgeFieldLabel`;
 4. escolher apenas uma fronteira pequena, sem tocar o núcleo temporal/espacial;
 5. abrir primeiro um PR **somente de contrato**, congelando:
    - corpo/bytes/SHA quando aplicável;
