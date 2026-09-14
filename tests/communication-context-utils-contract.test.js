@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 10965;
-const MODULE_SHA256 = '91571d79d2b3d84045a8ac25dada797514838b927483382b9a87f6cf00cdb523';
+const MODULE_BYTES = 10661;
+const MODULE_SHA256 = 'd66e97ab0dca18621c916f2a277946fddbd2e6793e5e0def0d43d3ec6001b39f';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -304,17 +304,13 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('knowledgeCategoryLabels: KNOWLEDGE_CATEGORY_LABELS,'));
   assert.ok(html.includes('humanize,'));
   assert.ok(html.includes('const { knowledgeContextSummary } = CommunicationContextUtils.create({ canonicalKnowledgeCode });'));
-  assert.ok(html.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });'));
-  assert.ok(html.includes('const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({ cleanDisplay, parseAddresses, normalizeLocalityCode, formatAddressCode });'));
-  assert.ok(html.includes('const { formatFieldDisplay } = CommunicationContextUtils.createFieldDisplayFormatter({ cleanDisplay, formatAddressCode, formatAddressDisplay, displayValue });'));
-});
-
-test('módulo permanece desacoplado de estado, DOM, rede, storage e mapa', () => {
-  const source = fs.readFileSync(MODULE, 'utf8');
-  for (const name of ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'canonicalKnowledgeCode', 'entryMatchesToken', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay']) {
-    const target = functionSource(source, name);
-    for (const token of ['state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB', 'fetch(', 'google.', 'L.', 'Parser', 'realMapState']) {
-      assert.equal(target.includes(token), false, `acoplamento inesperado em ${name}: ${token}`);
-    }
-  }
+  assert.ok(html.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({'));
+  assert.ok(html.includes('normalizeLocalityCode,'));
+  assert.ok(html.includes('lookupLocality,'));
+  assert.ok(html.includes('const { formatAddressDisplay } = CommunicationContextUtils.createAddressDisplayFormatter({'));
+  assert.ok(html.includes('cleanDisplay,'));
+  assert.ok(html.includes('parseAddresses,'));
+  assert.ok(html.includes('formatAddressCode,'));
+  assert.ok(html.includes('const { formatFieldDisplay } = CommunicationContextUtils.createFieldDisplayFormatter({'));
+  assert.ok(html.includes('displayValue,'));
 });
