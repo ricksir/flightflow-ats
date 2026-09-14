@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'core', 'core-utils.js');
 const FUNCTION_NAME = 'normalizeSearchText';
 const EXPECTED_CONSUMERS = 6;
 const EXPECTED_SOURCE = [
@@ -33,7 +34,7 @@ function kernelSource() {
 function extractNamedFunction(source, name) {
   const marker = `  function ${name}(`;
   const start = source.indexOf(marker);
-  assert.ok(start >= 0, `${name} deve permanecer inline antes da extração`);
+  assert.ok(start >= 0, `${name} deve existir no CoreUtils após a extração`);
   const paren = source.indexOf('(', start);
   let i = paren;
   let depth = 0;
@@ -84,19 +85,19 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction() {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   return Function(`${source}\nreturn normalizeSearchText;`)();
 }
 
-test('normalizeSearchText mantém identidade byte a byte antes da extração', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+test('normalizeSearchText mantém identidade byte a byte após a extração', () => {
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('normalizeSearchText permanece puro e sem dependências da aplicação', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage',
     'indexedDB', 'fetch(', 'goTo(', 'renderCurrent(', 'currentEvent(', 'setTimeout(',
@@ -107,12 +108,13 @@ test('normalizeSearchText permanece puro e sem dependências da aplicação', ()
   assert.equal((source.match(/\.toLocaleLowerCase\('pt-BR'\)/g) || []).length, 1);
 });
 
-test('normalizeSearchText mantém exatamente seis consumidores no núcleo', () => {
+test('normalizeSearchText mantém seis consumidores no núcleo e não permanece inline', () => {
   const kernel = kernelSource();
   const declarations = [...kernel.matchAll(/\bfunction\s+normalizeSearchText\s*\(/g)].length;
   const references = [...kernel.matchAll(/\bnormalizeSearchText\b/g)].length;
-  assert.equal(declarations, 1);
-  assert.equal(references - declarations, EXPECTED_CONSUMERS);
+  assert.equal(declarations, 0);
+  assert.equal(references, EXPECTED_CONSUMERS + 1);
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath, normalizeSearchText } = CoreUtils;'));
   assert.ok(kernel.includes('const wanted=normalizeSearchText(hint);'));
   assert.ok(kernel.includes('some(v=>normalizeSearchText(v)===wanted)'));
   assert.ok(kernel.includes("const text=normalizeSearchText([event.operation,event.messageType,event.content,event.rawBlock,s.groundState,s.status].filter(Boolean).join(' '));"));

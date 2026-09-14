@@ -91,7 +91,7 @@ test('cluster permanece desacoplado de estado, DOM, rede, storage, mapa e parser
 
 test('núcleo usa aliases externos e não redeclara o trio', () => {
   const kernel = kernelSource();
-  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath } = CoreUtils;'));
+  assert.ok(kernel.includes('const { shortMessageType, displayValue, cleanDisplay, humanize, clone, formatBytes, angleDifference, hashString, seeded, getPath, setPath, normalizeSearchText } = CoreUtils;'));
   for (const name of Object.keys(EXPECTED)) {
     assert.doesNotMatch(kernel, new RegExp(`function\\s+${name}\\s*\\(`), `${name} não deve retornar ao IIFE`);
   }
