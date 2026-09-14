@@ -9039,17 +9039,10 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     humanize,
   });
 
-  function relatedKnowledgeButtons(entry) {
-    const codes = Array.isArray(entry.related) ? entry.related : [];
-    const matches = [];
-    const seen = new Set();
-    codes.forEach(code => findKnowledgeEntriesByCode(code).forEach(item => {
-      if (item.key === entry.key || seen.has(item.key)) return;
-      seen.add(item.key); matches.push(item);
-    }));
-    if (!matches.length) return '';
-    return `<div class="knowledge-related">${matches.slice(0,12).map(item => `<button type="button" data-related-knowledge="${escapeHtml(item.key)}">${escapeHtml(item.code)} · ${escapeHtml(item.title)}</button>`).join('')}</div>`;
-  }
+  const { relatedKnowledgeButtons } = CommunicationContextUtils.createRelatedKnowledgeButtons({
+    findKnowledgeEntriesByCode,
+    escapeHtml,
+  });
 
   function knowledgeDetailMarkup(entry, options = {}) {
     if (!entry) return '<div class="knowledge-empty">Selecione uma mensagem, status ou termo.</div>';
