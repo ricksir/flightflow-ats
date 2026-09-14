@@ -5488,6 +5488,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-search-excerpt" src="src/ui/search-excerpt.js"></script>
 <script id="flightflow-source-manager-controller" src="src/ui/source-manager-controller.js"></script>
 <script id="flightflow-field-layout-utils" src="src/ui/field-layout-utils.js"></script>
+<script id="flightflow-knowledge-entries" src="src/knowledge/knowledge-entries.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
 <script id="flightflow-locality-utils" src="src/geo/locality-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
@@ -8873,12 +8874,13 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     return `${operation}${status ? ` · estado ${status}` : ''}. ${stage.scene || ''}`.trim();
   }
 
-  function knowledgeEntries() {
-    const circea = Array.isArray(CIRCEA_KNOWLEDGE.entries) ? CIRCEA_KNOWLEDGE.entries : [];
-    const mca = Array.isArray(MCA_KNOWLEDGE.entries) ? MCA_KNOWLEDGE.entries : [];
-    const sagitario = Array.isArray(SAGITARIO_ACC_KNOWLEDGE.entries) ? SAGITARIO_ACC_KNOWLEDGE.entries : [];
-    return [...circea, ...mca, ...sagitario];
-  }
+  const KnowledgeEntries = window.FlightFlowKnowledgeEntries;
+  if (!KnowledgeEntries) throw new Error('FlightFlowKnowledgeEntries não foi carregado.');
+  const { knowledgeEntries } = KnowledgeEntries.create({
+    circeaKnowledge: CIRCEA_KNOWLEDGE,
+    mcaKnowledge: MCA_KNOWLEDGE,
+    sagitarioKnowledge: SAGITARIO_ACC_KNOWLEDGE,
+  });
 
   // Expõe apenas uma função de leitura. A base normativa continua encapsulada
   // nesta camada do aplicativo, mas pode ser consultada pelo motor da IA.
