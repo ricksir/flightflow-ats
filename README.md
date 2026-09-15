@@ -87,6 +87,12 @@ Toda mudança deve seguir:
 
 Não abrir novas rodadas de remapeamento/refatoração automaticamente. O trabalho futuro deve ser motivado por bug, melhoria funcional, manutenção necessária ou preparação de release.
 
+## Contribuição e segurança
+
+Consulte `CONTRIBUTING.md` antes de abrir mudanças e `SECURITY.md` para orientações sobre conteúdo sensível e relato de vulnerabilidades.
+
+Branches temporárias encerradas são higienizadas automaticamente pelo workflow de housekeeping; branches `release/*`, protegidas, abertas ou sem histórico de PR fechado são preservadas.
+
 ## Release Readiness
 
 Para qualquer nova versão estável:

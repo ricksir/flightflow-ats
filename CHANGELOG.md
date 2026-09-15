@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- documentação do repositório reorganizada e alinhada ao estado atual;
+- adicionadas políticas de contribuição e segurança;
+- adicionado housekeeping de branches temporárias encerradas para evitar novo acúmulo no GitHub;
+
 ## 0.2.0 — 2026-09-11
 
 - corrigida a classificação visual de planos `INATIVO` no strip: passam a usar o tema não controlado (cinza) em vez do tema controlado (preto);

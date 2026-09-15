@@ -1,6 +1,6 @@
 # buildTimeline — mapa de dependências congelado
 
-> Gerado mecanicamente a partir do `index.html`. Este documento registra o estado atual antes de qualquer tentativa de extração de `buildTimeline`.
+> **Snapshot histórico de refatoração.** Gerado mecanicamente a partir do `index.html` antes das extrações correspondentes. Não use este arquivo como descrição do estado atual; consulte `docs/AI_CURRENT_STATE.md` e os contratos em `tests/`.
 
 ## Identidade estrutural
 
@@ -39,6 +39,6 @@ _Nenhuma._
 
 `goTo(`, `innerHTML`, `addEventListener(`
 
-## Decisão para o próximo corte
+## Decisão registrada naquele checkpoint
 
 `buildTimeline` **não deve ser movida integralmente ainda**. O contrato abaixo congela a função e permite separar, em PRs menores, renderização de item, classificação/labels e ligação de eventos antes de deslocar a orquestração completa para um módulo.
