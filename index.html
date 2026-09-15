@@ -7278,6 +7278,10 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
   }
   function deactivateVectorMapFallback(){const scene=document.getElementById('dropZone');if(scene)scene.classList.remove('ff-vector-map-mode');}
   function loadLeafletNonBlocking(){
+    if(window.location.protocol==='file:'){
+      activateVectorMapFallback('Mapa vetorial offline ativo · para cartografia online execute npm start e abra http://127.0.0.1:4173');
+      return Promise.resolve(false);
+    }
     if(window.L){initializeLeafletMap();return Promise.resolve(true);}
     if(window.__flightflowLeafletPromise)return window.__flightflowLeafletPromise;
     window.__flightflowLeafletPromise=new Promise(resolve=>{
