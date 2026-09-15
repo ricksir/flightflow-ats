@@ -10,7 +10,7 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'knowledgeEntryDocumentLabel';
-const EXPECTED_CONSUMERS = 5;
+const EXPECTED_CONSUMERS = 4;
 const EXPECTED_SOURCE = [
   '  function knowledgeEntryDocumentLabel(entry) {',
   "    return KNOWLEDGE_DOCUMENT_LABELS[knowledgeEntryDocumentKey(entry)] || 'Base normativa ATM';",
@@ -111,16 +111,20 @@ test('knowledgeEntryDocumentLabel permanece puro e sem acoplamento de infraestru
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('knowledgeEntryDocumentLabel mantém exatamente cinco consumidores no núcleo e não permanece inline', () => {
+test('knowledgeEntryDocumentLabel mantém quatro consumidores no núcleo e um no módulo de detalhe', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const occurrences = [...kernel.matchAll(/\bknowledgeEntryDocumentLabel\s*\(/g)].length;
   assert.equal(occurrences, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('els.knowledgePopoverSource.textContent = knowledgeEntryDocumentLabel(entry);'));
-  assert.ok(kernel.includes('escapeHtml(knowledgeEntryDocumentLabel(entry))'));
   assert.ok(kernel.includes('entry.source, knowledgeEntryDocumentLabel(entry)'));
   assert.ok(kernel.includes("const base=`${entry.title}${entry.short&&entry.short!==entry.title?` — ${entry.short}`:''} (${knowledgeEntryDocumentLabel(entry)}).`;"));
   assert.equal(kernel.includes('function knowledgeEntryDocumentLabel('), false);
   assert.ok(kernel.includes('const { knowledgeEntryDocumentLabel } = CommunicationContextUtils.createKnowledgeDocumentLabeler({'));
+
+  const detail = extractNamedFunction(moduleSource, 'knowledgeDetailMarkup');
+  assert.equal(detail.split('knowledgeEntryDocumentLabel(').length - 1, 1);
+  assert.ok(detail.includes('escapeHtml(knowledgeEntryDocumentLabel(entry))'));
 });
 
 test('knowledgeEntryDocumentLabel preserva os três rótulos normativos conhecidos', () => {

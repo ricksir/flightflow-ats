@@ -124,6 +124,52 @@
     return Object.freeze({ relatedKnowledgeButtons });
   }
 
+  function createKnowledgeDetailMarkup(options = {}) {
+    const escapeHtml = options.escapeHtml;
+    const knowledgeEntryDocumentLabel = options.knowledgeEntryDocumentLabel;
+    const knowledgeCategoryLabel = options.knowledgeCategoryLabel;
+    const relatedKnowledgeButtons = options.relatedKnowledgeButtons;
+    const KNOWLEDGE_DISCLAIMER = options.knowledgeDisclaimer;
+    if (typeof escapeHtml !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer escapeHtml para detalhe de conhecimento.');
+    }
+    if (typeof knowledgeEntryDocumentLabel !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentLabel para detalhe de conhecimento.');
+    }
+    if (typeof knowledgeCategoryLabel !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer knowledgeCategoryLabel para detalhe de conhecimento.');
+    }
+    if (typeof relatedKnowledgeButtons !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer relatedKnowledgeButtons para detalhe de conhecimento.');
+    }
+
+  function knowledgeDetailMarkup(entry, options = {}) {
+    if (!entry) return '<div class="knowledge-empty">Selecione uma mensagem, status ou termo.</div>';
+    const context = options.context || null;
+    const facts = [
+      ['Definição', entry.definition],
+      ['Fluxo normativo / geral', entry.direction],
+      context && ['Originador neste evento', context.originator],
+      context && ['Destinatário(s) neste evento', context.recipients],
+      context && ['Fluxo efetivamente registrado', context.direction],
+      context && ['Evento / horário', `${context.eventNumber ? `Evento ${context.eventNumber}` : 'Evento'}${context.timestamp ? ` · ${context.timestamp}` : ''}`],
+      ['Quando ocorre', entry.when],
+      ['Efeito no plano ou na strip', entry.effect],
+      ['Resposta ou próximo passo', entry.responses],
+      ['Observação', entry.notes]
+    ].filter(item => Array.isArray(item) && item[1]);
+    return `<section class="knowledge-hero">
+      <div class="knowledge-code">${escapeHtml(entry.code)}</div>
+      <div><span class="knowledge-category">${escapeHtml(knowledgeEntryDocumentLabel(entry))} · ${escapeHtml(knowledgeCategoryLabel(entry.category))}${entry.normative === false ? ' · COMPLEMENTAR' : ''}</span><h3>${escapeHtml(entry.title)}</h3><p>${escapeHtml(entry.short || entry.definition)}</p></div>
+    </section>
+    <dl class="knowledge-facts">${facts.map(([label,value]) => `<div class="knowledge-fact"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
+    ${entry.source ? `<div class="knowledge-source-note"><strong>Referência:</strong> ${escapeHtml(entry.source)}<br>${escapeHtml(KNOWLEDGE_DISCLAIMER)}</div>` : ''}
+    ${relatedKnowledgeButtons(entry)}`;
+  }
+
+    return Object.freeze({ knowledgeDetailMarkup });
+  }
+
   function createKnowledgeDocumentLabeler(options = {}) {
     const KNOWLEDGE_DOCUMENT_LABELS = options.knowledgeDocumentLabels;
     const knowledgeEntryDocumentKey = options.knowledgeEntryDocumentKey;
@@ -268,6 +314,7 @@ Destinatário(s): ${context.recipients}`;
     createKnowledgeEntryFinder,
     createKnowledgeEntriesByCodeFinder,
     createRelatedKnowledgeButtons,
+    createKnowledgeDetailMarkup,
     createKnowledgeDocumentLabeler,
     createKnowledgeCategoryLabeler,
     create: createCommunicationContextUtils,
