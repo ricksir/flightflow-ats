@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#185** e conclusão verde do workflow pós-merge **#472**.
+> Última verificação: **15/09/2026**, após o merge do PR **#189** e conclusão verde do workflow pós-merge **#479**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `bfb2fd3ab36432531a081351cb459258cc10db30`
-  — `refactor: extract knowledge detail markup` (PR #185).
+  `1eb4cf0ffb0d711ff8e8f1504e2c86bcb645c34e`
+  — `refactor: extract resolve knowledge entry` (PR #189).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -251,6 +251,118 @@ Workflows:
 - merge por squash no `main`:
   `bfb2fd3ab36432531a081351cb459258cc10db30`;
 - pós-merge: **#472** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+### PR #186 — checkpoint documental após `knowledgeDetailMarkup`
+
+O PR **#186 — `docs: update AI current state after PR 185`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`2699e06cc192c8e5050638ccb47b9bac071c561c`
+
+Workflows:
+
+- PR: **#473** — sucesso, **46 passed (2.6m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#474** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+### PR #187 — remapeamento analítico descartável
+
+O PR **#187 — `chore: fresh kernel remap after PR 186`** recalculou do zero o ranking sobre o `main` documental `2699e06cc192c8e5050638ccb47b9bac071c561c`, sem reutilizar o ranking anterior.
+
+Após exclusão das fronteiras já extraídas e dos candidatos temporal/espacialmente sensíveis, restaram:
+
+1. `resolveKnowledgeEntry` — **1.907 bytes**;
+2. `inferCommunicationContext` — **3.994 bytes**.
+
+A inspeção manual selecionou `resolveKnowledgeEntry`:
+
+- SHA-256: `95ca385afde918ceb769218088baaacfe7f146b4334666989846333e24590cc2`;
+- exatamente **1 consumidor funcional**, `renderKnowledgeFieldLabel`;
+- dependências restritas a:
+  - `normalizeKnowledgeText`;
+  - `knowledgeEntries`;
+  - `canonicalKnowledgeCode`;
+  - `entryMatchesToken`;
+- regras de prioridade por campo, preferência canônica, aliases e ordenação por comprimento de código identificadas como parte do comportamento a congelar;
+- sem estado global, DOM, storage, rede, timers, rota, DEP, mapa, movimento, timeline, scrubber ou autoplay.
+
+Head analítico:
+
+`76f49ed41ac832cebf5b0c45f448214ea14404a0`
+
+Workflow **#475** — sucesso, **46 passed (3.2m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+O PR foi fechado **sem merge**.
+
+### PR #188 — congelamento de `resolveKnowledgeEntry`
+
+O PR **#188 — `test: freeze resolve knowledge entry contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **1.907 bytes**;
+- SHA-256: `95ca385afde918ceb769218088baaacfe7f146b4334666989846333e24590cc2`;
+- único consumidor funcional em `renderKnowledgeFieldLabel`;
+- normalização vazia com retorno antecipado;
+- enriquecimento de `operation` e `protocol` com dados do evento;
+- prioridades distintas para campos de mensagem, status e demais campos;
+- preferência canônica por mensagem normativa, fallback MCA/mensagem e aliases canônicos;
+- ordenação de uma cópia do catálogo por comprimento de código, sem mutar catálogo/entradas;
+- propagação de erros das quatro dependências;
+- ausência de acoplamento temporal, espacial ou de infraestrutura.
+
+Head final:
+
+`1640171a627d1a35efe3f14fd5aa6a084dd605ad`
+
+Merge por squash:
+
+`57fb4c32c6d477326b196561cf22b7de580bf8cb`
+
+Workflows:
+
+- PR: **#476** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#477** — sucesso, **46 passed (3.1m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+### PR #189 — extração de `resolveKnowledgeEntry`
+
+O PR **#189 — `refactor: extract resolve knowledge entry`** moveu mecanicamente a fronteira do IIFE principal para a factory `createResolveKnowledgeEntry` em `src/timeline/communication-context-utils.js`.
+
+A extração preservou exatamente:
+
+- corpo de `resolveKnowledgeEntry`: **1.907 bytes**;
+- SHA-256 do corpo:
+  `95ca385afde918ceb769218088baaacfe7f146b4334666989846333e24590cc2`;
+- único consumidor funcional em `renderKnowledgeFieldLabel`;
+- 0 declarações inline no IIFE principal;
+- injeção explícita de:
+  - `normalizeKnowledgeText`;
+  - `knowledgeEntries`;
+  - `canonicalKnowledgeCode`;
+  - `entryMatchesToken`.
+
+Os contratos de `normalizeKnowledgeText`, `knowledgeEntries`, `canonicalKnowledgeCode` e `entryMatchesToken` foram ajustados apenas para refletir a mudança de localização do consumidor, sem relaxar comportamento.
+
+Head final validado:
+
+`6683b6dab9f9f15cc892499b4c2d86b40eedf249`
+
+Merge por squash no `main`:
+
+`1eb4cf0ffb0d711ff8e8f1504e2c86bcb645c34e`
+
+Baselines resultantes:
+
+- kernel: **1.118.081 bytes**, **5.081 linhas**, **287 funções nomeadas**;
+- SHA-256 do kernel:
+  `8fb75716e25a8fc65abf05521e503165ce7695cc5c0522cf29cac9d2b09489a2`;
+- `src/timeline/communication-context-utils.js`: **17.838 bytes**, **373 linhas**, **30 funções nomeadas**;
+- SHA-256 do módulo:
+  `7b1954d8f776fcc549d551727ef1af88cae4685a6a28a0251f652baf9c91d285`;
+- inventário global: **754 declarações function nomeadas / 743 nomes únicos**.
+
+Workflows:
+
+- PR: **#478** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#479** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
 Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
 
@@ -1401,13 +1513,13 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `knowledgeDetailMarkup` está concluído em produção e validado no SHA exato:
+O ciclo `resolveKnowledgeEntry` está concluído em produção e validado no SHA exato:
 
-`bfb2fd3ab36432531a081351cb459258cc10db30`
+`1eb4cf0ffb0d711ff8e8f1504e2c86bcb645c34e`
 
-Workflow pós-merge correspondente: **#472**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+Workflow pós-merge correspondente: **#479**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
-**Não reutilizar o ranking do PR #183**, porque o kernel mudou com a extração do PR #185.
+**Não reutilizar o ranking do PR #187**, porque o kernel mudou com a extração do PR #189.
 
 Próximo fluxo seguro:
 
@@ -1435,6 +1547,7 @@ Próximo fluxo seguro:
    - `entryMatchesToken`;
    - `relatedKnowledgeButtons`;
    - `knowledgeDetailMarkup`;
+   - `resolveKnowledgeEntry`;
 5. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
 6. inspecionar manualmente o melhor candidato restante;
