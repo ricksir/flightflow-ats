@@ -5886,14 +5886,15 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
     state.geo.airportByCode = new Map((state.geoData.airports || []).map(item => [String(item[0] || '').toUpperCase(), {
       code:String(item[0] || '').toUpperCase(), lat:Number(item[1]), lon:Number(item[2]),
       twr:Array.isArray(item[3]) ? item[3].map(normalizeLocalityCode) : [],
-      app:Array.isArray(item[4]) ? item[4].map(normalizeLocalityCode) : [], type:item[5] || 'AIRPORT', source:'base'
+      app:Array.isArray(item[4]) ? item[4].map(normalizeLocalityCode) : [], type:item[5] || 'AIRPORT', source:String(item[6] || 'base')
     }]));
     Object.values(state.customAerodromes || {}).forEach(record => {
       const code=normalizeLocalityCode(record&&record.code);
       const lat=Number(record&&record.lat),lon=Number(record&&record.lon);
       if(!isLocationCode(code)||!Number.isFinite(lat)||!Number.isFinite(lon))return;
       const existing=state.geo.airportByCode.get(code)||{};
-      state.geo.airportByCode.set(code,{...existing,code,lat,lon,twr:Array.isArray(existing.twr)?existing.twr:[],app:Array.isArray(existing.app)?existing.app:[],type:record.type||existing.type||(code.length===4?'AIRPORT':'ATS_LOCATION'),source:'user-confirmed',name:record.name||lookupLocality(code)||''});
+      const officialLocked=existing.source==='official-aip';
+      state.geo.airportByCode.set(code,{...existing,code,lat:officialLocked?Number(existing.lat):lat,lon:officialLocked?Number(existing.lon):lon,twr:Array.isArray(existing.twr)?existing.twr:[],app:Array.isArray(existing.app)?existing.app:[],type:record.type||existing.type||(code.length===4?'AIRPORT':'ATS_LOCATION'),source:officialLocked?existing.source:'user-confirmed',name:record.name||lookupLocality(code)||''});
     });
     state.geo.appByAftn = new Map((state.geoData.apps || []).map(item => [normalizeLocalityCode(item[1]), { code:item[0], aftn:normalizeLocalityCode(item[1]), points:item[2] || [] }]));
     state.geo.accByAftn = new Map((state.geoData.accs || []).map(item => [normalizeLocalityCode(item[1]), { code:item[0], aftn:normalizeLocalityCode(item[1]), points:item[2] || [] }]));
