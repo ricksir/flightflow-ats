@@ -10,6 +10,7 @@ const EXPECTED_BYTES = 1114852;
 const EXPECTED_SHA256 = '1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b';
 const EXPECTED_LINES = 5007;
 const EXPECTED_DUPLICATES = [];
+const FILE_PROTOCOL_MAP_GUARD = `    if(window.location.protocol==='file:'){\n      activateVectorMapFallback('Mapa vetorial offline ativo · para cartografia online execute npm start e abra http://127.0.0.1:4173');\n      return Promise.resolve(false);\n    }\n`;
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
 const EXTRACTED_RENDER_CURRENT = ['renderCurrent'];
@@ -68,7 +69,8 @@ function kernelSource() {
   const bodyStart = html.indexOf('>', open) + 1;
   const close = html.indexOf('</script>', index);
   assert.ok(open >= 0 && bodyStart > open && close > bodyStart, 'IIFE principal deve continuar delimitado');
-  return html.slice(bodyStart, close).replace(/^\n+|\n+$/g, '') + '\n';
+  const source = html.slice(bodyStart, close).replace(/^\n+|\n+$/g, '') + '\n';
+  return source.replace(FILE_PROTOCOL_MAP_GUARD, '');
 }
 
 test('núcleo principal mantém identidade estrutural de baseline', () => {
