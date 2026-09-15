@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#201** e conclusão verde do workflow pós-merge **#507**.
+> Última verificação: **15/09/2026**, após o merge do PR **#205** e conclusão verde do workflow pós-merge **#514**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `f8c50a056b8e73c5dded1dc9ac8caf74b7241cd4`
-  — `refactor: extract Strip minimizer` (PR #201).
+  `2b82578017150a94d946e44f8e143fd4b094ff89`
+  — `refactor: extract knowledge popover hider` (PR #205).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,124 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #202 — checkpoint documental após `minimizeStrip`
+
+O PR **#202 — `docs: update AI current state after PR 201`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`ce2b8ae9ceb9662b33891051ff33338099d1f914`
+
+Workflows:
+
+- PR: **#508** — sucesso;
+- pós-merge: **#509** — sucesso;
+- ambos com os cinco gates verdes e **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+### PR #203 — remapeamento analítico descartável após #202
+
+O PR **#203 — `chore: fresh kernel remap after PR 202`** recalculou o ranking do zero sobre o `main` documental `ce2b8ae9ceb9662b33891051ff33338099d1f914`.
+
+Resultado:
+
+- **0 candidatos estritamente puros**;
+- melhor near-miss infra-only: `hideKnowledgePopover`;
+- corpo exato: **156 bytes**;
+- SHA-256:
+  `57adc4878279173c3b09aefef808da7eb213d614219e579479970315061003cc`;
+- exatamente **2 consumidores funcionais**:
+  1. handler global de `pointerdown` para clique fora do popover;
+  2. `openActiveKnowledgeDetail`;
+- nenhuma chamada funcional externa;
+- efeitos restritos a:
+  - `els.knowledgePopover.hidden = true`;
+  - `state.activeKnowledgeAnchor = null`;
+- retorno antecipado antes de qualquer mutação quando `els.knowledgePopover` não existe;
+- ausência de rota, DEP, `goTo`, `renderCurrent`, `currentEvent`, timeline, scrubber, autoplay, planner, interpolação, mapa, movimento, ground e geometria.
+
+Head analítico final:
+
+`6254c5eb27dba834a586e2944ed2325850fc890d`
+
+Workflow **#510** — sucesso, **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+O PR foi fechado **sem merge**.
+
+### PR #204 — congelamento de `hideKnowledgePopover`
+
+O PR **#204 — `test: freeze hide knowledge popover contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **156 bytes**;
+- SHA-256:
+  `57adc4878279173c3b09aefef808da7eb213d614219e579479970315061003cc`;
+- exatamente **2 consumidores funcionais**;
+- retorno antecipado sem mutação quando o popover não existe;
+- ordem protegida:
+  1. `els.knowledgePopover.hidden = true`;
+  2. `state.activeKnowledgeAnchor = null`;
+- propagação de erro e estados parciais preservados conforme a ordem original;
+- nenhum acoplamento temporal, espacial, cartográfico, de rota ou transporte introduzido.
+
+Head final validado:
+
+`a65de124f487c75349bb044dd344ed51ec917727`
+
+Merge por squash:
+
+`0c79643f1b6172a31e7cf6d0e2222b287f8447ef`
+
+Workflows:
+
+- PR: **#511** — sucesso, **46/0/0/0/0**;
+- pós-merge: **#512** — sucesso, **46/0/0/0/0**.
+
+### PR #205 — extração de `hideKnowledgePopover`
+
+O PR **#205 — `refactor: extract knowledge popover hider`** moveu mecanicamente `hideKnowledgePopover` do IIFE principal para:
+
+`src/knowledge/knowledge-popover-controller.js`
+
+A extração preservou:
+
+- corpo congelado: **156 bytes**;
+- SHA-256:
+  `57adc4878279173c3b09aefef808da7eb213d614219e579479970315061003cc`;
+- wiring explícito por
+  `FlightFlowKnowledgePopoverController.create({ els, state })`;
+- dependências injetadas:
+  - `els`;
+  - `state`;
+- API pública congelada:
+  - `create`;
+- retorno congelado:
+  - `hideKnowledgePopover`;
+- 0 declarações inline de `hideKnowledgePopover` no núcleo;
+- os mesmos dois consumidores funcionais;
+- estados parciais e propagação de erro mantidos pelo contrato prévio.
+
+Baselines resultantes:
+
+- kernel: **1.114.709 bytes**;
+- **5.007 linhas**;
+- **283 funções nomeadas**;
+- SHA-256 do kernel:
+  `eae54fca21828ce37968ed072a07dab69b6d4182afe58c7f3cb575a02c5f46dd`;
+- inventário global: **758 declarações function nomeadas / 747 nomes únicos / 9 nomes repetidos conhecidos**;
+- módulo Knowledge Popover Controller: **24 linhas / 2 funções nomeadas**.
+
+Head final validado:
+
+`22b4b335d4536da8000bb8c4ead6d0abe29a0199`
+
+Merge por squash no `main`:
+
+`2b82578017150a94d946e44f8e143fd4b094ff89`
+
+Workflows:
+
+- PR: **#513** — sucesso, **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**;
+- pós-merge: **#514** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, ground, timeline, scrubber, teclado ou autoplay foi alterado.
 
 ### PR #198 — checkpoint documental após `minimizeFpv`
 
@@ -1475,13 +1593,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #201:
+Conforme `tests/main-kernel-contract.test.js` após o PR #205:
 
-- **1.114.588 bytes**;
-- **5.009 linhas**;
+- **1.114.709 bytes**;
+- **5.007 linhas**;
 - SHA-256:
-  `d27d411aa139443463a8229a78ac9b691e573056f13b246a7227e40e682c29b6`;
-- **284 funções nomeadas** no núcleo protegido.
+  `eae54fca21828ce37968ed072a07dab69b6d4182afe58c7f3cb575a02c5f46dd`;
+- **283 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -1560,6 +1678,27 @@ Após o PR #201:
 - SHA-256:
   `b773e96b5cc2f540ecb2133459cfacb176b2ff3ee1a88be1f3c9a6f0f8fac048`;
 - exatamente dois consumidores funcionais preservados;
+- declaração inline no IIFE principal: **0**.
+
+### Knowledge Popover Controller
+
+Após o PR #205:
+
+- arquivo: `src/knowledge/knowledge-popover-controller.js`;
+- **24 linhas / 2 funções nomeadas**;
+- carregado pelo script `flightflow-knowledge-popover-controller` antes do núcleo;
+- API pública congelada:
+  - `create`;
+- factory interna nomeada `createKnowledgePopoverController`;
+- dependências injetadas:
+  - `els`;
+  - `state`;
+- retorno congelado:
+  - `hideKnowledgePopover`;
+- corpo de `hideKnowledgePopover`: **156 bytes**;
+- SHA-256:
+  `57adc4878279173c3b09aefef808da7eb213d614219e579479970315061003cc`;
+- dois consumidores funcionais preservados;
 - declaração inline no IIFE principal: **0**.
 
 ### Communication Context Utils
@@ -1778,12 +1917,12 @@ Conforme `tests/merge-config-contract.test.js` após o PR #172:
 
 ### Inventário global
 
-Após o PR #201, confirmado pelo workflow pós-merge #507:
+Após o PR #205, confirmado pelo workflow pós-merge #514:
 
-- **757 declarações function nomeadas** entre o HTML e scripts locais;
-- **746 nomes únicos**;
+- **758 declarações function nomeadas** entre o HTML e scripts locais;
+- **747 nomes únicos**;
 - **9 nomes repetidos conhecidos**;
-- o IIFE principal contém **284 funções nomeadas**;
+- o IIFE principal contém **283 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **32 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
@@ -1793,6 +1932,7 @@ Após o PR #201, confirmado pelo workflow pós-merge #507:
 - `src/config/config-merger.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-field-label-renderer.js` contém **2 funções nomeadas**;
+- `src/knowledge/knowledge-popover-controller.js` contém **2 funções nomeadas**;
 - o inventário não introduziu nova colisão de nomes;
 - `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
@@ -1808,6 +1948,25 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 3. **Timeline and route regression tests / Node**;
 4. **Browser availability**;
 5. **UI navigation regression tests / Playwright**.
+
+Referência do ciclo mais recente (`hideKnowledgePopover`):
+
+- checkpoint documental #202:
+  - workflow **#508** no head exato `3f41c32205cd7908831f4c21a0006fb7d6fd0f61` — sucesso;
+  - pós-merge: workflow **#509** no SHA `ce2b8ae9ceb9662b33891051ff33338099d1f914` — sucesso;
+  - ambos em **46/0/0/0/0**.
+- remapeamento descartável #203:
+  - workflow **#510** no head exato `6254c5eb27dba834a586e2944ed2325850fc890d` — sucesso;
+  - **46/0/0/0/0**;
+  - fechado sem merge.
+- PR de contrato #204:
+  - workflow **#511** no head exato `a65de124f487c75349bb044dd344ed51ec917727` — sucesso;
+  - pós-merge: workflow **#512** no SHA `0c79643f1b6172a31e7cf6d0e2222b287f8447ef` — sucesso;
+  - ambos em **46/0/0/0/0**.
+- PR de extração #205:
+  - workflow **#513** no head exato `22b4b335d4536da8000bb8c4ead6d0abe29a0199` — sucesso;
+  - pós-merge: workflow **#514** no SHA `2b82578017150a94d946e44f8e143fd4b094ff89` — sucesso;
+  - ambos em **46/0/0/0/0**.
 
 Referência do ciclo mais recente (`minimizeStrip`):
 
@@ -1952,31 +2111,31 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `minimizeStrip` está concluído em produção e validado no SHA exato:
+O ciclo `hideKnowledgePopover` está concluído em produção e validado no SHA exato:
 
-`f8c50a056b8e73c5dded1dc9ac8caf74b7241cd4`
+`2b82578017150a94d946e44f8e143fd4b094ff89`
 
-Workflow pós-merge correspondente: **#507**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+Workflow pós-merge correspondente: **#514**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
 
-O corpo protegido permanece no módulo `src/ui/strip-window-controller.js` com **92 bytes** e SHA-256:
+O corpo protegido permanece no módulo `src/knowledge/knowledge-popover-controller.js` com **156 bytes** e SHA-256:
 
-`b773e96b5cc2f540ecb2133459cfacb176b2ff3ee1a88be1f3c9a6f0f8fac048`
+`57adc4878279173c3b09aefef808da7eb213d614219e579479970315061003cc`
 
 Baseline atual do núcleo:
 
-- **1.114.588 bytes**;
-- **5.009 linhas**;
-- **284 funções nomeadas**;
+- **1.114.709 bytes**;
+- **5.007 linhas**;
+- **283 funções nomeadas**;
 - SHA-256:
-  `d27d411aa139443463a8229a78ac9b691e573056f13b246a7227e40e682c29b6`.
+  `eae54fca21828ce37968ed072a07dab69b6d4182afe58c7f3cb575a02c5f46dd`.
 
 Inventário global atual:
 
-- **757 declarações function nomeadas**;
-- **746 nomes únicos**;
+- **758 declarações function nomeadas**;
+- **747 nomes únicos**;
 - **9 nomes repetidos conhecidos**.
 
-**Não reutilizar o ranking do PR #199**, porque o kernel mudou com a extração do PR #201.
+**Não reutilizar o ranking do PR #203**, porque o kernel mudou com a extração do PR #205.
 
 Próximo fluxo seguro:
 
@@ -2008,6 +2167,7 @@ Próximo fluxo seguro:
    - `inferCommunicationContext`;
    - `minimizeFpv`;
    - `minimizeStrip`;
+   - `hideKnowledgePopover`;
 5. manter a separação entre candidatos estritamente puros e near-misses infra-only;
 6. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, ground, geometria e outras fronteiras de alto blast radius;
