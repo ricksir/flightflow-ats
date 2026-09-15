@@ -68,6 +68,53 @@
     return Object.freeze({ entryMatchesToken });
   }
 
+  function createResolveKnowledgeEntry(options = {}) {
+    const normalizeKnowledgeText = options.normalizeKnowledgeText;
+    const knowledgeEntries = options.knowledgeEntries;
+    const canonicalKnowledgeCode = options.canonicalKnowledgeCode;
+    const entryMatchesToken = options.entryMatchesToken;
+    if (typeof normalizeKnowledgeText !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para resolver conhecimento.');
+    }
+    if (typeof knowledgeEntries !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer knowledgeEntries para resolver conhecimento.');
+    }
+    if (typeof canonicalKnowledgeCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode para resolver conhecimento.');
+    }
+    if (typeof entryMatchesToken !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer entryMatchesToken para resolver conhecimento.');
+    }
+
+  function resolveKnowledgeEntry(fieldKey, rawValue, event) {
+    const textParts = [rawValue];
+    if (fieldKey === 'operation' && event) textParts.push(event.messageType, event.operation);
+    if (fieldKey === 'protocol' && event) textParts.push(event.messageType, event.protocol);
+    const normalized = normalizeKnowledgeText(textParts.filter(Boolean).join(' '));
+    if (!normalized) return null;
+    let priorities;
+    if (fieldKey === 'messageType' || fieldKey === 'operation' || fieldKey === 'protocol') priorities = ['message','status_sagitario','status_tatic','plan_state','term','mca_abbreviation','mca_definition','mca_general'];
+    else if (fieldKey === 'status') priorities = ['plan_state','status_sagitario','status_tatic','message','term','mca_abbreviation','mca_definition','mca_general'];
+    else priorities = ['status_tatic','status_sagitario','message','plan_state','term','mca_abbreviation','mca_definition','mca_general'];
+    const entries = knowledgeEntries().slice().sort((a,b) => String(b.code).length - String(a.code).length);
+    if (fieldKey === 'messageType' || fieldKey === 'operation' || fieldKey === 'protocol') {
+      const normalizedCanonical = canonicalKnowledgeCode(normalized);
+      const exact = entries.filter(entry => canonicalKnowledgeCode(entry.code) === normalizedCanonical || (entry.aliases || []).some(alias => canonicalKnowledgeCode(alias) === normalizedCanonical));
+      const preferred = exact.find(entry => entry.category === 'message' && entry.normative !== false)
+        || exact.find(entry => entry.category === 'mca_abbreviation')
+        || exact.find(entry => entry.category === 'message');
+      if (preferred) return preferred;
+    }
+    for (const category of priorities) {
+      const match = entries.find(entry => entry.category === category && entryMatchesToken(entry, normalized));
+      if (match) return match;
+    }
+    return null;
+  }
+
+    return Object.freeze({ resolveKnowledgeEntry });
+  }
+
   function createKnowledgeEntryFinder(options = {}) {
     const knowledgeEntries = options.knowledgeEntries;
     if (typeof knowledgeEntries !== 'function') {
@@ -311,6 +358,7 @@ Destinatário(s): ${context.recipients}`;
     normalizeKnowledgeText,
     createCanonicalKnowledgeCode,
     createEntryMatchesToken,
+    createResolveKnowledgeEntry,
     createKnowledgeEntryFinder,
     createKnowledgeEntriesByCodeFinder,
     createRelatedKnowledgeButtons,

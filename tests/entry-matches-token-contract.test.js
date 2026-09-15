@@ -98,15 +98,20 @@ test('entryMatchesToken permanece puro e só usa dependências de conhecimento',
   assert.equal((source.match(/\bcanonicalKnowledgeCode\s*\(/g) || []).length, 2);
 });
 
-test('entryMatchesToken mantém exatamente um consumidor executável e não permanece inline', () => {
+test('entryMatchesToken mantém exatamente um consumidor executável no resolver modular', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
   assert.equal((kernel.match(/\bfunction\s+entryMatchesToken\s*\(/g) || []).length, 0);
   assert.equal((kernel.match(/\bentryMatchesToken\b/g) || []).length, 2);
   assert.ok(kernel.includes('const { entryMatchesToken } = CommunicationContextUtils.createEntryMatchesToken({'));
+  assert.ok(kernel.includes('CommunicationContextUtils.createResolveKnowledgeEntry({'));
   assert.ok(kernel.includes('normalizeKnowledgeText,'));
   assert.ok(kernel.includes('canonicalKnowledgeCode,'));
+  assert.ok(kernel.includes('entryMatchesToken,'));
+
+  const resolver = extractNamedFunction(moduleSource, 'resolveKnowledgeEntry');
   assert.equal(
-    kernel.split('entries.find(entry => entry.category === category && entryMatchesToken(entry, normalized));').length - 1,
+    resolver.split('entries.find(entry => entry.category === category && entryMatchesToken(entry, normalized));').length - 1,
     1
   );
 });

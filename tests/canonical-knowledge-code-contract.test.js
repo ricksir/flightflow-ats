@@ -10,7 +10,7 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'canonicalKnowledgeCode';
-const EXPECTED_KERNEL_CONSUMERS = 8;
+const EXPECTED_KERNEL_CONSUMERS = 6;
 const EXPECTED_SOURCE = [
   '  function canonicalKnowledgeCode(value) {',
   "    return normalizeKnowledgeText(value).replace(/[^A-Z0-9]/g, '');",
@@ -111,7 +111,7 @@ test('canonicalKnowledgeCode permanece puro e depende somente de normalizeKnowle
   assert.equal((source.match(/\bnormalizeKnowledgeText\s*\(/g) || []).length, 1);
 });
 
-test('canonicalKnowledgeCode mantém oito consumidores no núcleo e o consumidor extraído no módulo', () => {
+test('canonicalKnowledgeCode mantém seis consumidores no núcleo e usos congelados no módulo', () => {
   const kernel = kernelSource();
   const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const declarations = [...kernel.matchAll(/\bfunction\s+canonicalKnowledgeCode\s*\(/g)].length;
@@ -119,9 +119,13 @@ test('canonicalKnowledgeCode mantém oito consumidores no núcleo e o consumidor
   assert.equal(declarations, 0);
   assert.equal(references, EXPECTED_KERNEL_CONSUMERS + 1);
   assert.ok(kernel.includes('const { canonicalKnowledgeCode } = CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });'));
+  assert.ok(kernel.includes('CommunicationContextUtils.createResolveKnowledgeEntry({'));
   assert.ok(kernel.includes('canonicalKnowledgeCode,'));
+
   const matcher = extractNamedFunction(moduleSource, 'entryMatchesToken');
   assert.equal((matcher.match(/\bcanonicalKnowledgeCode\s*\(/g) || []).length, 2);
+  const resolver = extractNamedFunction(moduleSource, 'resolveKnowledgeEntry');
+  assert.equal((resolver.match(/\bcanonicalKnowledgeCode\s*\(/g) || []).length, 3);
   assert.ok(moduleSource.includes('const canonicalKnowledgeCode = options.canonicalKnowledgeCode;'));
 });
 

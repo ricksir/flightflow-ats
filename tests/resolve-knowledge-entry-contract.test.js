@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const RENDERER_MODULE = path.join(ROOT, 'src', 'knowledge', 'knowledge-field-label-renderer.js');
 const FUNCTION_NAME = 'resolveKnowledgeEntry';
 const EXPECTED_BYTES = 1907;
@@ -66,7 +67,7 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(overrides = {}) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   const deps = {
     normalizeKnowledgeText: value => String(value || '').trim().toUpperCase(),
     knowledgeEntries: () => [],
@@ -89,7 +90,7 @@ function loadFunction(overrides = {}) {
 }
 
 test('resolveKnowledgeEntry congela exatamente a fronteira selecionada no remapeamento #187', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
   assert.ok(source.startsWith('function resolveKnowledgeEntry(fieldKey, rawValue, event) {'));
@@ -99,7 +100,7 @@ test('resolveKnowledgeEntry congela exatamente a fronteira selecionada no remape
 });
 
 test('resolveKnowledgeEntry permanece sem acoplamento temporal, espacial ou de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
     'fetch(', 'setTimeout(', 'setInterval(', 'requestAnimationFrame(', 'navigator.', 'google.', 'L.',
@@ -116,11 +117,19 @@ test('resolveKnowledgeEntry permanece sem acoplamento temporal, espacial ou de i
   assert.equal(source.split('entryMatchesToken(').length - 1, 1);
 });
 
-test('resolveKnowledgeEntry mantém um único consumidor funcional em renderKnowledgeFieldLabel', () => {
+test('resolveKnowledgeEntry sai do núcleo, preserva wiring e mantém um único consumidor funcional', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const rendererSource = fs.readFileSync(RENDERER_MODULE, 'utf8');
+
+  assert.equal(kernel.split('function resolveKnowledgeEntry(').length - 1, 0);
+  assert.equal(moduleSource.split('function resolveKnowledgeEntry(').length - 1, 1);
   assert.equal(kernel.split('resolveKnowledgeEntry').length - 1, 2);
-  assert.equal(kernel.split('function resolveKnowledgeEntry(').length - 1, 1);
+  assert.ok(kernel.includes('const { resolveKnowledgeEntry } = CommunicationContextUtils.createResolveKnowledgeEntry({'));
+  assert.ok(kernel.includes('normalizeKnowledgeText,'));
+  assert.ok(kernel.includes('knowledgeEntries,'));
+  assert.ok(kernel.includes('canonicalKnowledgeCode,'));
+  assert.ok(kernel.includes('entryMatchesToken,'));
   assert.ok(kernel.includes('const { renderKnowledgeFieldLabel } = KnowledgeFieldLabelRenderer.create({'));
   assert.ok(kernel.includes('resolveKnowledgeEntry,'));
 
