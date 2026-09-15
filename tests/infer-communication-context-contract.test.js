@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'inferCommunicationContext';
 const EXPECTED_BYTES = 3994;
 const EXPECTED_SHA256 = '3aba0a949b32d9e8e42494686d581831ac920ae302e43b4782479fa4fa85cbe9';
@@ -67,7 +68,7 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(overrides = {}) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   const deps = {
     parseAddresses: value => String(value || '').split(/[\\s,;|/]+/).filter(Boolean),
     formatAddressCode: value => 'FMT:' + value,
@@ -88,7 +89,7 @@ function loadFunction(overrides = {}) {
 }
 
 test('inferCommunicationContext congela exatamente a fronteira selecionada no remapeamento #191', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
   assert.ok(source.startsWith('function inferCommunicationContext(event) {'));
@@ -101,7 +102,7 @@ test('inferCommunicationContext congela exatamente a fronteira selecionada no re
 });
 
 test('inferCommunicationContext permanece sem acoplamento direto temporal, espacial ou de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
     'fetch(', 'setTimeout(', 'setInterval(', 'requestAnimationFrame(', 'navigator.', 'google.', 'L.',
@@ -117,10 +118,17 @@ test('inferCommunicationContext permanece sem acoplamento direto temporal, espac
   assert.equal((source.match(/\binternalTransitionDetails\s*\(/g) || []).length, 1);
 });
 
-test('inferCommunicationContext mantém um único consumidor funcional em renderCommunication', () => {
+test('inferCommunicationContext sai do núcleo, preserva wiring e mantém um único consumidor funcional', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+
+  assert.equal(kernel.split('function inferCommunicationContext(').length - 1, 0);
+  assert.equal(moduleSource.split('function inferCommunicationContext(').length - 1, 1);
   assert.equal(kernel.split('inferCommunicationContext').length - 1, 2);
-  assert.equal(kernel.split('function inferCommunicationContext(').length - 1, 1);
+  assert.ok(kernel.includes('const { inferCommunicationContext } = CommunicationContextUtils.createCommunicationContextInferer({'));
+  assert.ok(kernel.includes('parseAddresses,'));
+  assert.ok(kernel.includes('formatAddressCode,'));
+  assert.ok(kernel.includes('internalTransitionDetails,'));
 
   const consumer = extractNamedFunction(kernel, 'renderCommunication');
   assert.equal(consumer.split('inferCommunicationContext(').length - 1, 1);

@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1118081;
-const EXPECTED_SHA256 = '8fb75716e25a8fc65abf05521e503165ce7695cc5c0522cf29cac9d2b09489a2';
-const EXPECTED_LINES = 5081;
+const EXPECTED_BYTES = 1114266;
+const EXPECTED_SHA256 = 'fda04cb84151bbb90e4e9d0619f15007f930ecc322ab7f70c543d09c416b4ed6';
+const EXPECTED_LINES = 5005;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -37,7 +37,7 @@ const EXTRACTED_STAND_HINT_UTILS = ['extractStandHint'];
 const EXTRACTED_AIRPORT_SURFACE_UTILS = ['airportSurfacePreset'];
 const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
 const EXTRACTED_ROUTE_REVISION_REASON = ['routeRevisionReason'];
-const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'canonicalKnowledgeCode', 'entryMatchesToken', 'resolveKnowledgeEntry', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'relatedKnowledgeButtons', 'knowledgeDetailMarkup', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
+const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'parseAddresses', 'inferCommunicationContext', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'canonicalKnowledgeCode', 'entryMatchesToken', 'resolveKnowledgeEntry', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'relatedKnowledgeButtons', 'knowledgeDetailMarkup', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
 const EXTRACTED_KEYBOARD = ['handleKeyboard'];
@@ -168,6 +168,7 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     "if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');",
     'const { internalTransitionDetails } = CommunicationContextUtils;',
     'const { parseAddresses } = CommunicationContextUtils;',
+    'const { inferCommunicationContext } = CommunicationContextUtils.createCommunicationContextInferer({',
     'const { knowledgeEntryDocumentKey } = CommunicationContextUtils;',
     'const { normalizeKnowledgeText } = CommunicationContextUtils;',
     'const { canonicalKnowledgeCode } = CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });',
@@ -265,8 +266,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 287);
-  assert.equal(counts.size, 287);
+  assert.equal(names.length, 286);
+  assert.equal(counts.size, 286);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
