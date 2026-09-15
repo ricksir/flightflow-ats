@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#189** e conclusão verde do workflow pós-merge **#479**.
+> Última verificação: **15/09/2026**, após o merge do PR **#193** e conclusão verde do workflow pós-merge **#489**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `1eb4cf0ffb0d711ff8e8f1504e2c86bcb645c34e`
-  — `refactor: extract resolve knowledge entry` (PR #189).
+  `3e49497c336ff215c5c5b5aa9b26bda89301417f`
+  — `refactor: extract communication context inferer` (PR #193).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -363,6 +363,126 @@ Workflows:
 
 - PR: **#478** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
 - pós-merge: **#479** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+### PR #190 — checkpoint documental após `resolveKnowledgeEntry`
+
+O PR **#190 — `docs: update AI current state after PR 189`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`2925c3478640cf2efb0e0e419b1ae1c7eb8c85cf`
+
+Workflows:
+
+- PR: **#480** — sucesso, **46 passed (2.4m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#481** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+### PR #191 — remapeamento analítico descartável
+
+O PR **#191 — `chore: fresh kernel remap after PR 190`** recalculou do zero o ranking sobre o `main` documental `2925c3478640cf2efb0e0e419b1ae1c7eb8c85cf`.
+
+Após excluir todas as fronteiras já extraídas e os candidatos temporal/espacialmente sensíveis, restou uma única fronteira elegível:
+
+- `inferCommunicationContext`;
+- corpo exato: **3.994 bytes**;
+- SHA-256:
+  `3aba0a949b32d9e8e42494686d581831ac920ae302e43b4782479fa4fa85cbe9`;
+- exatamente **1 consumidor funcional**, `renderCommunication`;
+- dependências funcionais restritas a:
+  - `parseAddresses`;
+  - `formatAddressCode`;
+  - `internalTransitionDetails`;
+- sem acesso direto a estado global, DOM, storage, rede, timers, rota, DEP, mapa, movimento, timeline, scrubber ou autoplay.
+
+A inspeção manual confirmou que a função apenas deriva, a partir do `event`, o contexto de comunicação para:
+
+- fluxo ATS externo;
+- transição interna de estados;
+- criação/RPL;
+- correlação;
+- estimados;
+- SSR;
+- arquivamento.
+
+Head analítico:
+
+`eca799569484735b4e17923294afb293d2aee98e`
+
+Workflow **#482** — sucesso, **46 passed (2.9m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+O PR foi fechado **sem merge**.
+
+### PR #192 — congelamento de `inferCommunicationContext`
+
+O PR **#192 — `test: freeze infer communication context contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **3.994 bytes**;
+- SHA-256:
+  `3aba0a949b32d9e8e42494686d581831ac920ae302e43b4782479fa4fa85cbe9`;
+- único consumidor funcional: `renderCommunication`;
+- dependências:
+  - `parseAddresses`;
+  - `formatAddressCode`;
+  - `internalTransitionDetails`;
+- fluxo externo, fallbacks de origem/destino/formato, evento interno padrão, transição, criação/RPL, correlação, estimados, SSR e arquivamento protegidos;
+- precedência de dados do evento sobre snapshot, não mutação e propagação de erros protegidas;
+- ausência de acoplamento temporal, espacial ou de infraestrutura.
+
+Durante a construção do contrato, os primeiros runs encontraram exclusivamente problemas nas próprias fixtures/regex do teste novo; nenhum código de produção foi alterado. O head final validado foi:
+
+`2bf68f8236a13ea5d1edde24c7c4fcd2b0a64b76`
+
+Merge por squash:
+
+`4f5bdccb5993b27a40d8106bb0385e2c0c21033b`
+
+Workflows aceitos:
+
+- PR: **#486** — sucesso, **46/0/0/0**;
+- pós-merge: **#487** — sucesso, **46/0/0/0**.
+
+### PR #193 — extração de `inferCommunicationContext`
+
+O PR **#193 — `refactor: extract communication context inferer`** moveu mecanicamente a função do IIFE principal para a factory `createCommunicationContextInferer` em `src/timeline/communication-context-utils.js`.
+
+A extração preservou:
+
+- corpo protegido: **3.994 bytes**;
+- SHA-256 do corpo:
+  `3aba0a949b32d9e8e42494686d581831ac920ae302e43b4782479fa4fa85cbe9`;
+- único consumidor funcional em `renderCommunication`;
+- 0 declarações inline no IIFE principal;
+- injeção explícita de:
+  - `parseAddresses`;
+  - `formatAddressCode`;
+  - `internalTransitionDetails`;
+- wiring por:
+  `CommunicationContextUtils.createCommunicationContextInferer({ parseAddresses, formatAddressCode, internalTransitionDetails })`.
+
+Os contratos de `parseAddresses`, `formatAddressCode` e `internalTransitionDetails` foram ajustados somente para refletir a nova localização do consumidor.
+
+Head final validado:
+
+`f82993cf292ef463b65eb46bb8ca37aa32f2bb73`
+
+Merge por squash no `main`:
+
+`3e49497c336ff215c5c5b5aa9b26bda89301417f`
+
+Baselines resultantes:
+
+- kernel: **1.114.266 bytes**, **5.005 linhas**, **286 funções nomeadas**;
+- SHA-256 do kernel:
+  `fda04cb84151bbb90e4e9d0619f15007f930ecc322ab7f70c543d09c416b4ed6`;
+- `src/timeline/communication-context-utils.js`: **22.691 bytes**, **473 linhas**, **32 funções nomeadas**;
+- SHA-256 do módulo:
+  `3d6e6f787a296194a651037bc80bf1050473a266f578712893064b66a8e2d68c`;
+- inventário global: **755 declarações function nomeadas / 744 nomes únicos**.
+
+Workflows:
+
+- PR: **#488** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: **#489** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
 Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
 
@@ -1131,13 +1251,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #185:
+Conforme `tests/main-kernel-contract.test.js` após o PR #193:
 
-- **1.119.792 bytes**;
-- **5.100 linhas**;
+- **1.114.266 bytes**;
+- **5.005 linhas**;
 - SHA-256:
-  `e738156ed16c67a9a6c33f407346ba3c46578cc79a7151a605faab0fffc0364b`;
-- **288 funções nomeadas** no núcleo protegido.
+  `fda04cb84151bbb90e4e9d0619f15007f930ecc322ab7f70c543d09c416b4ed6`;
+- **286 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -1182,13 +1302,14 @@ Conforme `tests/location-code-contract.test.js`:
 
 ### Communication Context Utils
 
-Conforme `tests/communication-context-utils-contract.test.js` após o PR #185:
+Conforme `tests/communication-context-utils-contract.test.js` após o PR #193:
 
 - arquivo: `src/timeline/communication-context-utils.js`;
-- **14.828 bytes**;
+- **22.691 bytes**;
+- **473 linhas**;
 - SHA-256:
-  `071667faa0ee75b44354a9ecee4a3c284dc13fe1753fa26b899a9bc5ce666718`;
-- **28 funções nomeadas**.
+  `3d6e6f787a296194a651037bc80bf1050473a266f578712893064b66a8e2d68c`;
+- **32 funções nomeadas**.
 
 A API pública congelada inclui:
 
@@ -1196,8 +1317,10 @@ A API pública congelada inclui:
 - `parseAddresses`;
 - `knowledgeEntryDocumentKey`;
 - `normalizeKnowledgeText`;
+- `createCommunicationContextInferer`;
 - `createCanonicalKnowledgeCode`;
 - `createEntryMatchesToken`;
+- `createResolveKnowledgeEntry`;
 - `createKnowledgeEntryFinder`;
 - `createKnowledgeEntriesByCodeFinder`;
 - `createRelatedKnowledgeButtons`;
@@ -1216,9 +1339,6 @@ A API pública congelada inclui:
   `1786277e616ee1668872e61de46c48ebf4e3405961bcc11b912eb02e48fa8c9c`;
 - fábrica:
   `createEntryMatchesToken({ normalizeKnowledgeText, canonicalKnowledgeCode })`;
-- retorno congelado:
-  `entryMatchesToken`;
-- consumidores executáveis no núcleo: **1**;
 - declaração inline no IIFE principal: **0**.
 
 `relatedKnowledgeButtons` permanece congelada dentro do módulo com:
@@ -1228,9 +1348,6 @@ A API pública congelada inclui:
   `61ea15f4014d7872d74c62b4d2fcf8fc2079f7adc462c3f4959394db69a03c31`;
 - fábrica:
   `createRelatedKnowledgeButtons({ findKnowledgeEntriesByCode, escapeHtml })`;
-- retorno congelado:
-  `relatedKnowledgeButtons`;
-- consumidor funcional no núcleo: **1**, em `knowledgeDetailMarkup`;
 - declaração inline no IIFE principal: **0**.
 
 `knowledgeDetailMarkup` permanece congelada dentro do módulo com:
@@ -1240,9 +1357,28 @@ A API pública congelada inclui:
   `3a516046ca6d13484c3cb8ad157285cb05566e83a05d434887cee03b82c24285`;
 - fábrica:
   `createKnowledgeDetailMarkup({ escapeHtml, knowledgeEntryDocumentLabel, knowledgeCategoryLabel, relatedKnowledgeButtons, knowledgeDisclaimer })`;
+- declaração inline no IIFE principal: **0**.
+
+`resolveKnowledgeEntry` permanece congelada dentro do módulo com:
+
+- corpo: **1.907 bytes**;
+- SHA-256:
+  `95ca385afde918ceb769218088baaacfe7f146b4334666989846333e24590cc2`;
+- fábrica:
+  `createResolveKnowledgeEntry({ normalizeKnowledgeText, knowledgeEntries, canonicalKnowledgeCode, entryMatchesToken })`;
+- único consumidor funcional em `renderKnowledgeFieldLabel`;
+- declaração inline no IIFE principal: **0**.
+
+`inferCommunicationContext` permanece congelada dentro do módulo com:
+
+- corpo: **3.994 bytes**;
+- SHA-256:
+  `3aba0a949b32d9e8e42494686d581831ac920ae302e43b4782479fa4fa85cbe9`;
+- fábrica:
+  `createCommunicationContextInferer({ parseAddresses, formatAddressCode, internalTransitionDetails })`;
 - retorno congelado:
-  `knowledgeDetailMarkup`;
-- consumidores funcionais no núcleo: **3**;
+  `inferCommunicationContext`;
+- único consumidor funcional no núcleo: **1**, em `renderCommunication`;
 - declaração inline no IIFE principal: **0**.
 
 ### Source Manager Controller
@@ -1380,13 +1516,13 @@ Conforme `tests/merge-config-contract.test.js` após o PR #172:
 
 ### Inventário global
 
-Após o PR #185:
+Após o PR #193:
 
-- **753 declarações function nomeadas** entre o HTML e scripts locais;
-- **742 nomes únicos**;
-- o IIFE principal contém **288 funções nomeadas**;
+- **755 declarações function nomeadas** entre o HTML e scripts locais;
+- **744 nomes únicos**;
+- o IIFE principal contém **286 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
-- `src/timeline/communication-context-utils.js` contém **28 funções nomeadas**;
+- `src/timeline/communication-context-utils.js` contém **32 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `src/ui/field-card-renderer.js` contém **2 funções nomeadas**;
@@ -1394,6 +1530,7 @@ Após o PR #185:
 - `src/config/config-merger.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-field-label-renderer.js` contém **2 funções nomeadas**;
+- o inventário não introduziu nova colisão de nomes;
 - `flightflow-locality-utils` continua contendo:
   - `createLocalityUtils`;
   - `isLocationCode`.
@@ -1408,7 +1545,26 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 4. **Browser availability**;
 5. **UI navigation regression tests / Playwright**.
 
-Referência do ciclo mais recente (`knowledgeDetailMarkup`):
+Referência do ciclo mais recente (`inferCommunicationContext`):
+
+- checkpoint documental #190:
+  - workflow **#480** no head exato `117aafc4e68fc9b1c87fbb314a0bed513d76eba8` — sucesso;
+  - pós-merge: workflow **#481** no SHA `2925c3478640cf2efb0e0e419b1ae1c7eb8c85cf` — sucesso;
+  - ambos em **46/0/0/0**.
+- remapeamento descartável #191:
+  - workflow **#482** no head exato `eca799569484735b4e17923294afb293d2aee98e` — sucesso;
+  - **46/0/0/0**;
+  - fechado sem merge.
+- PR de contrato #192:
+  - workflow final **#486** no head exato `2bf68f8236a13ea5d1edde24c7c4fcd2b0a64b76` — sucesso;
+  - pós-merge: workflow **#487** no SHA `4f5bdccb5993b27a40d8106bb0385e2c0c21033b` — sucesso;
+  - ambos em **46/0/0/0**.
+- PR de extração #193:
+  - workflow **#488** no head exato `f82993cf292ef463b65eb46bb8ca37aa32f2bb73` — sucesso;
+  - pós-merge: workflow **#489** no SHA `3e49497c336ff215c5c5b5aa9b26bda89301417f` — sucesso;
+  - ambos em **46/0/0/0**.
+
+Referência de ciclo anterior (`knowledgeDetailMarkup`):
 
 - checkpoint documental #182:
   - workflow **#464** no head exato `acee789dfbeaf8b3fe7351df543c0f5fe60c7ea5` — sucesso;
@@ -1513,13 +1669,17 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `resolveKnowledgeEntry` está concluído em produção e validado no SHA exato:
+O ciclo `inferCommunicationContext` está concluído em produção e validado no SHA exato:
 
-`1eb4cf0ffb0d711ff8e8f1504e2c86bcb645c34e`
+`3e49497c336ff215c5c5b5aa9b26bda89301417f`
 
-Workflow pós-merge correspondente: **#479**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+Workflow pós-merge correspondente: **#489**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
-**Não reutilizar o ranking do PR #187**, porque o kernel mudou com a extração do PR #189.
+O corpo protegido permanece no módulo com **3.994 bytes** e SHA-256:
+
+`3aba0a949b32d9e8e42494686d581831ac920ae302e43b4782479fa4fa85cbe9`
+
+**Não reutilizar o ranking do PR #191**, porque o kernel mudou com a extração do PR #193.
 
 Próximo fluxo seguro:
 
@@ -1548,6 +1708,7 @@ Próximo fluxo seguro:
    - `relatedKnowledgeButtons`;
    - `knowledgeDetailMarkup`;
    - `resolveKnowledgeEntry`;
+   - `inferCommunicationContext`;
 5. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
 6. inspecionar manualmente o melhor candidato restante;
