@@ -99,6 +99,9 @@
     lastSourceLabel: '',
     lastTransferSignature: '',
     movementProfile: null,
+    focusMode: true,
+    selectedPointIndex: -1,
+    legendOpen: false,
   };
 
   const qs = (s, root=document) => root.querySelector(s);
@@ -199,6 +202,26 @@
       @media(max-width:1180px){.ffrp-window{width:calc(100vw - 30px);height:calc(100vh - 32px)}.ffrp-tool-group-data{flex-basis:420px}.ffrp-tool-status{width:100%;margin-left:0;justify-content:flex-start}.ffrp-body{grid-template-columns:minmax(0,1fr) minmax(305px,340px)}}
       @media(max-width:900px){.ffrp-modal{padding:8px}.ffrp-window{height:calc(100vh - 16px);width:calc(100vw - 16px);border-radius:16px}.ffrp-head{min-height:60px;padding:12px 14px}.ffrp-toolbar{padding:9px}.ffrp-tool-group{flex:1 1 280px}.ffrp-tool-group-data{flex-basis:100%}.ffrp-eventbar{margin:0 9px 1px;flex-wrap:wrap}.ffrp-eventbar label{flex:1 1 360px}.ffrp-eventbar select{width:100%}.ffrp-event-info{margin-left:0}.ffrp-body{grid-template-columns:1fr;grid-template-rows:minmax(320px,1fr) minmax(190px,260px);padding:9px;gap:9px}.ffrp-side{max-height:none;border-top:1px solid var(--ffrp-border)}.ffrp-map-wrap{border-right:1px solid #cbdce3}.ffrp-footer{margin:0 9px 9px}}
       @media(max-width:640px){.ffrp-window{width:100vw;height:100vh;border:0;border-radius:0}.ffrp-modal{padding:0}.ffrp-head-title .ffrp-head-subtitle{display:none}.ffrp-head{padding:10px 12px}.ffrp-toolbar{max-height:226px;overflow:auto}.ffrp-tool-group{flex-basis:100%}.ffrp-tool-buttons button{flex:1 1 132px}.ffrp-tool-status{align-items:stretch}.ffrp-id-card{flex:1 1 auto}.ffrp-eventbar{margin:0 7px}.ffrp-eventbar label{order:5;flex-basis:100%}.ffrp-event-info{order:6;width:100%}.ffrp-body{grid-template-rows:minmax(280px,1fr) minmax(175px,235px);padding:7px}.ffrp-map-hud{left:8px;top:8px;max-width:calc(100% - 16px)}.ffrp-legend{left:8px;right:8px;bottom:8px;justify-content:flex-start;max-width:none}.ffrp-map-note{left:8px;bottom:64px;max-width:calc(100% - 16px)}.ffrp-footer{margin:0 7px 7px;grid-template-columns:auto minmax(120px,1fr) auto;gap:8px}}
+
+      /* Rota Processada v2 — foco operacional e densidade controlada. */
+      .ffrp-map-wrap{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0}
+      .ffrp-map-stage{position:relative;min-width:0;min-height:0;overflow:hidden}
+      .ffrp-map-note{position:static;left:auto;bottom:auto;max-width:none;min-height:42px;margin:0;padding:9px 12px;border:0;border-top:1px solid rgba(13,112,132,.14);border-radius:0!important;background:rgba(255,255,255,.97);box-shadow:none!important;font:700 .70rem/1.45 Inter,system-ui,sans-serif;color:#3e5f6e}
+      .ffrp-legend{position:absolute;top:12px;right:12px;bottom:auto;display:block;max-width:min(520px,calc(100% - 24px));padding:0;border-radius:12px!important;background:rgba(255,255,255,.96);font:750 .68rem/1.35 Inter,system-ui,sans-serif;color:#3d5d6c;overflow:hidden}
+      .ffrp-legend summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;padding:0 11px;cursor:pointer;list-style:none;color:#0a526c;font:900 .70rem/1 Inter,system-ui,sans-serif;letter-spacing:.01em;user-select:none}
+      .ffrp-legend summary::-webkit-details-marker{display:none}.ffrp-legend summary::after{content:'+';display:grid;place-items:center;width:20px;height:20px;border-radius:7px;background:#e7f4f8;color:#0d7084;font-size:.86rem}.ffrp-legend[open] summary::after{content:'−'}
+      .ffrp-legend-items{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:7px 10px;padding:9px 11px 11px;border-top:1px solid rgba(13,112,132,.12)}.ffrp-legend-items span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+      .ffrp-map .wp{cursor:pointer;transition:opacity .14s ease}.ffrp-map.focus-mode .wp.is-muted{opacity:.28}.ffrp-map.focus-mode .wp.is-muted:hover,.ffrp-map.focus-mode .wp.is-muted:focus{opacity:.82}
+      .ffrp-map .wp.is-current circle{stroke:#18a0c4;stroke-width:4;filter:drop-shadow(0 0 6px rgba(24,160,196,.55))}.ffrp-map .wp.is-selected circle{stroke:#d59a20;stroke-width:4;filter:drop-shadow(0 0 5px rgba(213,154,32,.45))}.ffrp-map .wp.is-transfer circle{stroke:#8a48bd;stroke-width:3}
+      .ffrp-map .wp text{font:850 14px/1 Inter,system-ui,sans-serif;stroke-width:5px}.ffrp-map .wp .meta{font:700 11px/1.15 ui-monospace,monospace;fill:#486978}.ffrp-map .label-leader{stroke:#6c8793;stroke-width:1.2;stroke-opacity:.50;vector-effect:non-scaling-stroke}.ffrp-map .wp:focus{outline:none}.ffrp-map .wp:focus circle{stroke:#18a0c4;stroke-width:4}
+      .ffrp-map-hud{max-width:min(430px,calc(100% - 28px))}.ffrp-map-hud-card strong{font-size:.76rem;line-height:1.3}.ffrp-map-hud-card span{font-size:.68rem;line-height:1.42}
+      .ffrp-side h3{font-size:.82rem}.ffrp-point{font-size:.72rem;line-height:1.35}.ffrp-point-main strong{font-size:.75rem}.ffrp-point-main span{font-size:.69rem;line-height:1.4}.ffrp-point-source{font-size:.66rem;line-height:1.4}.ffrp-route-kind{font-size:.56rem;padding:3px 6px}.ffrp-tail-note,.ffrp-unresolved{font-size:.69rem;line-height:1.5}
+      .ffrp-tool-label{font-size:.60rem}.ffrp-toolbar button{font-size:.69rem}.ffrp-stat,.ffrp-id-card{font-size:.67rem}.ffrp-eventbar label,.ffrp-eventbar select,.ffrp-event-info{font-size:.68rem}.ffrp-head-title .ffrp-eyebrow{font-size:.58rem}.ffrp-head-title strong{font-size:1rem}.ffrp-head-title .ffrp-head-subtitle{font-size:.70rem}.ffrp-time{font-size:.68rem}
+      .leaflet-tooltip.ffrp-native-fix-label{padding:5px 7px;font:800 11px/1.2 Inter,system-ui,sans-serif}.ffrp-native-fix-label b{font-size:11px}.ffrp-native-fix-label span{font-size:10px;line-height:1.2}.leaflet-tooltip.ffrp-native-fix-hover{background:rgba(255,255,255,.98);box-shadow:0 5px 14px rgba(3,29,57,.16)}
+      #ffrpVectorFixLayer .ffrp-vfix{opacity:.35;transition:opacity .14s ease}#ffrpVectorFixLayer .ffrp-vfix.labelled,#ffrpVectorFixLayer .ffrp-vfix.current,#ffrpVectorFixLayer .ffrp-vfix.transfer{opacity:1}
+      .ffrp-focus-btn[aria-pressed="true"]{background:#0d7084!important;color:#fff!important;border-color:#0d7084!important;box-shadow:0 4px 12px rgba(13,112,132,.20)!important}
+      @media(max-width:900px){.ffrp-map-note{font-size:.68rem}.ffrp-legend{top:8px;right:8px;max-width:calc(100% - 16px)}}
+      @media(max-width:640px){.ffrp-map-note{font-size:.66rem;padding:8px 10px}.ffrp-legend{left:auto;right:8px;bottom:auto}.ffrp-map-hud{max-width:calc(100% - 110px)}}
 
     `;
     document.head.appendChild(s);
@@ -1410,6 +1433,7 @@
             <div class="ffrp-tool-buttons">
               <button id="ffrpTimelineBtn" class="active">Acompanhar timeline</button>
               <button id="ffrpFinalBtn">Usar quadro final</button>
+              <button id="ffrpFocusBtn" class="ffrp-focus-btn active" aria-pressed="true" title="Destacar ponto atual, transferências, origem, destino e seleção">Modo foco</button>
             </div>
           </section>
           <section class="ffrp-tool-group ffrp-tool-group-data" aria-label="Dados e base geográfica">
@@ -1434,7 +1458,20 @@
           <input id="ffrpFileInput" class="ffrp-file-input" type="file" accept=".json,.geojson,.csv,.txt,.xlsx,.xls" />
         </div>
         <div class="ffrp-eventbar"><button id="ffrpPrevEvent" title="Evento anterior">◀</button><label>Evento FlightFlow <select id="ffrpEventSelect"></select></label><button id="ffrpGoEvent" title="Mostrar diretamente o evento selecionado no FlightFlow">Mostrar no FlightFlow</button><button id="ffrpNextEvent" title="Próximo evento">▶</button><span id="ffrpEventInfo" class="ffrp-event-info">Aguardando timeline</span></div>
-        <div class="ffrp-body"><div class="ffrp-map-wrap"><svg id="ffrpMap" class="ffrp-map" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet"></svg><div id="ffrpMapHud" class="ffrp-map-hud"></div><div id="ffrpLegend" class="ffrp-legend"><span><i class="ffrp-lg-dot ffrp-lg-airport"></i>Aeródromo</span><span><i class="ffrp-lg-dot"></i>Fixo/Waypoint</span><span><i class="ffrp-lg-dot ffrp-lg-coord"></i>Coordenada</span><span><i class="ffrp-lg-transfer"></i>Transferência</span><span><i class="ffrp-lg-line"></i>Rota processada</span><span><i class="ffrp-lg-declared"></i>Rota declarada s/ ETIM</span><span><i class="ffrp-lg-destination"></i>ADES sem trajetória terminal</span></div><div id="ffrpMapNote" class="ffrp-map-note"></div></div><aside class="ffrp-side"><div class="ffrp-snap-head"><h3 id="ffrpSnapTitle">Quadro da rota</h3><button id="ffrpShowSnapEvent">Mostrar quadro no FlightFlow</button></div><div id="ffrpRouteList" class="ffrp-route-list"></div><div id="ffrpTailNote"></div><div id="ffrpUnresolved"></div></aside></div>
+        <div class="ffrp-body">
+          <div class="ffrp-map-wrap">
+            <div class="ffrp-map-stage">
+              <svg id="ffrpMap" class="ffrp-map focus-mode" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet"></svg>
+              <div id="ffrpMapHud" class="ffrp-map-hud"></div>
+              <details id="ffrpLegend" class="ffrp-legend">
+                <summary>Legenda operacional</summary>
+                <div class="ffrp-legend-items"><span><i class="ffrp-lg-dot ffrp-lg-airport"></i>Aeródromo</span><span><i class="ffrp-lg-dot"></i>Fixo/Waypoint</span><span><i class="ffrp-lg-dot ffrp-lg-coord"></i>Coordenada</span><span><i class="ffrp-lg-transfer"></i>Transferência</span><span><i class="ffrp-lg-line"></i>Rota processada</span><span><i class="ffrp-lg-declared"></i>Rota declarada s/ ETIM</span><span><i class="ffrp-lg-destination"></i>ADES sem trajetória terminal</span></div>
+              </details>
+            </div>
+            <div id="ffrpMapNote" class="ffrp-map-note" role="status"></div>
+          </div>
+          <aside class="ffrp-side"><div class="ffrp-snap-head"><h3 id="ffrpSnapTitle">Quadro da rota</h3><button id="ffrpShowSnapEvent">Mostrar quadro no FlightFlow</button></div><div id="ffrpRouteList" class="ffrp-route-list"></div><div id="ffrpTailNote"></div><div id="ffrpUnresolved"></div></aside>
+        </div>
         <div class="ffrp-footer"><button id="ffrpPlay" class="ffrp-play">▶</button><input id="ffrpRange" class="ffrp-range" type="range" min="0" max="1000" value="0"/><span id="ffrpTime" class="ffrp-time">0%</span></div>
       </div>`;
       document.body.appendChild(wrap);
@@ -1442,6 +1479,8 @@
       wrap.addEventListener('click',e=>{if(e.target===wrap)wrap.hidden=true});
       qs('#ffrpTimelineBtn').addEventListener('click',()=>{model.syncTimeline=true;model.useFinalSnapshot=false;qs('#ffrpTimelineBtn').classList.add('active');qs('#ffrpFinalBtn').classList.remove('active');syncFromNativeTimeline({fit:false});toast(`Rota sincronizada com o evento ${nativeEventIndex()+1} do FlightFlow.`,'ok');});
       qs('#ffrpFinalBtn').addEventListener('click',()=>{model.useFinalSnapshot=!model.useFinalSnapshot;if(model.useFinalSnapshot)model.syncTimeline=false;qs('#ffrpFinalBtn').classList.toggle('active',model.useFinalSnapshot);qs('#ffrpTimelineBtn').classList.toggle('active',model.syncTimeline);renderModal();});
+      qs('#ffrpFocusBtn').addEventListener('click',()=>{model.focusMode=!model.focusMode;const button=qs('#ffrpFocusBtn');button.classList.toggle('active',model.focusMode);button.setAttribute('aria-pressed',String(model.focusMode));applyProcessedRouteToFlightFlow();renderModal(false);});
+      qs('#ffrpLegend').addEventListener('toggle',e=>{model.legendOpen=Boolean(e.currentTarget.open);});
       qs('#ffrpSyncBtn').addEventListener('click',syncAISWEB);
       qs('#ffrpHistoryBtn').addEventListener('click',()=>qs('#ffrpHistoryInput').click());
       qs('#ffrpHistoryInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(f){try{await analyzeText(await readHistoryFile(f),f.name)}catch(err){toast(`Falha ao ler histórico: ${err.message||err}`,'error')}}e.target.value=''});
