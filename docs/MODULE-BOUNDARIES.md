@@ -1,6 +1,8 @@
-# Fronteiras atuais de módulos JavaScript
+# Fronteiras de módulos JavaScript — registro técnico
 
-Este documento registra a decomposição gradual do `index.html`. A regra é mover uma fronteira por vez, preservar o contrato existente e validar antes de qualquer limpeza interna.
+> **Nota de estado:** este documento preserva o histórico das extrações realizadas. Alguns baselines intermediários abaixo são históricos e não representam os totais atuais. Para o estado vigente, use `docs/AI_CURRENT_STATE.md` e `tests/main-kernel-contract.test.js`.
+
+A rodada contínua de decomposição foi encerrada após o PR #211. Novas extrações só devem ocorrer quando houver necessidade funcional ou arquitetural concreta, preservando o contrato existente e os quality gates.
 
 ## Inventário estrutural
 
