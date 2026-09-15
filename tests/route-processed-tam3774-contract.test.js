@@ -172,3 +172,165 @@ test('TAM3774 não cria mais aproximação sintética IMTBI → SBCT e limita o 
   const imtbiIndex = movement.findIndex(point => point.ident === 'IMTBI');
   assertNear(limit, fractions[imtbiIndex], 'limite temporal em IMTBI');
 });
+
+
+const GEO_DATA = path.join(ROOT, 'src', 'data', 'geo-data.js');
+
+function airportFromRepo(ident) {
+  const geoSource = fs.readFileSync(GEO_DATA, 'utf8');
+  const re = new RegExp('\\["' + ident + '",(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?),');
+  const match = geoSource.match(re);
+  assert.ok(match, `${ident} deve existir na base geográfica do FlightFlow`);
+  return {
+    ident,
+    lat: Number(match[1]),
+    lon: Number(match[2]),
+    source: 'FlightFlow base geográfica',
+    kind: 'airport',
+  };
+}
+
+const TAM3774_TER_FIXTURE = TAM3774_FIXTURE + `
+############################################################
+
+OPERAÇÃO : Recepção de Mensagem DEP
+
+data:   08/07/2026      hora:   23:45:00      posição: SPA01      ambiente: OpA
+
+Mensagem         : DEP
+Conteúdo         :
+(DEP-TAM3774-SBBR2345-SBCT)
+
+############################################################
+
+OPERAÇÃO : Ordem TER
+
+data:   09/07/2026      hora:   00:50:00      posição: SPA01      ambiente: OpA
+
+Plano encerrado por Ordem TER
+############################################################
+`;
+
+test('TAM3774 fecha visualmente no ADES somente após Ordem TER, sem alterar o histórico', () => {
+  const api = loadRouteApi();
+  const history = api.parseHistory(TAM3774_TER_FIXTURE, 'TAM3774-Ordem-TER.txt');
+  const model = api.getModel();
+  model.history = history;
+
+  const seed = new Map(Array.from(api.officialSeed, row => [row.ident, row]));
+  model.embedded.set('SBCT', airportFromRepo('SBCT'));
+
+  const snapshot = {
+    ...history.snapshots[0],
+    points: history.snapshots[0].points.map(point => {
+      const geo = api.parseCoordinateIdent(point.ident) || seed.get(point.ident) || model.embedded.get(point.ident) || null;
+      return {...point, geo};
+    }),
+  };
+  model.resolvedSnapshots = [snapshot];
+
+  assert.deepEqual(
+    Array.from(snapshot.points, point => point.ident),
+    EXPECTED_POINTS,
+    'Ordem TER não pode alterar, inserir ou reordenar os fixos históricos'
+  );
+
+  const historicalAndDeclared = api.movementPoints(snapshot);
+  assert.equal(
+    historicalAndDeclared.some(point => point.ident === 'SBCT'),
+    false,
+    'movementPoints continua reservado ao histórico + continuação declarada'
+  );
+  assert.deepEqual(
+    Array.from(historicalAndDeclared.slice(-6), point => point.ident),
+    ['IMTBI', 'VULRU', 'UBNID', 'GIKLU', 'USVIG', 'UMGUL']
+  );
+
+  const closure = api.terminalClosureContext();
+  assert.ok(closure, 'Ordem TER deve ser reconhecida como gatilho terminal');
+  assert.match(String(closure.event?.operation || ''), /Ordem TER/i);
+
+  const terminalPoint = api.terminalClosurePoint(snapshot);
+  assert.ok(terminalPoint, 'ADES deve gerar ponto terminal derivado quando conhecido');
+  assert.equal(terminalPoint.ident, 'SBCT');
+  assert.equal(terminalPoint.terminalClosure, true);
+  assert.equal(terminalPoint.derived, true);
+  assert.equal(terminalPoint.untimed, true);
+  assert.equal(terminalPoint.etim, '', 'fechamento terminal não pode fabricar ETIM');
+  assert.equal(terminalPoint.etimKey, null, 'fechamento terminal não pode fabricar chave temporal');
+  assert.equal(terminalPoint.cfl, '', 'fechamento terminal não pode fabricar CFL');
+
+  const profilePoints = api.movementPointsForProfile(snapshot);
+  assert.equal(profilePoints.at(-1).ident, 'SBCT', 'perfil espacial deve terminar no ADES após Ordem TER');
+  assert.equal(
+    profilePoints.filter(point => point.terminalClosure).length,
+    1,
+    'fechamento terminal deve acrescentar somente o ADES, sem fixos/STAR intermediários'
+  );
+
+  const declared = api.declaredRouteContinuation(snapshot);
+  assert.deepEqual(
+    Array.from(declared, point => point.ident),
+    ['VULRU', 'UBNID', 'GIKLU', 'USVIG', 'UMGUL']
+  );
+  assert.ok(declared.every(point => point.etim === '' && point.etimKey === null), 'continuação UZ5 continua sem ETIM inventado');
+
+  const limit = api.timedProgressLimit(snapshot);
+  const fractions = api.routeDistanceFractions(profilePoints);
+  const imtbiIndex = profilePoints.findIndex(point => point.ident === 'IMTBI');
+  assert.ok(limit > 0 && limit < 1, 'limite dos ETIM reais deve continuar antes do ADES');
+  assertNear(limit, fractions[imtbiIndex], 'último ETIM real continua em IMTBI');
+
+  const profile = api.buildMovementProfile();
+  assert.ok(profile?.terminalClosure, 'perfil deve registrar contrato de fechamento terminal');
+  const terminalIndex = profile.terminalClosure.nativeIndex;
+  assert.ok(terminalIndex > 0, 'Ordem TER deve ocorrer depois do início do histórico');
+  assert.ok(profile.targets[terminalIndex - 1] < 1, 'evento anterior à Ordem TER não pode antecipar o ADES');
+  assert.equal(profile.targets[terminalIndex], 1, 'Ordem TER deve levar a aeronave ao ADES');
+  assert.ok(profile.targets.slice(terminalIndex).every(value => value === 1), 'eventos posteriores devem permanecer encerrados no ADES');
+
+  const forward = api.transitionPlanForEvents(terminalIndex - 1, terminalIndex);
+  assert.equal(forward.toProgress, 1, 'Próximo até Ordem TER deve terminar no ADES');
+  assert.equal(
+    forward.checkpoints.some(point => point.ident === 'SBCT'),
+    false,
+    'ADES derivado não pode aparecer como checkpoint ETIM histórico'
+  );
+
+  const backward = api.transitionPlanForEvents(terminalIndex, terminalIndex - 1);
+  assert.equal(backward.fromProgress, 1, 'Anterior parte do ADES quando retrocede a Ordem TER');
+  assert.ok(backward.toProgress < 1, 'Anterior deve retornar fielmente ao estado pré-TER');
+  assert.equal(backward.forward, false);
+});
+
+test('sem Ordem TER o TAM3774 continua sem fechamento sintético até SBCT', () => {
+  const api = loadRouteApi();
+  const history = api.parseHistory(TAM3774_FIXTURE, 'TAM3774-sem-TER.txt');
+  const model = api.getModel();
+  model.history = history;
+  model.embedded.set('SBCT', airportFromRepo('SBCT'));
+
+  const seed = new Map(Array.from(api.officialSeed, row => [row.ident, row]));
+  const snapshot = {
+    ...history.snapshots[0],
+    points: history.snapshots[0].points.map(point => ({
+      ...point,
+      geo: api.parseCoordinateIdent(point.ident) || seed.get(point.ident) || null,
+    })),
+  };
+
+  assert.equal(api.terminalClosureContext(), null);
+  assert.equal(api.terminalClosureState(snapshot, 999).active, false);
+  assert.equal(api.movementPointsForProfile(snapshot).some(point => point.ident === 'SBCT'), false);
+  assert.equal(api.pseudoDestinationTail(snapshot), null);
+});
+
+test('contrato visual marca fechamento terminal como derivado e não histórico', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  assert.match(source, /ffrpTerminalClosureActive/);
+  assert.match(source, /class="route-terminal"/);
+  assert.match(source, /Fechamento terminal derivado da Ordem TER/);
+  assert.match(source, /sem ETIM histórico/);
+  assert.match(source, /sem STAR\/fixos inventados/);
+  assert.match(source, /function pseudoDestinationTail\(\) \{ return null; \}/);
+});
