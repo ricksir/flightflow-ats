@@ -1,6 +1,6 @@
 # Plano de testes — timeline, rota processada e movimento da aeronave
 
-Branch: `test/timeline-route-regression`
+> **Status:** plano histórico que originou a cobertura atual de regressão. A branch citada originalmente foi encerrada; os contratos vigentes vivem em `tests/` e `tests/e2e/`.
 
 ## Objetivo
 
@@ -50,9 +50,9 @@ O estado final correspondente ao mesmo instante/índice deve ser equivalente.
 - estado do autoplay;
 - estado derivado após DEP.
 
-## Critério de aprovação inicial
+## Critério de aprovação
 
-A Fase 1 só termina quando os testes conseguem detectar automaticamente pelo menos:
+A cobertura automatizada deve continuar detectando pelo menos:
 
 - reordenação de ETIM;
 - salto de fixo intermediário;
