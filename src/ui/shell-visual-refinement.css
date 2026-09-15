@@ -784,3 +784,966 @@ html[data-theme="light"] .empty-list {
     padding-left: 11px;
   }
 }
+
+
+/* ==========================================================================
+   FlightFlow ATS Design System 1.0
+   Adaptação operacional dos princípios observados no case Velox/Arounda:
+   dashboard de tela única, zonas funcionais estáveis, profundidade em camadas,
+   alta densidade legível, hierarquia clara e responsividade por cartões.
+   Mantém a identidade azul/ciano FlightFlow e as cores semânticas ATS existentes.
+   ========================================================================== */
+
+:root {
+  --ffds-space-1: 4px;
+  --ffds-space-2: 8px;
+  --ffds-space-3: 12px;
+  --ffds-space-4: 16px;
+  --ffds-space-5: 24px;
+  --ffds-radius-xs: 8px;
+  --ffds-radius-sm: 10px;
+  --ffds-radius-md: 14px;
+  --ffds-radius-lg: 18px;
+  --ffds-radius-xl: 22px;
+  --ffds-type-micro: .625rem;
+  --ffds-type-xs: .6875rem;
+  --ffds-type-sm: .75rem;
+  --ffds-type-md: .875rem;
+  --ffds-type-lg: 1.125rem;
+  --ffds-type-xl: 1.5rem;
+  --ffds-accent: #35d7ff;
+  --ffds-accent-strong: #159dca;
+  --ffds-accent-soft: rgba(53,215,255,.09);
+  --ffds-blue: #0e5598;
+  --ffds-warning: #ffb02e;
+  --ffds-success: #22a06b;
+  --ffds-danger: #d64a4a;
+  --ffds-line-dark: rgba(126,190,239,.16);
+  --ffds-line-light: rgba(35,94,135,.13);
+  --ffds-shadow-1: 0 8px 24px rgba(0,16,30,.12);
+  --ffds-shadow-2: 0 18px 48px rgba(0,16,30,.20);
+  --ffds-glow: 0 0 0 1px rgba(53,215,255,.10),0 0 22px rgba(53,215,255,.08);
+  --ffds-motion-fast: 140ms;
+  --ffds-motion-base: 190ms;
+}
+
+/* Foundation / interaction ------------------------------------------------- */
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+:is(button,input,select,textarea,[tabindex]):focus-visible {
+  outline: 2px solid var(--ffds-accent);
+  outline-offset: 2px;
+}
+
+.btn,
+.icon-btn,
+.transport-btn,
+.play-btn,
+.toggle-btn,
+.tab,
+.real-map-control-group button,
+.ff-fir-button {
+  transition:
+    transform var(--ffds-motion-fast) ease,
+    background var(--ffds-motion-base) ease,
+    color var(--ffds-motion-base) ease,
+    border-color var(--ffds-motion-base) ease,
+    box-shadow var(--ffds-motion-base) ease,
+    opacity var(--ffds-motion-base) ease;
+}
+
+.btn {
+  min-height: 36px;
+  padding-inline: 13px;
+  border-radius: var(--ffds-radius-sm);
+  font-size: var(--ffds-type-xs);
+  letter-spacing: .005em;
+}
+
+.icon-btn {
+  border-radius: var(--ffds-radius-sm);
+}
+
+.btn:hover:not(:disabled),
+.icon-btn:hover:not(:disabled),
+.transport-btn:hover:not(:disabled),
+.toggle-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Single-screen shell ----------------------------------------------------- */
+
+.app {
+  grid-template-rows: auto minmax(0,1fr) auto;
+  padding: 10px;
+  gap: 10px;
+}
+
+.topbar,
+.workspace-card,
+.inspector-card,
+.transport {
+  border-radius: var(--ffds-radius-lg);
+}
+
+.topbar {
+  min-height: 64px;
+  padding: 7px 12px;
+  gap: 12px;
+  border: 1px solid var(--ffds-line-dark);
+  box-shadow: var(--ffds-shadow-1);
+}
+
+.brand {
+  min-width: 226px;
+  gap: 10px;
+}
+
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  box-shadow:
+    0 8px 20px rgba(14,85,152,.20),
+    0 0 0 1px rgba(53,215,255,.10);
+}
+
+.brand-title {
+  font-size: clamp(.9rem,1vw,1.05rem);
+  letter-spacing: -.018em;
+}
+
+.brand-subtitle {
+  font-size: var(--ffds-type-xs);
+  line-height: 1.3;
+}
+
+.brand-credit {
+  font-size: .5rem;
+  line-height: 1.25;
+}
+
+.file-actions {
+  min-width: 270px;
+  padding: 6px 9px;
+  gap: 6px;
+  border-radius: 12px;
+}
+
+.selected-file {
+  font-size: var(--ffds-type-xs);
+}
+
+.ops-live {
+  min-height: 38px;
+  padding-inline: 9px;
+  border-radius: 12px;
+}
+
+.ops-live b {
+  font-size: .6rem;
+}
+
+.ops-live small {
+  font-size: .45rem;
+}
+
+.header-actions {
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.header-actions .icon-btn {
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+}
+
+.content {
+  min-height: 0;
+  gap: 10px;
+  padding: 0;
+  grid-template-columns: minmax(0,1fr) minmax(350px,380px);
+}
+
+.workspace-card,
+.inspector-card {
+  position: relative;
+  border: 1px solid var(--ffds-line-dark);
+  box-shadow: var(--ffds-shadow-2);
+}
+
+.workspace-card::before,
+.inspector-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 18% auto;
+  height: 1px;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(90deg,transparent,rgba(53,215,255,.50),transparent);
+}
+
+.scene-head {
+  min-height: 68px;
+  padding: 11px 14px 10px;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin-bottom: 5px;
+  font-size: .575rem;
+  letter-spacing: .13em;
+}
+
+.flight-route {
+  gap: 10px;
+}
+
+.flight-route strong {
+  font-size: clamp(1.2rem,1.55vw,1.48rem);
+  line-height: 1;
+}
+
+.route-airports {
+  font-size: var(--ffds-type-sm);
+}
+
+.scene-status {
+  padding: 5px;
+  gap: 5px;
+  border-radius: 12px;
+}
+
+.status-badge,
+.stage-badge,
+.frame-counter {
+  min-height: 27px;
+  padding: 5px 9px;
+  font-size: var(--ffds-type-micro);
+  letter-spacing: .045em;
+}
+
+.scene-protocol-toggle {
+  min-height: 27px;
+  font-size: var(--ffds-type-micro);
+}
+
+/* Map-first workspace ----------------------------------------------------- */
+
+.scene-wrap {
+  margin: 0 10px;
+  border-radius: 16px;
+  box-shadow:
+    inset 0 0 0 1px rgba(151,219,255,.12),
+    0 12px 30px rgba(0,20,36,.16);
+}
+
+.real-map-controls {
+  top: 12px;
+  left: 12px;
+  gap: 6px;
+  max-width: calc(100% - 88px);
+}
+
+.real-map-control-group,
+.real-map-layer-switches {
+  border-radius: 10px;
+  box-shadow: 0 7px 18px rgba(0,0,0,.18);
+  backdrop-filter: blur(12px);
+}
+
+.real-map-control-group button {
+  height: 34px;
+  padding: 0 10px;
+  font-size: var(--ffds-type-xs);
+}
+
+.real-map-layer-switches {
+  min-height: 34px;
+  gap: 10px;
+  padding: 0 10px;
+}
+
+.real-map-layer-switches label {
+  font-size: var(--ffds-type-xs);
+}
+
+.real-map-layer-switches input {
+  width: 14px;
+  height: 14px;
+}
+
+.scene-caption {
+  left: 14px;
+  right: auto;
+  bottom: 14px;
+  width: min(610px,56%);
+  max-width: calc(100% - 28px);
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+}
+
+.scene-caption strong {
+  font-size: var(--ffds-type-sm);
+}
+
+.scene-caption p {
+  margin-top: 4px;
+  font-size: var(--ffds-type-xs);
+  line-height: 1.45;
+}
+
+.real-map-status {
+  left: auto;
+  right: 14px;
+  bottom: 14px;
+  width: auto;
+  max-width: 39%;
+  min-height: 40px;
+  flex-wrap: wrap;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: .625rem;
+  line-height: 1.35;
+}
+
+.real-map-coordinates {
+  font-size: .6rem;
+}
+
+.protocol-card {
+  top: 58px;
+  right: 14px;
+  width: min(360px,calc(100% - 28px));
+  padding: 12px 13px;
+  border-radius: 13px;
+  box-shadow: 0 14px 36px rgba(0,24,42,.20);
+}
+
+.protocol-topline {
+  font-size: var(--ffds-type-micro);
+}
+
+.protocol-route {
+  font-size: var(--ffds-type-sm);
+}
+
+.protocol-format {
+  font-size: var(--ffds-type-micro);
+}
+
+.scene-legend {
+  min-height: 42px;
+  padding: 7px 14px 9px;
+  gap: 13px;
+  font-size: var(--ffds-type-micro);
+}
+
+/* Inspector / cards ------------------------------------------------------- */
+
+.inspector-tabs {
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 5px;
+  padding: 7px;
+  border-bottom: 1px solid var(--ffds-line-dark);
+  background: transparent;
+}
+
+.tab {
+  min-width: 0;
+  height: 38px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: var(--ffds-type-xs);
+  line-height: 1.16;
+}
+
+.tab:hover:not(.active) {
+  background: rgba(53,215,255,.045);
+  border-color: rgba(53,215,255,.08);
+}
+
+.tab.active {
+  box-shadow:
+    inset 0 0 0 1px rgba(53,215,255,.10),
+    0 5px 14px rgba(0,20,36,.07);
+}
+
+.tab.active::after {
+  left: 26%;
+  right: 26%;
+  bottom: 3px;
+}
+
+.tab-panel {
+  padding: 13px;
+}
+
+.panel-heading {
+  margin-bottom: 12px;
+}
+
+.panel-heading h2 {
+  font-size: var(--ffds-type-md);
+  line-height: 1.25;
+}
+
+.panel-heading.sticky {
+  padding: 12px 13px 10px;
+}
+
+.fields-grid {
+  gap: 8px;
+}
+
+.field-card {
+  min-height: 68px;
+  padding: 10px 11px;
+  border-radius: 11px;
+  border: 1px solid rgba(126,190,239,.09);
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+
+.field-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(53,215,255,.18);
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.035),
+    0 6px 16px rgba(0,20,36,.06);
+}
+
+.field-label {
+  min-height: 17px;
+  font-size: .625rem;
+  line-height: 1.25;
+  letter-spacing: .08em;
+}
+
+.field-value {
+  margin-top: 5px;
+  font-size: .78rem;
+  line-height: 1.36;
+}
+
+.field-card[data-span="2"] .field-label {
+  font-size: .625rem;
+}
+
+.field-card[data-span="2"] .field-value {
+  font-size: .84rem;
+  line-height: 1.4;
+}
+
+.field-card[data-span="1"] .field-value {
+  font-size: .78rem;
+}
+
+.field-card[data-span="2"][data-field="route"] .field-value,
+.field-card[data-span="2"][data-field="sid"] .field-value,
+.field-card[data-span="2"][data-field="star"] .field-value {
+  font-size: .77rem;
+}
+
+.field-previous {
+  font-size: .625rem;
+}
+
+.field-card .change-tag {
+  font-size: .5rem;
+}
+
+.message-actions {
+  margin-top: 11px;
+  gap: 6px;
+}
+
+.change-item {
+  padding: 10px 11px;
+  border-radius: 11px;
+}
+
+/* Timeline --------------------------------------------------------------- */
+
+.timeline-panel.active {
+  background:
+    linear-gradient(180deg,rgba(53,215,255,.018),transparent 150px);
+}
+
+.timeline-list {
+  padding: 11px 11px 22px;
+}
+
+.timeline-list::before {
+  left: 76px;
+}
+
+.timeline-item {
+  grid-template-columns: 59px minmax(0,1fr);
+  gap: 12px;
+  margin-bottom: 5px;
+  padding: 10px 9px;
+  border-radius: 11px;
+}
+
+.timeline-item::before {
+  left: 72px;
+  top: 19px;
+}
+
+.timeline-item.changed::after {
+  left: 74px;
+  top: 21px;
+}
+
+.timeline-time {
+  font-size: var(--ffds-type-micro);
+  line-height: 1.3;
+}
+
+.timeline-event-number {
+  min-height: 20px;
+  padding: 3px 6px;
+  font-size: .56rem;
+}
+
+.timeline-body {
+  padding: 8px 10px 9px 13px;
+}
+
+.timeline-op {
+  font-size: var(--ffds-type-sm);
+  line-height: 1.35;
+}
+
+.timeline-meta {
+  margin-top: 6px;
+  gap: 5px;
+  font-size: var(--ffds-type-micro);
+}
+
+.timeline-chip,
+.timeline-meta .source-chip {
+  min-height: 20px;
+  padding: 3px 6px;
+  font-size: .56rem;
+}
+
+/* Transport -------------------------------------------------------------- */
+
+.transport {
+  min-height: 58px;
+  grid-template-columns: auto minmax(220px,1fr) auto;
+  gap: 11px;
+  padding: 7px 12px;
+  border: 1px solid var(--ffds-line-dark);
+  box-shadow: var(--ffds-shadow-1);
+}
+
+.transport-left,
+.transport-right {
+  gap: 5px;
+}
+
+.transport-btn,
+.toggle-btn {
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 9px;
+  font-size: var(--ffds-type-xs);
+}
+
+.play-btn {
+  width: 42px;
+  height: 42px;
+  font-size: 1rem;
+  box-shadow:
+    0 7px 18px rgba(11,59,117,.22),
+    0 0 0 1px rgba(53,215,255,.10);
+}
+
+.scrubber {
+  min-height: 18px;
+}
+
+.scrubber-labels {
+  margin-top: 2px;
+  font-size: var(--ffds-type-micro);
+}
+
+.speed-control {
+  gap: 5px;
+  font-size: var(--ffds-type-micro);
+}
+
+.speed-control select {
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: var(--ffds-type-xs);
+}
+
+/* Floating operational windows: shell only; regulatory inner palettes stay intact. */
+
+.fpv-window,
+.strip-window {
+  border-radius: 16px;
+  border-color: rgba(126,190,239,.24);
+  box-shadow: 0 26px 72px rgba(0,18,34,.34);
+}
+
+.fpv-toolbar,
+.strip-toolbar {
+  min-height: 43px;
+}
+
+.window-dock {
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0,18,34,.20);
+}
+
+/* Rota Processada visual integration. The route module keeps its own
+   temporal/spatial behavior and semantic route colors. */
+
+html body .ffrp-window {
+  border-radius: 18px;
+  border: 1px solid rgba(126,190,239,.18);
+  box-shadow: 0 28px 76px rgba(0,18,34,.30);
+}
+
+html body .ffrp-head {
+  min-height: 62px;
+}
+
+html body .ffrp-toolbar {
+  gap: 8px;
+}
+
+html body .ffrp-tool-group {
+  border-radius: 11px;
+}
+
+html body .ffrp-eventbar,
+html body .ffrp-footer {
+  border-radius: 11px;
+}
+
+html body .ffrp-map-wrap,
+html body .ffrp-side {
+  border-radius: 14px;
+}
+
+html body .ffrp-point {
+  min-height: 52px;
+  border-radius: 10px;
+}
+
+html body .ffrp-point-main strong {
+  font-size: .75rem;
+}
+
+html body .ffrp-point-main span {
+  font-size: .69rem;
+}
+
+html body .ffrp-map-note {
+  min-height: 40px;
+  font-size: .7rem;
+}
+
+/* Dark theme: layered cockpit-like shell, FlightFlow blue/cyan identity. */
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% -8%,rgba(24,112,154,.18),transparent 34%),
+    radial-gradient(circle at 88% 4%,rgba(53,215,255,.06),transparent 30%),
+    linear-gradient(145deg,#040b13 0%,#07131f 46%,#081724 100%);
+}
+
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] .workspace-card,
+html[data-theme="dark"] .inspector-card,
+html[data-theme="dark"] .transport {
+  background:
+    linear-gradient(180deg,rgba(13,29,42,.96),rgba(8,22,34,.96));
+  border-color: rgba(126,190,239,.15);
+}
+
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] .transport {
+  box-shadow:
+    0 14px 36px rgba(0,0,0,.24),
+    inset 0 1px rgba(255,255,255,.025);
+}
+
+html[data-theme="dark"] .workspace-card,
+html[data-theme="dark"] .inspector-card {
+  box-shadow:
+    0 20px 54px rgba(0,0,0,.27),
+    inset 0 1px rgba(255,255,255,.018);
+}
+
+html[data-theme="dark"] .file-actions,
+html[data-theme="dark"] .header-actions,
+html[data-theme="dark"] .scene-status {
+  border-color: rgba(126,190,239,.13);
+  background: rgba(255,255,255,.018);
+}
+
+html[data-theme="dark"] .inspector-tabs {
+  border-bottom-color: rgba(126,190,239,.11);
+}
+
+html[data-theme="dark"] .tab.active {
+  background: rgba(53,215,255,.075);
+  color: #dff9ff;
+}
+
+html[data-theme="dark"] .field-card {
+  background: rgba(255,255,255,.022);
+  border-color: rgba(126,190,239,.075);
+}
+
+html[data-theme="dark"] .timeline-body {
+  background: rgba(255,255,255,.014);
+}
+
+html[data-theme="dark"] .timeline-item.active .timeline-body {
+  background: rgba(53,215,255,.035);
+}
+
+/* Light theme: same hierarchy with restrained blue depth. */
+
+html[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 10% -8%,rgba(58,148,203,.18),transparent 35%),
+    radial-gradient(circle at 92% 4%,rgba(53,170,215,.08),transparent 29%),
+    linear-gradient(145deg,#e8f0f6 0%,#f7fafc 47%,#eaf1f6 100%);
+}
+
+html[data-theme="light"] .topbar,
+html[data-theme="light"] .workspace-card,
+html[data-theme="light"] .inspector-card,
+html[data-theme="light"] .transport {
+  border-color: var(--ffds-line-light);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.97),rgba(249,252,254,.96));
+}
+
+html[data-theme="light"] .topbar,
+html[data-theme="light"] .transport {
+  box-shadow: 0 12px 32px rgba(35,74,104,.10);
+}
+
+html[data-theme="light"] .workspace-card,
+html[data-theme="light"] .inspector-card {
+  box-shadow: 0 18px 44px rgba(35,74,104,.11);
+}
+
+html[data-theme="light"] .workspace-card::before,
+html[data-theme="light"] .inspector-card::before {
+  background: linear-gradient(90deg,transparent,rgba(21,157,202,.38),transparent);
+}
+
+html[data-theme="light"] .file-actions,
+html[data-theme="light"] .header-actions,
+html[data-theme="light"] .scene-status {
+  border-color: rgba(35,94,135,.11);
+  background: rgba(25,94,136,.025);
+}
+
+html[data-theme="light"] .inspector-tabs {
+  border-bottom-color: rgba(35,94,135,.10);
+}
+
+html[data-theme="light"] .tab.active {
+  background: #fff;
+  color: #0b4f7d;
+}
+
+html[data-theme="light"] .field-card {
+  background: rgba(247,250,252,.92);
+  border-color: rgba(35,94,135,.07);
+}
+
+/* Responsive density ------------------------------------------------------ */
+
+@media (max-width: 1260px) {
+  .content {
+    grid-template-columns: minmax(0,1fr) minmax(340px,360px);
+  }
+  .scene-caption {
+    width: min(560px,58%);
+  }
+  .real-map-status {
+    max-width: 38%;
+  }
+}
+
+@media (max-width: 1080px) {
+  .app {
+    padding: 8px;
+    gap: 8px;
+  }
+  .content {
+    grid-template-columns: minmax(0,1fr) 338px;
+    gap: 8px;
+  }
+  .topbar {
+    row-gap: 7px;
+  }
+  .file-actions {
+    border-radius: 10px;
+  }
+  .inspector-tabs {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .scene-caption {
+    width: min(520px,60%);
+  }
+  .real-map-status {
+    max-width: 36%;
+  }
+}
+
+@media (max-width: 900px) {
+  .topbar,
+  .workspace-card,
+  .inspector-card,
+  .transport {
+    border-radius: 14px;
+  }
+  .content {
+    grid-template-columns: 1fr;
+  }
+  .workspace-card {
+    min-height: 620px;
+  }
+  .inspector-card {
+    min-height: 500px;
+  }
+  .scene-caption {
+    left: 12px;
+    right: 12px;
+    bottom: 58px;
+    width: auto;
+    max-width: none;
+  }
+  .real-map-status {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+  .transport {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .app {
+    padding: 5px;
+    gap: 5px;
+  }
+  .topbar {
+    padding: 8px 9px;
+  }
+  .brand {
+    min-width: 0;
+  }
+  .file-actions {
+    gap: 5px;
+  }
+  .btn {
+    font-size: .66rem;
+  }
+  .scene-head {
+    padding: 10px 11px 9px;
+  }
+  .scene-wrap {
+    margin: 0 6px;
+    border-radius: 13px;
+  }
+  .real-map-controls {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    max-width: none;
+  }
+  .real-map-control-group button {
+    height: 32px;
+    padding-inline: 8px;
+    font-size: .64rem;
+  }
+  .real-map-layer-switches {
+    min-height: 32px;
+    padding-inline: 8px;
+  }
+  .real-map-layer-switches label {
+    font-size: .64rem;
+  }
+  .protocol-card {
+    top: 50px;
+    right: 8px;
+    width: calc(100% - 16px);
+  }
+  .inspector-tabs {
+    padding: 5px;
+    gap: 4px;
+  }
+  .tab {
+    height: 36px;
+    font-size: .64rem;
+  }
+  .tab-panel {
+    padding: 10px;
+  }
+  .field-card {
+    min-height: 64px;
+    padding: 9px;
+  }
+  .field-value {
+    font-size: .75rem;
+  }
+  .timeline-list {
+    padding-inline: 7px;
+  }
+  .timeline-list::before {
+    left: 66px;
+  }
+  .timeline-item {
+    grid-template-columns: 49px minmax(0,1fr);
+    gap: 9px;
+    padding-inline: 7px;
+  }
+  .timeline-item::before {
+    left: 62px;
+  }
+  .timeline-item.changed::after {
+    left: 64px;
+  }
+  .transport {
+    padding: 7px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .icon-btn,
+  .transport-btn,
+  .play-btn,
+  .toggle-btn,
+  .tab,
+  .field-card,
+  .timeline-item,
+  .real-map-control-group button {
+    transition-duration: 0ms !important;
+  }
+}
