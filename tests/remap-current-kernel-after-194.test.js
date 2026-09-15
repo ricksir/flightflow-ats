@@ -107,28 +107,7 @@ test('fresh remap of low-coupling kernel candidates after PR 194', () => {
     const standaloneMap = /(^|[^.A-Za-z0-9_$])map([^A-Za-z0-9_$]|$)/i.test(mapSanitized);
     const infra = infraForbidden.test(source);
 
-    const occurrences = [...kernel.matchAll(new RegExp('\\b' + name.replace(/[$]/g, '\\    if (sensitiveHits.length || standaloneMap || infra) {
-      excluded.push({ name, bytes, sensitiveHits, standaloneMap, infra });
-      continue;
-    }
-
     const occurrences = [...kernel.matchAll(new RegExp('\\b' + name.replace(/[$]/g, '\\$&') + '\\b', 'g'))].length;
-    const consumers = Math.max(0, occurrences - 1);
-    const calls = [...source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)]
-      .map(m => m[1])
-      .filter(x => !['function','if','for','while','switch','catch','String','Number','Boolean','Array','Object','Math','Date','RegExp','parseInt','parseFloat','isNaN','Set','Map'].includes(x));
-    const uniqueCalls = [...new Set(calls)].filter(x => x !== name);
-    const score = bytes + consumers * 30 + uniqueCalls.length * 45;
-
-    rows.push({
-      name,
-      bytes,
-      consumers,
-      deps: uniqueCalls,
-      sha256: crypto.createHash('sha256').update(source, 'utf8').digest('hex'),
-      score,
-      preview: source.replace(/\s+/g, ' ').slice(0, 420)
-    });') + '\\b', 'g'))].length;
     const consumers = Math.max(0, occurrences - 1);
     const calls = [...source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)]
       .map(m => m[1])
