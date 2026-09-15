@@ -19,7 +19,7 @@ Use branches curtas e orientadas ao objetivo:
 - `test/<descricao>`
 - `chore/<descricao>`
 
-Branches temporárias fechadas são removidas automaticamente quando pertencem aos prefixos de manutenção configurados no workflow de housekeeping. Branches `release/*` são preservadas.
+Branches temporárias encerradas são removidas automaticamente quando pertencem aos prefixos de manutenção configurados no workflow de housekeeping. O namespace `analysis/*` é reservado para diagnósticos descartáveis e pode ser removido automaticamente quando não houver PR aberto. Não use `analysis/*` para trabalho que precise ser preservado. Branches `release/*` são sempre preservadas.
 
 ## Mudanças
 
