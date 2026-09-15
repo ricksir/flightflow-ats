@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'ui', 'fpv-window-controller.js');
 const FUNCTION_NAME = 'minimizeFpv';
 const EXPECTED_SOURCE = 'function minimizeFpv(){state.fpvMinimized=true;setFpvVisible(false,{minimized:true});}';
 const EXPECTED_BYTES = 86;
@@ -68,24 +69,28 @@ function extractNamedFunction(source, name) {
   throw new Error('fim de ' + name + ' não encontrado');
 }
 
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
+
 function loadFunction(state, setFpvVisible) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'state',
-    'setFpvVisible',
-    source + '\nreturn minimizeFpv;'
-  )(state, setFpvVisible);
+  const source = moduleSource();
+  const context = { window: {} };
+  Function('window', source)(context.window);
+  return context.window.FlightFlowFpvWindowController
+    .create({ state, setFpvVisible })
+    .minimizeFpv;
 }
 
 test('minimizeFpv congela exatamente a fronteira selecionada no remap #195', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('minimizeFpv não contém lógica temporal, espacial, de mapa ou infraestrutura externa', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   for (const token of [
     'currentEvent', 'goTo', 'renderCurrent', 'timeline', 'scrubber', 'autoplay',
     'route', 'planner', 'interpol', 'aircraft', 'map', 'realMap', 'googleMap',
@@ -100,10 +105,15 @@ test('minimizeFpv não contém lógica temporal, espacial, de mapa ou infraestru
   assert.equal((source.match(/\bstate\.fpvMinimized\b/g) || []).length, 1);
 });
 
-test('minimizeFpv mantém exatamente dois consumidores funcionais', () => {
+test('minimizeFpv sai do kernel, preserva wiring e mantém exatamente dois consumidores funcionais', () => {
   const kernel = kernelSource();
-  assert.equal(kernel.split('function minimizeFpv(').length - 1, 1);
+  const module = moduleSource();
+  assert.equal(kernel.split('function minimizeFpv(').length - 1, 0);
+  assert.equal(module.split('function minimizeFpv(').length - 1, 1);
   assert.equal(kernel.split('minimizeFpv').length - 1, EXPECTED_CONSUMERS + 1);
+  assert.ok(kernel.includes('const FpvWindowController = window.FlightFlowFpvWindowController;'));
+  assert.ok(kernel.includes("if (!FpvWindowController) throw new Error('FlightFlowFpvWindowController não foi carregado.');"));
+  assert.ok(kernel.includes('const { minimizeFpv } = FpvWindowController.create({ state, setFpvVisible });'));
   assert.ok(kernel.includes("els.fpvCloseBtn.addEventListener('click', minimizeFpv);"));
 
   const toggle = extractNamedFunction(kernel, 'toggleFpv');
