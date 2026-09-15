@@ -19,11 +19,12 @@ REPRODUÇÃO
 
 RESTRIÇÕES
 - Não alterar funcionalidades não relacionadas.
-- Preservar compatibilidade com o baseline.
+- Preservar os contratos, checksums e regressões protegidos.
 - Não apagar persistência do usuário.
 - Não introduzir dependência de rede sem fallback.
 
 ANTES DE CODIFICAR
+0. leia `docs/AI_CURRENT_STATE.md` e confirme o estado atual do GitHub;
 1. encontre a causa raiz;
 2. identifique os blocos/arquivos afetados;
 3. proponha a menor correção;
