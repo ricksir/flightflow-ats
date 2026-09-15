@@ -583,8 +583,60 @@
     return actual.concat(declaredRouteContinuation(snapshot));
   }
 
+  function isTerminalClosureEvent(event) {
+    return /\bORDEM\s+TER\b/i.test(movementEventText(event));
+  }
+
+  function terminalClosureContext() {
+    const nativeEvents=window.__FlightFlowFirBridge?.state?.parsed?.events||[];
+    const nativeIndex=nativeEvents.findIndex(isTerminalClosureEvent);
+    if(nativeIndex>=0){
+      const event=nativeEvents[nativeIndex];
+      return {nativeIndex,key:eventDateTimeKey(event),event,source:'native'};
+    }
+    const historyEvents=model.history?.events||[];
+    const historyIndex=historyEvents.findIndex(isTerminalClosureEvent);
+    if(historyIndex<0)return null;
+    const total=nativeEvents.length||historyEvents.length||1;
+    const event=historyEvents[historyIndex];
+    return {nativeIndex:historyIndexToNativeIndex(historyIndex,total),historyIndex,key:eventDateTimeKey(event),event,source:'history'};
+  }
+
+  function terminalClosurePoint(snapshot) {
+    const destination=destinationRouteMarker(snapshot);
+    if(!destination)return null;
+    return {
+      ...destination,
+      terminalClosure:true,
+      derived:true,
+      untimed:true,
+      etim:'',
+      etimRaw:'',
+      etimKey:null,
+      cfl:'',
+      geo:{...destination.geo,source:'ADES do plano · fechamento terminal derivado de Ordem TER · não histórico'},
+    };
+  }
+
+  function movementPointsForProfile(snapshot) {
+    const base=movementPoints(snapshot);
+    const closure=terminalClosureContext();
+    const destination=terminalClosurePoint(snapshot);
+    if(!closure||!destination)return base;
+    return base.concat(destination);
+  }
+
+  function terminalClosureState(snapshot,index=nativeEventIndex()) {
+    const context=terminalClosureContext();
+    const destination=terminalClosurePoint(snapshot);
+    const continuation=declaredRouteContinuation(snapshot);
+    const from=continuation.at(-1)||(snapshot?.points||[]).at(-1)||null;
+    const active=!!(context&&destination&&Number(index)>=Number(context.nativeIndex));
+    return {active,context,destination,from};
+  }
+
   function timedProgressLimit(snapshot) {
-    const move=movementPoints(snapshot);
+    const move=movementPointsForProfile(snapshot);
     if(!move.length)return 0;
     const fractions=routeDistanceFractions(move);
     let lastTimed=-1;
@@ -797,7 +849,7 @@
   function buildMovementProfile() {
     const master=bestSnapshotForMovement();
     if(!master)return null;
-    const canonical=movementPoints(master).filter(p=>p?.geo&&Number.isFinite(Number(p.geo.lat))&&Number.isFinite(Number(p.geo.lon)));
+    const canonical=movementPointsForProfile(master).filter(p=>p?.geo&&Number.isFinite(Number(p.geo.lat))&&Number.isFinite(Number(p.geo.lon)));
     if(canonical.length<2)return null;
     const nativeEvents=window.__FlightFlowFirBridge?.state?.parsed?.events||model.history?.events||[];
     const nativeTotal=Math.max(nativeEvents.length,1);
@@ -807,6 +859,7 @@
     const depKey=Number.isFinite(dep?.key)?dep.key:nativeEventTimeOrHistory(startNative,nativeEvents);
     const depSnapshot=firstPostDepSnapshot(depKey)||master;
     const masterTail=pseudoDestinationTail(master);
+    const terminal=terminalClosureContext();
     const targets=[];
     let previous=0;
     for(let i=0;i<nativeTotal;i++){
@@ -814,6 +867,10 @@
       let target=0;
       if(i<=startNative){
         target=0; // a primeira DEP é o instante de decolagem: ainda no ADEP.
+      }else if(terminal&&i>=terminal.nativeIndex){
+        // Ordem TER encerra visualmente o plano no ADES. O valor 1 representa apenas
+        // o fechamento espacial derivado; nenhum ETIM/STAR/fixo é criado.
+        target=1;
       }else{
         const snap=snapshotForMovementKey(key,depKey,depSnapshot);
         target=candidateProgressFromSnapshot(snap,key,canonical,masterTail,depKey);
@@ -831,7 +888,7 @@
       let idx=targets.findIndex((v,i)=>i>=startNative&&v+1e-9>=goal);
       if(idx<0)idx=nativeTotal-1;return idx;
     });
-    return {snapshot:master,departureSnapshot:depSnapshot,points:canonical,distanceFractions,startNative,departureKey:depKey,departureEvent:dep?.event||null,endNative:endNative>=0?endNative:nativeTotal-1,milestones,targets};
+    return {snapshot:master,departureSnapshot:depSnapshot,points:canonical,distanceFractions,startNative,departureKey:depKey,departureEvent:dep?.event||null,endNative:endNative>=0?endNative:nativeTotal-1,milestones,targets,terminalClosure:terminal?{nativeIndex:terminal.nativeIndex,key:terminal.key,source:terminal.source}:null};
   }
 
   function rebuildMovementProfile() {
@@ -1338,14 +1395,14 @@
     const profile=model.movementProfile||buildMovementProfile();
     const routeSnapshot=(profile?.snapshot&&snapshotIsComplete(profile.snapshot))?profile.snapshot:(bestSnapshotForMovement()||model.resolvedSnapshots.at(-1)||model.resolvedSnapshots[0]);
     if(!snapshotIsComplete(routeSnapshot))return false;
-    const move=movementPoints(routeSnapshot);
+    const move=movementPointsForProfile(routeSnapshot);
     const points=move.map(p=>bridge.projectGeo(Number(p.geo.lon),Number(p.geo.lat)));
     if(points.length<2)return false;
     let applied=0;
     for(let i=0;i<events.length;i++){
       const existing=routes[i]||{};
       const target=progressForNativeEventIndex(i,events.length);
-      routes[i]={...existing,points,path:projectedPath(points),target,ffrpProcessed:true,ffrpVersion:VERSION,ffrpSnapshotBlock:routeSnapshot.blockIndex,ffrpPseudoTail:false,ffrpDeclaredContinuation:declaredRouteContinuation(routeSnapshot).length};
+      routes[i]={...existing,points,path:projectedPath(points),target,ffrpProcessed:true,ffrpVersion:VERSION,ffrpSnapshotBlock:routeSnapshot.blockIndex,ffrpPseudoTail:false,ffrpDeclaredContinuation:declaredRouteContinuation(routeSnapshot).length,ffrpTerminalClosure:!!profile?.terminalClosure,ffrpTerminalClosureActive:!!profile?.terminalClosure&&i>=profile.terminalClosure.nativeIndex};
       events[i].syntheticProgress=target;applied++;
     }
     const currentIndex=Number.isFinite(Number(state?.index))?clamp(Number(state.index),0,Math.max(0,events.length-1)):0;
@@ -1950,7 +2007,7 @@
       applyProcessedRouteToFlightFlow,
       setFixesVisible:(value)=>{saveFixesVisiblePreference(value);const input=ensureFixesToggle();if(input)input.checked=!!model.fixesVisible;applyProcessedRouteToFlightFlow();return model.fixesVisible;},
       setHandoffsVisible:(value)=>{saveHandoffsVisiblePreference(value);const input=ensureHandoffsToggle();if(input)input.checked=!!model.handoffsVisible;applyProcessedRouteToFlightFlow();return model.handoffsVisible;},
-      movementPoints, pseudoDestinationTail, declaredRouteContinuation, destinationRouteMarker, timedProgressLimit, transferMarkersForSnapshot, routeDisplayContext, pointDisplayState, nativeEventIndexForSnapshot, firstDepartureAnchor, buildMovementProfile, progressForNativeEventIndex, routeDistanceFractions, candidateProgressFromSnapshot, transitionPlanForEvents, transitionDurations,
+      movementPoints, movementPointsForProfile, pseudoDestinationTail, declaredRouteContinuation, destinationRouteMarker, isTerminalClosureEvent, terminalClosureContext, terminalClosurePoint, terminalClosureState, timedProgressLimit, transferMarkersForSnapshot, routeDisplayContext, pointDisplayState, nativeEventIndexForSnapshot, firstDepartureAnchor, buildMovementProfile, progressForNativeEventIndex, routeDistanceFractions, candidateProgressFromSnapshot, transitionPlanForEvents, transitionDurations,
       officialSeed:OFFICIAL_SEED.map(x=>({...x})),
       collectMapObstacles,
       labelPlacementFor,
