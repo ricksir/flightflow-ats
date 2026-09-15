@@ -38,6 +38,13 @@ jobs:
           default_branch = os.environ.get("GH_DEFAULT_BRANCH") or "main"
           api = os.environ.get("GITHUB_API_URL") or "https://api.github.com"
           safe_prefixes = ("analysis/", "chore/", "docs/", "refactor/", "test/")
+          legacy_orphans = {
+              "chore/map-next-kernel-candidates",
+              "refactor/extract-aircraft-visual-utils",
+              "refactor/move-validate-config-to-module",
+              "test/freeze-format-address-code-v0.3.0",
+              "test/freeze-ground-midpoint-contract",
+          }
 
           headers = {
               "Accept": "application/vnd.github+json",
@@ -97,8 +104,16 @@ jobs:
                   continue
               if name in open_refs:
                   continue
-              if name not in closed_refs:
+
+              # analysis/* is an explicitly disposable namespace.
+              # Other maintenance branches still require a closed PR record,
+              # except for the small audited list of legacy orphans below.
+              disposable_analysis = name.startswith("analysis/")
+              historically_closed = name in closed_refs
+              audited_legacy_orphan = name in legacy_orphans
+              if not (disposable_analysis or historically_closed or audited_legacy_orphan):
                   continue
+
               candidates.append(name)
 
           deleted = []
@@ -125,7 +140,8 @@ jobs:
                   summary.write(f"- safe candidates: **{len(candidates)}**\n")
                   summary.write(f"- deleted: **{len(deleted)}**\n")
                   summary.write(f"- failures: **{len(failures)}**\n")
-                  summary.write("- preserved prefixes include `release/` and every branch without a closed PR record.\n")
+                  summary.write("- `release/*`, protected branches and branches with open PRs are always preserved.\n")
+                  summary.write("- `analysis/*` is treated as disposable when no PR is open; other orphan cleanup is explicit and audited.\n")
 
           if failures:
               raise SystemExit(1)
