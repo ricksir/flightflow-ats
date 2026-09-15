@@ -1,91 +1,111 @@
 # FlightFlow ATS
 
-Ambiente interativo para análise e visualização do ciclo de vida de planos de voo, históricos ATS, rota processada, fixos, eventos e coordenação entre órgãos.
+Aplicação web para análise e visualização de históricos ATS, ciclo de vida de planos de voo, rota processada, fixos, eventos e coordenação entre órgãos.
 
-> **Status do repositório:** fase de **Release Readiness**. O núcleo temporal/espacial, a navegação e as regressões críticas possuem cobertura automatizada; a modularização do antigo monólito segue incremental e não deve alterar os contratos funcionais protegidos.
+## Estado do projeto
+
+- **Release estável:** `v0.2.0`
+- **Execução:** aplicação web sem etapa obrigatória de build
+- **Branch de referência:** `main`
+- **Quality gates:** auditoria estática, inventário de funções, testes Node, disponibilidade do navegador e Playwright
+- **Modularização contínua:** encerrada após o PR #211; novas extrações só devem ocorrer quando houver necessidade funcional concreta
+
+O projeto permanece em manutenção evolutiva. A rodada de modularização do ciclo v0.3.0 reduziu o acoplamento do núcleo e consolidou módulos já extraídos em `src/`, sem alterar os contratos temporais e espaciais protegidos.
 
 ## Executar
 
-A aplicação continua sem build obrigatório:
+Para uso direto:
 
-1. abra `index.html` no Chrome/Edge/Firefox;
+1. abra `index.html` em Chrome, Edge ou Firefox;
 2. carregue o histórico desejado;
-3. use timeline, mapa, Rota Processada e ferramentas normalmente.
+3. utilize timeline, mapa, Rota Processada, STRIP, FPV e demais ferramentas normalmente.
 
-Alguns recursos cartográficos e consultas dependem de acesso à internet; a aplicação também possui dados e recursos locais/offline.
+Alguns recursos cartográficos e consultas externas dependem de conectividade, mas o projeto também mantém dados e recursos locais.
 
-## Verificação completa
+## Desenvolvimento e verificação
 
-Com Node.js 22+ e dependências instaladas:
+Requisitos:
+
+- Node.js 22+
+- Python 3
+- dependências do projeto instaladas com `npm install`
+
+Verificação completa:
 
 ```bash
 npm install
 npm run check
 ```
 
-O comando executa:
+O comando executa, em sequência:
 
-- auditoria estática;
-- inventário de funções;
-- testes Node;
-- testes de interface com Playwright.
+1. **Static audit**
+2. **Function declaration inventory**
+3. testes de regressão Node
+4. testes de interface Playwright
 
-Os mesmos gates são exigidos pelo GitHub Actions para pull requests e pushes em `main`.
+Os mesmos gates são exigidos pelo GitHub Actions em pull requests e pushes para `main`.
 
 ## Contratos críticos protegidos
 
-A evolução do FlightFlow deve preservar, entre outros:
+Mudanças não podem introduzir regressões em:
 
 - DEP como referência temporal;
-- nenhum fixo intermediário pulado;
-- aeronave renderizada sobre os checkpoints da rota;
+- passagem por todos os fixos intermediários;
+- aeronave exatamente sobre os checkpoints correspondentes;
 - equivalência entre avanço e retrocesso;
 - equivalência entre Próximo, Anterior, timeline, scrubber, teclado e autoplay;
 - sequência crítica `PADIL → IRISO → LIBEC → EGDOD → IBGAM → PMS → ILVES → MASVA`;
-- ILVES 01:34 antes de MASVA 01:36.
+- `ILVES 01:34` antes de `MASVA 01:36`;
+- fechamento do perfil de rota no destino esperado.
 
-Veja `docs/RELEASE-READINESS.md` e `docs/REGRESSION-CHECKLIST.md`.
+Consulte `docs/REGRESSION-CHECKLIST.md` e `docs/RELEASE-READINESS.md`.
 
-## Estrutura
+## Estrutura do repositório
 
-- `index.html` — aplicação executável e núcleo ainda em modularização progressiva;
-- `src/` — módulos já extraídos por domínio, incluindo core, timeline, rota, mapa, geografia, storage e UI;
-- `tests/` — contratos Node e regressões E2E/Playwright;
-- `docs/` — arquitetura, auditorias, planos de teste, regressões e critérios de release;
-- `tools/` — auditoria estática, inventário e utilitários de manutenção;
-- `baseline/` — referência congelada da versão original;
-- `AGENTS.md` — regras para agentes automatizados trabalharem no projeto sem mudanças destrutivas.
+```text
+.
+├── index.html              # aplicação e orquestração principal
+├── src/                    # módulos por domínio
+├── tests/                  # contratos Node e regressões E2E/Playwright
+├── docs/                   # arquitetura, operação, regressão e histórico técnico
+├── tools/                  # auditoria estática e inventário
+├── .github/                # workflow e template de pull request
+├── AGENTS.md               # regras para agentes automatizados
+├── CHANGELOG.md            # histórico de versões
+├── package.json            # scripts e dependências de desenvolvimento
+└── playwright.config.js    # configuração E2E
+```
+
+Um mapa da documentação está disponível em `docs/README.md`.
 
 ## Princípio de desenvolvimento
 
 Toda mudança deve seguir:
 
-**entender → reproduzir → planejar → alterar minimamente → verificar → revisar → registrar**.
+**entender → reproduzir → alterar minimamente → verificar → revisar → registrar**
 
-Correções de bugs devem gerar um caso de regressão correspondente. Mudanças em navegação, rota processada, movimento ou `goTo()` exigem cobertura adequada antes do merge.
+Não abrir novas rodadas de remapeamento/refatoração automaticamente. O trabalho futuro deve ser motivado por bug, melhoria funcional, manutenção necessária ou preparação de release.
 
 ## Release Readiness
 
-A versão estável só deve ser marcada quando:
+Para qualquer nova versão estável:
 
-1. todos os quality gates estiverem verdes no mesmo SHA;
-2. o log bruto do Playwright estiver sem `flaky`, retry ou `SPATIAL_EQ_DIAG`;
-3. a aceitação manual descrita em `docs/RELEASE-READINESS.md` estiver concluída;
-4. não houver regressão crítica conhecida aberta;
-5. a documentação corresponder ao comportamento efetivamente entregue.
+1. todos os quality gates devem estar verdes no mesmo SHA;
+2. o Playwright deve terminar sem `flaky`, retry ou `SPATIAL_EQ_DIAG`;
+3. a aceitação operacional aplicável deve estar registrada;
+4. não pode haver regressão crítica conhecida aberta;
+5. documentação e changelog devem refletir o comportamento entregue.
 
-A modularização adicional pode continuar depois da versão estável como manutenção arquitetural.
+## Segurança e publicação
 
-## Segurança
+O repositório é público. Portanto:
 
-Este projeto contém dados e conhecimento operacional ATS embutidos. **Mantenha o repositório privado** até concluir a sanitização e uma revisão específica de conteúdo publicável.
+- não versionar credenciais, tokens, chaves ou segredos;
+- não adicionar dados pessoais desnecessários;
+- revisar qualquer novo conteúdo operacional antes do commit;
+- manter arquivos locais sensíveis fora do Git e cobertos por `.gitignore`.
 
-## Baseline original
+## Histórico
 
-Arquivo de origem: `FlightFlow_TIOP_CINDACTA1_NOVO.html`
-
-SHA-256 da versão recebida:
-
-`1a4ec449abd99ac34ffd5eeec91baa2c9975058b9459bf1952309c2fe0eac96f`
-
-Veja `docs/AUDIT-BASELINE.md` para a auditoria inicial.
+A release `v0.2.0` e o histórico de evolução estão documentados em `CHANGELOG.md`. O estado técnico mais recente para continuidade assistida por IA fica em `docs/AI_CURRENT_STATE.md`.
