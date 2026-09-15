@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
 
-  function create(options = {}) {
+  function createFpvWindowController(options = {}) {
     const state = options.state;
     const setFpvVisible = options.setFpvVisible;
     if (!state || typeof state !== 'object') {
@@ -16,5 +16,5 @@
     return Object.freeze({ minimizeFpv });
   }
 
-  global.FlightFlowFpvWindowController = Object.freeze({ create });
+  global.FlightFlowFpvWindowController = Object.freeze({ create: createFpvWindowController });
 })(window);
