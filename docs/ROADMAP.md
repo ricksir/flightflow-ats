@@ -1,47 +1,72 @@
 # Roadmap técnico
 
-## Fase 0 — baseline e proteção
+> Estado revisado em 15/09/2026. Este roadmap substitui o plano inicial de modularização contínua.
 
-- [x] congelar arquivo recebido;
-- [x] registrar checksum;
-- [x] criar regras de agente;
-- [x] criar auditoria estática;
-- [x] criar checklist de regressão;
-- [x] criar repositório GitHub privado;
-- [ ] executar smoke test visual completo.
+## Concluído
 
-## Fase 1 — testes antes da refatoração
+### Base e proteção
 
-- [ ] automatizar carregamento inicial;
-- [ ] fixtures de histórico;
-- [ ] teste determinístico de timeline;
-- [ ] teste de ordenação ETIM/fixos;
-- [ ] teste de troca/reset de histórico;
-- [ ] teste DEP → estimados.
+- [x] auditoria estática;
+- [x] inventário de funções;
+- [x] quality gates no GitHub Actions;
+- [x] regressões Node;
+- [x] regressões E2E/Playwright;
+- [x] contratos temporais e espaciais críticos;
+- [x] documentação de Release Readiness.
 
-## Fase 2 — extrações de baixo risco
+### Release estável
 
-- [ ] mover base geográfica para arquivo dedicado;
-- [ ] mover dados/knowledge estáticos;
-- [ ] extrair parser sem alterar API pública;
-- [ ] extrair persistência.
+- [x] validação operacional da v0.2.0;
+- [x] gates verdes no SHA candidato;
+- [x] publicação da tag e release `v0.2.0`;
+- [x] changelog de release.
 
-## Fase 3 — núcleo temporal e espacial
+### Modularização
 
-- [ ] separar timeline/estado;
-- [ ] separar rota processada;
-- [ ] separar interpolação/movimento da aeronave;
-- [ ] adicionar testes de ida/volta/autoplay.
+- [x] parser, dados, storage e IA externalizados;
+- [x] controladores de timeline e navegação protegidos;
+- [x] utilitários geográficos e de UI extraídos quando seguro;
+- [x] contratos por fronteira adicionados;
+- [x] fresh remap final executado no PR #211;
+- [x] critério de parada aplicado: 0 candidatos estritamente puros;
+- [x] modularização contínua encerrada.
 
-## Fase 4 — UI
+## Prioridades atuais
 
-- [ ] separar CSS por domínio;
-- [ ] remover patches CSS obsoletos apenas após comparação visual;
-- [ ] padronizar componentes e acessibilidade.
+### 1. Estabilidade funcional
 
-## Fase 5 — segurança e distribuição
+- corrigir apenas bugs reproduzíveis;
+- manter equivalência entre Próximo, Anterior, timeline, scrubber, teclado e autoplay;
+- preservar DEP e fidelidade espacial;
+- criar regressão automatizada para cada correção crítica.
 
-- [ ] sanitizar conteúdo incorporado;
-- [ ] remover dados pessoais não necessários;
-- [ ] revisar o que pode ser publicado;
-- [ ] configurar CI e releases.
+### 2. Evolução do produto
+
+- priorizar melhorias solicitadas pelo uso real do FlightFlow;
+- evitar refatoração sem benefício funcional mensurável;
+- documentar mudanças de comportamento no changelog.
+
+### 3. Segurança e publicação
+
+- revisar continuamente novos conteúdos antes de adicioná-los ao repositório público;
+- manter segredos e dados locais fora do Git;
+- remover dados pessoais desnecessários caso sejam identificados.
+
+### 4. Próxima release
+
+Quando houver conjunto funcional suficiente para nova versão:
+
+- executar o checklist de `docs/RELEASE-READINESS.md`;
+- validar todos os gates no mesmo SHA;
+- registrar aceitação operacional aplicável;
+- atualizar `CHANGELOG.md`;
+- publicar tag/release somente após validação final.
+
+## Fora de escopo automático
+
+Não são tarefas automáticas:
+
+- novo fresh remap;
+- extração adicional apenas para reduzir `index.html`;
+- reescrita completa do frontend;
+- reorganização de código sem objetivo funcional.

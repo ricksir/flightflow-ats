@@ -1,95 +1,109 @@
 # FlightFlow ATS — instruções para agentes de IA
 
-Este arquivo é a fonte de verdade para qualquer agente de IA que trabalhe neste repositório.
+Este arquivo define as regras permanentes para agentes automatizados que trabalhem neste repositório.
 
 ## 1. Objetivo
 
-Evoluir o FlightFlow preservando a fidelidade temporal e espacial do plano de voo, a leitura dos históricos ATS e a estabilidade da interface.
+Evoluir o FlightFlow ATS preservando a fidelidade temporal e espacial do plano de voo, a leitura dos históricos ATS e a estabilidade da interface.
 
 ## 2. Regras obrigatórias
 
-1. **Pense antes de editar.** Identifique causa, arquivos/blocos afetados e risco de regressão.
-2. **Mudanças cirúrgicas.** Não refatore áreas adjacentes sem necessidade para o pedido atual.
-3. **Baseline é imutável.** Nunca editar `baseline/FlightFlow_TIOP_CINDACTA1_NOVO.html`.
-4. **Não mascarar bug com UI.** Corrija a lógica de dados/estado antes de compensar visualmente.
-5. **Timeline e rota são determinísticas.** Avançar, retroceder, clicar em evento e autoplay devem produzir o mesmo estado para o mesmo índice.
-6. **Não saltar fixos processados.** Se um fixo pertence ao intervalo temporal entre dois eventos, a transição visual deve respeitar sua ordem.
-7. **Mudança de histórico limpa estado derivado.** Nenhum dado da sessão anterior pode contaminar a nova análise.
-8. **Persistência compatível.** Alterações em IndexedDB/localStorage exigem migração ou fallback compatível.
-9. **Sem segredo no código.** Não inserir chaves de API, tokens, senhas ou credenciais em arquivos versionados.
-10. **Repositório privado.** Não tornar público sem sanitização explícita do conteúdo operacional e dos dados pessoais incorporados.
+1. **Entenda antes de editar.** Identifique causa, arquivos afetados e risco de regressão.
+2. **Faça mudanças cirúrgicas.** Não refatore áreas adjacentes sem necessidade para o objetivo atual.
+3. **Preserve os contratos protegidos.** O baseline lógico é mantido por testes, checksums documentados e `docs/AUDIT-BASELINE.md`; não invente ou recrie um diretório `baseline/`.
+4. **Não masque bugs com UI.** Corrija a lógica de dados/estado antes de compensar visualmente.
+5. **Timeline e rota são determinísticas.** Avançar, retroceder, clicar em evento e autoplay devem convergir para o mesmo estado no mesmo índice.
+6. **Não salte fixos processados.** A transição visual deve respeitar a ordem dos fixos do intervalo.
+7. **Troca de histórico limpa estado derivado.** Nenhuma sessão anterior pode contaminar a nova análise.
+8. **Persistência deve continuar compatível.** Mudanças em IndexedDB/localStorage exigem migração ou fallback seguro.
+9. **Sem segredos no código.** Nunca versionar chaves, tokens, senhas ou credenciais.
+10. **Repositório público.** Não adicionar dados pessoais desnecessários nem conteúdo operacional que não tenha sido revisado para publicação.
 
-## 3. Fluxo obrigatório para bugs
+## 3. Antes de qualquer alteração
 
-Antes de editar:
+- leia `docs/AI_CURRENT_STATE.md`;
+- confirme o SHA atual de `main`;
+- confira PRs abertos e workflows recentes;
+- descreva o comportamento observado e esperado quando houver bug;
+- encontre a menor fronteira de correção;
+- identifique os testes que protegem a área afetada.
 
-- descreva o comportamento observado;
-- descreva o comportamento esperado;
-- encontre a causa raiz;
-- identifique o menor ponto de correção;
-- defina como reproduzir e verificar.
+## 4. Quality gates obrigatórios
 
-Depois de editar:
+Mudanças em produção ou documentação relevante devem preservar:
 
-- execute `python tools/audit_static.py index.html`;
-- execute os testes de regressão relacionados;
-- revise o diff para mudanças não solicitadas;
-- valide manualmente os fluxos afetados no navegador.
+1. **Static audit**;
+2. **Function declaration inventory**;
+3. **Timeline and route regression tests / Node**;
+4. **Browser availability**;
+5. **UI navigation regression tests / Playwright**.
 
-## 4. Hotspots atuais
+Para mudanças de alto risco, o Playwright deve terminar com:
 
-Trate como áreas de alto risco:
+- 46 passed;
+- 0 flaky;
+- 0 retry;
+- 0 `SPATIAL_EQ_DIAG`;
+- 0 failed.
 
-- parser de históricos;
-- múltiplas fontes de histórico;
-- sincronização timeline/scrubber/eventos;
+## 5. Hotspots de alto risco
+
+Trate com proteção reforçada:
+
+- parser e múltiplas fontes de histórico;
+- timeline, scrubber e navegação;
 - rota processada e ETIM;
+- `goTo()`;
 - movimento/interpolação da aeronave;
-- fixos, aeródromos, FIR/TMA/ACC/APP/TWR;
-- atualização de nomes/coordenadas geográficas;
-- persistência IndexedDB/localStorage;
-- módulos de IA/base normativa;
-- carregamento dinâmico de mapas e consultas externas.
+- fixos, aeródromos e camadas FIR/TMA/ACC/APP/TWR;
+- mapa e coordenadas geográficas;
+- IndexedDB/localStorage;
+- motor de IA e base de conhecimento.
 
-## 5. Critérios de regressão prioritários
+## 6. Regressões prioritárias
 
-Sempre que a mudança tocar timeline, rota, mapa ou histórico, validar no mínimo:
+Quando a mudança tocar timeline, rota, mapa ou histórico, valide no mínimo:
 
-- anterior / próximo;
+- Anterior / Próximo;
 - clique direto em evento;
 - scrubber;
+- teclado;
 - autoplay;
-- avanço e retrocesso sobre o mesmo trecho;
-- passagem por todos os fixos intermediários;
-- aeronave posicionada sobre o fixo no instante correspondente;
+- avanço e retrocesso pelo mesmo trecho;
+- todos os fixos intermediários;
+- aeronave sobre o fixo correspondente;
 - ordem cronológica dos ETIM;
-- último fixo → aeródromo de destino;
-- troca de histórico sem resíduos da sessão anterior;
-- DEP atualizando a evolução temporal do voo quando aplicável.
+- último fixo → destino;
+- troca de histórico sem resíduos;
+- DEP como referência temporal quando aplicável.
 
-## 6. Estratégia de modularização
+Sequência crítica protegida:
 
-Não dividir o arquivo inteiro de uma vez. Extrair uma responsabilidade por PR/commit, com comportamento preservado.
+`PADIL → IRISO → LIBEC → EGDOD → IBGAM → PMS → ILVES → MASVA`
 
-Ordem preferencial:
+## 7. Regra de modularização
 
-1. dados estáticos e base geográfica;
-2. parser de histórico;
-3. persistência;
-4. timeline/estado;
-5. rota processada;
-6. mapa/aeronave;
-7. UI e estilos;
-8. IA/base normativa.
+A rodada contínua de modularização foi encerrada após o PR #211.
 
-Cada extração deve manter uma interface explícita e teste correspondente.
+**Não criar fresh remap automaticamente.**
+**Não extrair funções apenas para reduzir o tamanho do IIFE.**
 
-## 7. Definição de pronto
+Novas extrações só são justificadas quando:
+
+- simplificarem uma mudança funcional concreta;
+- corrigirem um bug;
+- reduzirem risco de manutenção em uma área que precisa ser alterada;
+- forem necessárias para uma decisão arquitetural explícita.
+
+Nesses casos, preservar contrato, comportamento e cobertura correspondente.
+
+## 8. Definição de pronto
 
 Uma tarefa só está concluída quando:
 
-- o bug/objetivo está verificavelmente resolvido;
-- JavaScript continua sintaticamente válido;
-- regressões relevantes foram testadas;
-- não houve alteração do baseline;
-- documentação/changelog foram atualizados quando necessário.
+- o objetivo está verificavelmente resolvido;
+- os gates aplicáveis estão verdes;
+- o diff contém apenas mudanças necessárias;
+- não há regressão crítica introduzida;
+- documentação/changelog foram atualizados quando necessário;
+- o estado de `main` está claramente registrado quando a tarefa alterar a continuidade do projeto.
