@@ -4,6 +4,7 @@
   "private": true,
   "description": "FlightFlow ATS — baseline e testes de regressão do núcleo temporal/espacial e navegação de UI",
   "scripts": {
+    "start": "node tools/dev-server.mjs",
     "test": "node --test tests/*.test.js",
     "test:ui": "playwright test",
     "audit": "python3 tools/audit_static.py index.html",
