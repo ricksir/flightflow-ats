@@ -112,9 +112,9 @@ test('inferCommunicationContext permanece sem acoplamento direto temporal, espac
     assert.equal(source.includes(token), false, 'acoplamento inesperado: ' + token);
   }
 
-  assert.equal((source.match(/\\bparseAddresses\\s*\\(/g) || []).length, 2);
-  assert.equal((source.match(/\\bformatAddressCode\\b/g) || []).length, 2);
-  assert.equal((source.match(/\\binternalTransitionDetails\\s*\\(/g) || []).length, 1);
+  assert.equal((source.match(/\bparseAddresses\s*\(/g) || []).length, 2);
+  assert.equal((source.match(/\bformatAddressCode\b/g) || []).length, 2);
+  assert.equal((source.match(/\binternalTransitionDetails\s*\(/g) || []).length, 1);
 });
 
 test('inferCommunicationContext mantém um único consumidor funcional em renderCommunication', () => {
