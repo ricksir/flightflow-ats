@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'knowledge', 'knowledge-popover-controller.js');
 const FUNCTION_NAME = 'hideKnowledgePopover';
 const EXPECTED_SOURCE = 'function hideKnowledgePopover() {\n    if (!els.knowledgePopover) return;\n    els.knowledgePopover.hidden = true;\n    state.activeKnowledgeAnchor = null;\n  }';
 const EXPECTED_BYTES = 156;
@@ -68,24 +69,28 @@ function extractNamedFunction(source, name) {
   throw new Error('fim de ' + name + ' não encontrado');
 }
 
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
+
 function loadFunction(els, state) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'els',
-    'state',
-    source + '\nreturn hideKnowledgePopover;'
-  )(els, state);
+  const source = moduleSource();
+  const context = { window: {} };
+  Function('window', source)(context.window);
+  return context.window.FlightFlowKnowledgePopoverController
+    .create({ els, state })
+    .hideKnowledgePopover;
 }
 
 test('hideKnowledgePopover congela exatamente a fronteira selecionada no remap #203', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('hideKnowledgePopover não contém lógica temporal, espacial, cartográfica ou externa', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   for (const token of [
     'currentEvent', 'goTo', 'renderCurrent', 'timeline', 'scrubber', 'autoplay',
     'route', 'planner', 'interpol', 'aircraft', 'map', 'realMap', 'googleMap',
@@ -100,11 +105,16 @@ test('hideKnowledgePopover não contém lógica temporal, espacial, cartográfic
   assert.equal((source.match(/\bstate\.activeKnowledgeAnchor\b/g) || []).length, 1);
 });
 
-test('hideKnowledgePopover mantém exatamente dois consumidores funcionais', () => {
+test('hideKnowledgePopover sai do kernel, preserva wiring e mantém exatamente dois consumidores funcionais', () => {
   const kernel = kernelSource();
-  assert.equal(kernel.split('function hideKnowledgePopover(').length - 1, 1);
+  const module = moduleSource();
+  assert.equal(kernel.split('function hideKnowledgePopover(').length - 1, 0);
+  assert.equal(module.split('function hideKnowledgePopover(').length - 1, 1);
   assert.equal(kernel.split('hideKnowledgePopover').length - 1, EXPECTED_CONSUMERS + 1);
 
+  assert.ok(kernel.includes('const KnowledgePopoverController = window.FlightFlowKnowledgePopoverController;'));
+  assert.ok(kernel.includes("if (!KnowledgePopoverController) throw new Error('FlightFlowKnowledgePopoverController não foi carregado.');"));
+  assert.ok(kernel.includes('const { hideKnowledgePopover } = KnowledgePopoverController.create({ els, state });'));
   assert.ok(kernel.includes('hideKnowledgePopover();\n    });'));
 
   const openActiveKnowledgeDetail = extractNamedFunction(kernel, 'openActiveKnowledgeDetail');
