@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1114852;
-const EXPECTED_SHA256 = '1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b';
-const EXPECTED_LINES = 5007;
+const EXPECTED_BYTES = 1115650;
+const EXPECTED_SHA256 = 'f287b08d450945e1f6c58f9c7e22ae1b84a5af6957221788fa4e09e951030462';
+const EXPECTED_LINES = 5019;
 const EXPECTED_DUPLICATES = [];
 const FILE_PROTOCOL_MAP_GUARD = `    if(window.location.protocol==='file:'){\n      activateVectorMapFallback('Mapa vetorial offline ativo · para cartografia online execute npm start e abra http://127.0.0.1:4173');\n      return Promise.resolve(false);\n    }\n`;
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
