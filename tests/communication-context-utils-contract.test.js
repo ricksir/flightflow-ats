@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 17838;
-const MODULE_SHA256 = '7b1954d8f776fcc549d551727ef1af88cae4685a6a28a0251f652baf9c91d285';
+const MODULE_BYTES = 22691;
+const MODULE_SHA256 = '3d6e6f787a296194a651037bc80bf1050473a266f578712893064b66a8e2d68c';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -76,7 +76,7 @@ test('API pública preserva contratos existentes e expõe fábricas isoladas', (
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createResolveKnowledgeEntry', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createRelatedKnowledgeButtons', 'createKnowledgeDetailMarkup', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCommunicationContextInferer', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createResolveKnowledgeEntry', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createRelatedKnowledgeButtons', 'createKnowledgeDetailMarkup', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.parseAddresses, 'function');
@@ -85,6 +85,25 @@ test('API pública preserva contratos existentes e expõe fábricas isoladas', (
   assert.equal(api.knowledgeEntryDocumentKey({ sourceDocument: 'MCA 100-27' }), 'MCA');
   assert.equal(typeof api.normalizeKnowledgeText, 'function');
   assert.equal(api.normalizeKnowledgeText('RQP — Brasília / ZQZX'), 'RQP - BRASILIA ZQZX');
+  assert.equal(typeof api.createCommunicationContextInferer, 'function');
+  assert.throws(() => api.createCommunicationContextInferer({}), /FlightFlowCommunicationContextUtils requer parseAddresses para inferir contexto/);
+  assert.throws(() => api.createCommunicationContextInferer({
+    parseAddresses: () => [],
+  }), /FlightFlowCommunicationContextUtils requer formatAddressCode para inferir contexto/);
+  assert.throws(() => api.createCommunicationContextInferer({
+    parseAddresses: () => [],
+    formatAddressCode: value => String(value),
+  }), /FlightFlowCommunicationContextUtils requer internalTransitionDetails para inferir contexto/);
+  const inferScoped = api.createCommunicationContextInferer({
+    parseAddresses: value => value === 'ORIG' ? ['SBBRZQZX'] : [],
+    formatAddressCode: value => `FMT:${value}`,
+    internalTransitionDetails: () => ({ previous: '', current: '' }),
+  });
+  assert.equal(Object.isFrozen(inferScoped), true);
+  assert.deepEqual(Object.keys(inferScoped), ['inferCommunicationContext']);
+  const inferred = inferScoped.inferCommunicationContext({ originator: 'ORIG', snapshot: {} });
+  assert.equal(inferred.external, true);
+  assert.equal(inferred.originLabel, 'FMT:SBBRZQZX');
   assert.equal(typeof api.createCanonicalKnowledgeCode, 'function');
   assert.throws(() => api.createCanonicalKnowledgeCode({}), /FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para código canônico/);
   const canonicalScoped = api.createCanonicalKnowledgeCode({ normalizeKnowledgeText: value => String(value || '').trim().toUpperCase() });
@@ -259,6 +278,10 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes("if (!CommunicationContextUtils) throw new Error('FlightFlowCommunicationContextUtils não foi carregado.');"));
   assert.ok(html.includes('const { internalTransitionDetails } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { parseAddresses } = CommunicationContextUtils;'));
+  assert.ok(html.includes('const { inferCommunicationContext } = CommunicationContextUtils.createCommunicationContextInferer({'));
+  assert.ok(html.includes('parseAddresses,'));
+  assert.ok(html.includes('formatAddressCode,'));
+  assert.ok(html.includes('internalTransitionDetails,'));
   assert.ok(html.includes('const { knowledgeEntryDocumentKey } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { normalizeKnowledgeText } = CommunicationContextUtils;'));
   assert.ok(html.includes('const { canonicalKnowledgeCode } = CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText });'));
