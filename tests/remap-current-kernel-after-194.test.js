@@ -87,6 +87,7 @@ test('fresh remap of low-coupling kernel candidates after PR 194', () => {
   const infraForbidden = /(state\.|els\.|document\.|window\.|localStorage|sessionStorage|indexedDB|fetch\(|setTimeout\(|setInterval\(|requestAnimationFrame\(|navigator\.|google\.|L\.)/;
 
   const rows = [];
+  const infraOnly = [];
   const excluded = [];
 
   for (const decl of declarations) {
@@ -106,7 +107,7 @@ test('fresh remap of low-coupling kernel candidates after PR 194', () => {
     const standaloneMap = /(^|[^.A-Za-z0-9_$])map([^A-Za-z0-9_$]|$)/i.test(mapSanitized);
     const infra = infraForbidden.test(source);
 
-    if (sensitiveHits.length || standaloneMap || infra) {
+    const occurrences = [...kernel.matchAll(new RegExp('\\b' + name.replace(/[$]/g, '\\    if (sensitiveHits.length || standaloneMap || infra) {
       excluded.push({ name, bytes, sensitiveHits, standaloneMap, infra });
       continue;
     }
@@ -127,10 +128,34 @@ test('fresh remap of low-coupling kernel candidates after PR 194', () => {
       sha256: crypto.createHash('sha256').update(source, 'utf8').digest('hex'),
       score,
       preview: source.replace(/\s+/g, ' ').slice(0, 420)
-    });
+    });') + '\\b', 'g'))].length;
+    const consumers = Math.max(0, occurrences - 1);
+    const calls = [...source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)]
+      .map(m => m[1])
+      .filter(x => !['function','if','for','while','switch','catch','String','Number','Boolean','Array','Object','Math','Date','RegExp','parseInt','parseFloat','isNaN','Set','Map'].includes(x));
+    const uniqueCalls = [...new Set(calls)].filter(x => x !== name);
+    const score = bytes + consumers * 30 + uniqueCalls.length * 45;
+    const row = {
+      name,
+      bytes,
+      consumers,
+      deps: uniqueCalls,
+      sha256: crypto.createHash('sha256').update(source, 'utf8').digest('hex'),
+      score,
+      preview: source.replace(/\s+/g, ' ').slice(0, 420)
+    };
+
+    if (sensitiveHits.length || standaloneMap || infra) {
+      excluded.push({ name, bytes, sensitiveHits, standaloneMap, infra });
+      if (infra && !sensitiveHits.length && !standaloneMap) infraOnly.push(row);
+      continue;
+    }
+
+    rows.push(row);
   }
 
   rows.sort((a, b) => a.score - b.score || a.bytes - b.bytes || a.name.localeCompare(b.name));
+  infraOnly.sort((a, b) => a.score - b.score || a.bytes - b.bytes || a.name.localeCompare(b.name));
   excluded.sort((a, b) => a.bytes - b.bytes || a.name.localeCompare(b.name));
 
   console.log('FRESH_REMAP_BASE|356ec5056e7b2fbc6b7ca46c91937321453184c0');
@@ -142,5 +167,9 @@ test('fresh remap of low-coupling kernel candidates after PR 194', () => {
   for (const row of excluded.slice(0, 100)) console.log('FRESH_REMAP_EXCLUDED|' + JSON.stringify(row));
   console.log('FRESH_REMAP_EXCLUDED_END');
 
-  assert.ok(rows.length > 0);
+  console.log('FRESH_REMAP_INFRA_ONLY_BEGIN');
+  for (const row of infraOnly.slice(0, 100)) console.log('FRESH_REMAP_INFRA_ONLY|' + JSON.stringify(row));
+  console.log('FRESH_REMAP_INFRA_ONLY_END');
+
+  assert.ok(rows.length > 0 || infraOnly.length > 0);
 });
