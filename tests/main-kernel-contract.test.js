@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1114588;
-const EXPECTED_SHA256 = 'd27d411aa139443463a8229a78ac9b691e573056f13b246a7227e40e682c29b6';
-const EXPECTED_LINES = 5009;
+const EXPECTED_BYTES = 1114709;
+const EXPECTED_SHA256 = 'eae54fca21828ce37968ed072a07dab69b6d4182afe58c7f3cb575a02c5f46dd';
+const EXPECTED_LINES = 5007;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -29,6 +29,7 @@ const EXTRACTED_FPV_WINDOW_CONTROLLER = ['minimizeFpv'];
 const EXTRACTED_STRIP_WINDOW_CONTROLLER = ['minimizeStrip'];
 const EXTRACTED_KNOWLEDGE_ENTRIES = ['knowledgeEntries'];
 const EXTRACTED_KNOWLEDGE_FIELD_LABEL_RENDERER = ['renderKnowledgeFieldLabel'];
+const EXTRACTED_KNOWLEDGE_POPOVER_CONTROLLER = ['hideKnowledgePopover'];
 const EXTRACTED_COORDINATE_UTILS = [
   'normalizeCoordinateInput', 'validAerodromeCoordinate', 'formatGeoCoord', 'atsCoordinateLabel', 'groundCentroid', 'groundMidpoint',
   'runwayTokens', 'runwayHeading', 'runwayHeadingFromCode', 'polygonGeoCentroid', 'geoOffset'
@@ -151,6 +152,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const KnowledgeFieldLabelRenderer = window.FlightFlowKnowledgeFieldLabelRenderer;',
     "if (!KnowledgeFieldLabelRenderer) throw new Error('FlightFlowKnowledgeFieldLabelRenderer não foi carregado.');",
     'const { renderKnowledgeFieldLabel } = KnowledgeFieldLabelRenderer.create({',
+    'const KnowledgePopoverController = window.FlightFlowKnowledgePopoverController;',
+    "if (!KnowledgePopoverController) throw new Error('FlightFlowKnowledgePopoverController não foi carregado.');",
+    'const { hideKnowledgePopover } = KnowledgePopoverController.create({ els, state });',
     'const CoordinateUtils = window.FlightFlowCoordinateUtils;',
     "if (!CoordinateUtils) throw new Error('FlightFlowCoordinateUtils não foi carregado.');",
     'const { normalizeCoordinateInput, validAerodromeCoordinate, formatGeoCoord, atsCoordinateLabel, groundCentroid, groundMidpoint, runwayTokens, runwayHeading, runwayHeadingFromCode, polygonGeoCentroid, geoOffset } = CoordinateUtils;',
@@ -274,8 +278,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 284);
-  assert.equal(counts.size, 284);
+  assert.equal(names.length, 283);
+  assert.equal(counts.size, 283);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -294,6 +298,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_STRIP_WINDOW_CONTROLLER,
     ...EXTRACTED_KNOWLEDGE_ENTRIES,
     ...EXTRACTED_KNOWLEDGE_FIELD_LABEL_RENDERER,
+    ...EXTRACTED_KNOWLEDGE_POPOVER_CONTROLLER,
     ...EXTRACTED_COORDINATE_UTILS,
     ...EXTRACTED_LOCALITY_UTILS,
     ...EXTRACTED_AIRPORT_GROUND_QUERY,
