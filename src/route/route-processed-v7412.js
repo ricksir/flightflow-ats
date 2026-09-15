@@ -55,8 +55,20 @@
     Object.freeze({ident:'PALCA',lat:-22.0988888889,lon:-49.0883333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
     Object.freeze({ident:'ANSOK',lat:-22.3938888889,lon:-49.1613888889,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
     Object.freeze({ident:'IMTBI',lat:-22.5677777778,lon:-49.2108333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    // Continuação publicada da UZ5 após o limite processado pelo histórico TAM3774.
+    Object.freeze({ident:'VULRU',lat:-22.8975,lon:-49.3013888889,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'UBNID',lat:-23.2113888889,lon:-49.3877777778,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'GIKLU',lat:-23.4263888889,lon:-49.4402777778,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'USVIG',lat:-23.6322222222,lon:-49.5047222222,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'UMGUL',lat:-23.7438888889,lon:-49.5358333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
     Object.freeze({ident:'SIREM',lat:-16.5501666667,lon:-48.6463333333,source:'AISWEB STAR RNAV SIREM 2B · tabela WGS84',kind:'waypoint',quality:'official'}),
   ]);
+
+  // Sequências publicadas usadas apenas para expandir trechos explicitamente declarados no FPL.
+  // Não há interpolação temporal para pontos que não possuem ETIM no histórico SAGITARIO.
+  const AIRWAY_SEQUENCES = Object.freeze({
+    UZ5: Object.freeze(['KUKOL','SIRUL','VUDOT','EDMIN','UDIGI','MEVIK','ASTOB','VUPOG','UPONA','ISISA','ENPEG','PALCA','ANSOK','IMTBI','VULRU','UBNID','GIKLU','USVIG','UMGUL']),
+  });
 
   const model = {
     history: null,
@@ -140,7 +152,7 @@
       .ffrp-map{width:100%;height:100%;display:block;background:linear-gradient(#d9eaf0,#e8f2f5)}
       .ffrp-map .grid{stroke:#527585;stroke-opacity:.13;stroke-width:1;vector-effect:non-scaling-stroke}.ffrp-map .grid-label{fill:#526f7d;font:600 11px ui-monospace,monospace;opacity:.72}
       .ffrp-map .route-line{fill:none;stroke:#e02d25;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 1px rgba(0,0,0,.2))}.ffrp-map .route-line.completed{stroke:#1b75a5}.ffrp-map .route-gap{fill:none;stroke:#a87300;stroke-width:2;stroke-dasharray:8 6;opacity:.75;vector-effect:non-scaling-stroke}
-      .ffrp-map .wp circle{fill:#fff;stroke:#0b688a;stroke-width:2.2;vector-effect:non-scaling-stroke}.ffrp-map .wp.coord circle{stroke:#7b4db8}.ffrp-map .wp.airport circle{fill:#ffefb5;stroke:#b87300}.ffrp-map .wp.pseudo circle{fill:#fff7d8;stroke:#6d52c8;stroke-dasharray:4 3}.ffrp-map .wp text{fill:#123b50;font:800 12px Inter,system-ui,sans-serif;paint-order:stroke;stroke:#e9f5f8;stroke-width:4px;stroke-linejoin:round}.ffrp-map .wp .meta{font:700 9px ui-monospace,monospace;fill:#355c70}
+      .ffrp-map .wp circle{fill:#fff;stroke:#0b688a;stroke-width:2.2;vector-effect:non-scaling-stroke}.ffrp-map .wp.coord circle{stroke:#7b4db8}.ffrp-map .wp.airport circle{fill:#ffefb5;stroke:#b87300}.ffrp-map .wp.declared circle{fill:#e7f6f9;stroke:#0d7084;stroke-dasharray:3 2}.ffrp-map .wp.destination circle{fill:#fff1b9;stroke:#a66b00;stroke-dasharray:4 3}.ffrp-map .wp text{fill:#123b50;font:800 12px Inter,system-ui,sans-serif;paint-order:stroke;stroke:#e9f5f8;stroke-width:4px;stroke-linejoin:round}.ffrp-map .wp .meta{font:700 9px ui-monospace,monospace;fill:#355c70}
       .ffrp-plane{filter:drop-shadow(0 2px 3px rgba(0,0,0,.22))}.ffrp-plane .stem{stroke:#18a0c4;stroke-width:3;stroke-linecap:round;opacity:.82;vector-effect:non-scaling-stroke}.ffrp-plane .body{fill:#083d5a;stroke:white;stroke-width:1.5;vector-effect:non-scaling-stroke}.ffrp-plane .tag{fill:rgba(255,255,255,.97);stroke:#c4d9e3;stroke-width:1.5;vector-effect:non-scaling-stroke}.ffrp-plane text{fill:#083d5a;font:900 11px Inter,system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:4px}.ffrp-plane .mini{font:900 10px Inter,system-ui,sans-serif;stroke-width:0}
       .ffrp-map-note{position:absolute;left:12px;bottom:12px;max-width:min(620px,calc(100% - 24px));padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.92);border:1px solid rgba(13,112,132,.18);box-shadow:0 8px 25px rgba(3,29,57,.12);font:700 .58rem/1.45 Inter,system-ui,sans-serif;color:#345667}
       .ffrp-side{min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;background:#fff;padding:12px}.ffrp-side h3{position:sticky;top:-12px;z-index:2;margin:-2px -2px 8px;padding:8px 2px 7px;background:rgba(255,255,255,.96);font-size:.72rem;color:#083d5a}.ffrp-route-list{display:grid;gap:6px}.ffrp-point{display:grid;grid-template-columns:30px minmax(0,1fr);gap:5px 7px;align-items:center;padding:8px 9px;border-radius:10px;background:#f4f8fa;border:1px solid #e2edf1;font-size:.58rem;overflow:hidden}.ffrp-point.unresolved{background:#fff8ed;border-color:#f1d7a7}.ffrp-point-index{grid-row:1 / span 2;display:grid;place-items:center;width:24px;height:24px;border-radius:12px;background:#dfeff5;color:#0b6788;font-weight:900}.ffrp-point.unresolved .ffrp-point-index{background:#ffe4b5;color:#995800}.ffrp-point-main{min-width:0}.ffrp-point-main strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#123e54}.ffrp-point-main span{display:block;margin-top:2px;color:#607684;font-size:.52rem;line-height:1.35}.ffrp-point-source{grid-column:2;min-width:0;font-size:.47rem;line-height:1.35;color:#6b7f89;white-space:normal;overflow-wrap:anywhere;word-break:break-word;border-top:1px dashed rgba(80,115,130,.14);padding-top:4px}
@@ -154,16 +166,16 @@
       #ffrpVectorFixLayer .ffrp-vfix circle{fill:#fff;stroke:#07576a;stroke-width:2;vector-effect:non-scaling-stroke}#ffrpVectorFixLayer .ffrp-vfix.airport circle{fill:#fff1b9;stroke:#a66b00}#ffrpVectorFixLayer .ffrp-vfix.coord circle{stroke:#754ab2}#ffrpVectorFixLayer .ffrp-vfix text{fill:#0a415c;font:800 13px/1 Inter,system-ui,sans-serif;paint-order:stroke;stroke:rgba(255,255,255,.96);stroke-width:4px;stroke-linejoin:round}#ffrpVectorFixLayer .ffrp-vfix text.meta{font:700 10px/1 ui-monospace,monospace;fill:#3a6175}
       .ffrp-id-card{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(13,112,132,.30);border-radius:11px;padding:6px 10px;background:linear-gradient(135deg,#dff4f8,#fff);font:900 .54rem/1 Inter,system-ui,sans-serif;color:#476a79;box-shadow:0 2px 8px rgba(3,61,90,.07)}.ffrp-id-value{display:inline-flex;gap:1px;align-items:center;font:950 .92rem/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.07em;color:#064766}.ffrp-id-value .eighth{color:#d11f2e;font-size:1.04rem;font-weight:1000;text-shadow:0 0 0 transparent}.ffrp-id-value .missing{color:#82949d}
       .ffrp-eventbar{position:relative;z-index:12;display:flex;align-items:center;gap:8px;min-height:46px;padding:7px 12px;border-bottom:1px solid #dbe7ed;background:#f6fafb;box-shadow:0 2px 8px rgba(3,29,57,.05)}.ffrp-eventbar button{min-width:32px;width:auto;height:30px;padding:0 9px;border:1px solid #c9dfe7;border-radius:8px;background:#fff;color:#07576a;font-weight:900;cursor:pointer;white-space:nowrap}.ffrp-eventbar label{min-width:0;display:flex;flex:1;align-items:center;gap:7px;font:800 .55rem/1 Inter,system-ui,sans-serif;color:#536d7a}.ffrp-eventbar select{width:min(520px,52vw);max-width:100%;height:30px;border:1px solid #cedfe6;border-radius:8px;background:#fff;color:#123e54;font:700 .56rem/1 Inter,system-ui,sans-serif;padding:0 8px}.ffrp-event-info{margin-left:auto;font:800 .52rem/1.2 Inter,system-ui,sans-serif;color:#55727f;white-space:nowrap}
-      .ffrp-point{cursor:pointer}.ffrp-point:hover{border-color:#b9dbe6;background:#eef7fa}.ffrp-point.active-point{box-shadow:inset 3px 0 #0d7084}
+      .ffrp-point{cursor:pointer}.ffrp-point.declared-point,.ffrp-point.destination-point{cursor:default}.ffrp-point:hover{border-color:#b9dbe6;background:#eef7fa}.ffrp-point.active-point{box-shadow:inset 3px 0 #0d7084}
       .ffrp-national-note{display:inline-flex;align-items:center;gap:5px;color:#596f79;font:700 .50rem/1.2 Inter,system-ui,sans-serif}
 
       .ffrp-handoffs-label{white-space:nowrap}.ffrp-handoffs-label input{accent-color:#8a48bd}
       .ffrp-map-hud{position:absolute;left:14px;top:14px;z-index:7;display:grid;gap:7px;max-width:min(390px,calc(100% - 28px));pointer-events:none}.ffrp-map-hud-card{padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.94);border:1px solid rgba(13,112,132,.16);box-shadow:0 7px 22px rgba(3,29,57,.10)}.ffrp-map-hud-card strong{display:block;color:#083d5a;font:900 .66rem/1.25 Inter,system-ui,sans-serif}.ffrp-map-hud-card span{display:block;margin-top:3px;color:#55717e;font:700 .52rem/1.35 ui-monospace,monospace}
-      .ffrp-legend{position:absolute;right:14px;bottom:14px;z-index:7;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;max-width:520px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.93);border:1px solid rgba(13,112,132,.15);box-shadow:0 7px 22px rgba(3,29,57,.09);font:750 .49rem/1.2 Inter,system-ui,sans-serif;color:#496572}.ffrp-legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.ffrp-lg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;border:2px solid #07576a;background:#fff}.ffrp-lg-airport{border-color:#a66b00;background:#ffe59a}.ffrp-lg-coord{border-color:#7b4db8}.ffrp-lg-transfer{width:9px;height:9px;border-radius:2px;transform:rotate(45deg);background:#8a48bd;border:1px solid #fff;box-shadow:0 0 0 1px #6e3498}.ffrp-lg-line{width:18px;height:0;border-top:3px solid #e02d25}.ffrp-lg-tail{width:20px;height:0;border-top:2px dashed #7359dd}
-      .ffrp-map .route-tail{fill:none;stroke:#7359dd;stroke-width:3;stroke-dasharray:9 7;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 1px rgba(0,0,0,.1))}.ffrp-map .route-underlay{fill:none;stroke:#fff;stroke-width:8;stroke-opacity:.65;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.ffrp-map .handoff-marker polygon{fill:#8a48bd;stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}.ffrp-map .handoff-marker text{fill:#65328b;font:900 10px Inter,system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:4px}.ffrp-map .tail-label{fill:#5a42a6;font:900 9px Inter,system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:4px;letter-spacing:.04em}
+      .ffrp-legend{position:absolute;right:14px;bottom:14px;z-index:7;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;max-width:520px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.93);border:1px solid rgba(13,112,132,.15);box-shadow:0 7px 22px rgba(3,29,57,.09);font:750 .49rem/1.2 Inter,system-ui,sans-serif;color:#496572}.ffrp-legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.ffrp-lg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;border:2px solid #07576a;background:#fff}.ffrp-lg-airport{border-color:#a66b00;background:#ffe59a}.ffrp-lg-coord{border-color:#7b4db8}.ffrp-lg-transfer{width:9px;height:9px;border-radius:2px;transform:rotate(45deg);background:#8a48bd;border:1px solid #fff;box-shadow:0 0 0 1px #6e3498}.ffrp-lg-line{width:18px;height:0;border-top:3px solid #e02d25}.ffrp-lg-declared{width:20px;height:0;border-top:2px dashed #0d7084}.ffrp-lg-destination{width:8px;height:8px;border-radius:50%;display:inline-block;border:2px dashed #a66b00;background:#fff1b9}
+      .ffrp-map .route-declared{fill:none;stroke:#0d7084;stroke-width:3;stroke-dasharray:8 6;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 1px rgba(0,0,0,.10))}.ffrp-map .route-underlay{fill:none;stroke:#fff;stroke-width:8;stroke-opacity:.65;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.ffrp-map .handoff-marker polygon{fill:#8a48bd;stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}.ffrp-map .handoff-marker text{fill:#65328b;font:900 10px Inter,system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:4px}.ffrp-map .tail-label{fill:#5a42a6;font:900 9px Inter,system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:4px;letter-spacing:.04em}
       .ffrp-transfer-marker{width:20px;height:20px;display:grid;place-items:center;transform:rotate(45deg);border-radius:4px;background:#8a48bd;color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(66,30,95,.35);font:900 10px/1 Inter,system-ui,sans-serif}.ffrp-transfer-marker span{transform:rotate(-45deg)}.leaflet-tooltip.ffrp-transfer-tip{background:#fff7ff;border:1px solid #c9a8df;color:#55306c;border-radius:7px;box-shadow:0 3px 10px rgba(52,24,70,.18);font:800 9px/1.25 Inter,system-ui,sans-serif}.leaflet-tooltip.ffrp-transfer-tip:before{display:none}
       .ffrp-snap-head{position:sticky;top:-12px;z-index:4;margin:-2px -2px 8px;padding:7px 2px;background:rgba(255,255,255,.97);display:flex;align-items:center;gap:8px;border-bottom:1px solid #edf3f6}.ffrp-snap-head h3{position:static!important;flex:1;margin:0!important;padding:0!important;background:none!important;min-width:0}.ffrp-snap-head button{border:1px solid #c8e1e9;border-radius:8px;background:#e8f4f8;color:#07576a;padding:6px 8px;font:850 .50rem/1 Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
-      .ffrp-route-kind{display:inline-flex;margin-left:5px;padding:2px 5px;border-radius:999px;background:#e7f4f8;color:#0d6077;font:900 .43rem/1 Inter,system-ui,sans-serif}.ffrp-route-kind.coord{background:#f1e9fa;color:#7040a0}.ffrp-route-kind.airport{background:#fff1c9;color:#8a5a00}.ffrp-route-kind.transfer{background:#efe3f8;color:#713b98}.ffrp-route-kind.pseudo{background:#ece9ff;color:#5944a1}
+      .ffrp-route-kind{display:inline-flex;margin-left:5px;padding:2px 5px;border-radius:999px;background:#e7f4f8;color:#0d6077;font:900 .43rem/1 Inter,system-ui,sans-serif}.ffrp-route-kind.coord{background:#f1e9fa;color:#7040a0}.ffrp-route-kind.airport{background:#fff1c9;color:#8a5a00}.ffrp-route-kind.transfer{background:#efe3f8;color:#713b98}.ffrp-route-kind.declared{background:#e4f4f7;color:#07576a}.ffrp-route-kind.destination{background:#fff1c9;color:#8a5a00}
       .ffrp-point.transfer-point{border-color:#d8c1e8;background:#fbf7fe}.ffrp-point.transfer-point .ffrp-point-index{background:#eadcf4;color:#6d3794}
       .ffrp-tail-note{margin-top:8px;padding:8px 9px;border-radius:9px;background:#f3f0ff;border:1px dashed #b3a6df;color:#594c82;font:750 .52rem/1.4 Inter,system-ui,sans-serif}.ffrp-tail-note b{color:#4f3e89}
       /* Refinamento visual v1: hierarquia inspirada em WebApps modernos, preservando a identidade cromática FlightFlow. */
@@ -485,26 +497,78 @@
     return candidates.length?candidates.at(-1).key:null;
   }
 
-  function pseudoDestinationTail(snapshot) {
-    if(!snapshotIsComplete(snapshot))return null;
-    const actual=snapshot.points||[]; if(!actual.length)return null;
-    const last=actual.at(-1),ades=norm(model.history?.ades||'');
-    if(!ades || norm(last.ident)===ades)return null;
-    const dest=destinationGeo(); if(!dest||!Number.isFinite(Number(dest.lat))||!Number.isFinite(Number(dest.lon)))return null;
-    const dx=(Number(dest.lon)-Number(last.geo.lon))*Math.cos(((Number(dest.lat)+Number(last.geo.lat))/2)*Math.PI/180),dy=Number(dest.lat)-Number(last.geo.lat);
-    if(Math.hypot(dx,dy)<.025)return null;
-    const startKey=Number.isFinite(last.etimKey)?last.etimKey:null;
-    let endKey=terminalEventKeyAfter(startKey);
-    if(!Number.isFinite(endKey) && Number.isFinite(startKey))endKey=startKey+20*60*1000;
-    const d=endKey?new Date(endKey):null;
-    const etim=d?`${String(d.getUTCDate()).padStart(2,'0')}-${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`:'';
-    return {from:last,to:{ident:ades,etim,etimRaw:etim,passed:false,cfl:last.cfl||'',etimKey:endKey,geo:{...dest,source:'Aproximação gráfica estimada até ADES',kind:'airport'},synthetic:true,pseudo:true},startKey,endKey};
+  function officialSeedPoint(ident) {
+    const id=norm(ident);
+    return OFFICIAL_SEED.find(row=>row.ident===id)||null;
   }
+
+  function declaredAirwaySpan() {
+    const tokens=tokenList(model.history?.route||'');
+    for(let i=1;i<tokens.length-1;i++){
+      const airway=tokens[i],sequence=AIRWAY_SEQUENCES[airway];
+      if(!sequence)continue;
+      const entry=tokens[i-1],exit=tokens[i+1];
+      const a=sequence.indexOf(entry),b=sequence.indexOf(exit);
+      if(a<0||b<0)continue;
+      const points=a<=b?sequence.slice(a,b+1):sequence.slice(b,a+1).reverse();
+      return {airway,entry,exit,points};
+    }
+    return null;
+  }
+
+  function declaredRouteContinuation(snapshot) {
+    if(!snapshot?.points?.length)return [];
+    const span=declaredAirwaySpan();if(!span?.points?.length)return [];
+    let lastPathIndex=-1;
+    for(const p of snapshot.points){
+      const i=span.points.indexOf(norm(p.ident));
+      if(i>lastPathIndex)lastPathIndex=i;
+    }
+    if(lastPathIndex<0||lastPathIndex>=span.points.length-1)return [];
+    return span.points.slice(lastPathIndex+1).map(ident=>{
+      const seed=officialSeedPoint(ident);if(!seed)return null;
+      return {
+        ident,
+        etim:'',
+        etimRaw:'',
+        passed:false,
+        cfl:'',
+        etimKey:null,
+        geo:{...seed,source:`${seed.source} · rota declarada ${span.airway}`},
+        declared:true,
+        untimed:true,
+        airway:span.airway,
+      };
+    }).filter(Boolean);
+  }
+
+  function destinationRouteMarker(snapshot) {
+    const ades=norm(model.history?.ades||'');if(!ades)return null;
+    const actual=(snapshot?.points||[]).map(p=>norm(p.ident));
+    const continuation=declaredRouteContinuation(snapshot);
+    if(actual.includes(ades)||continuation.some(p=>norm(p.ident)===ades))return null;
+    const dest=destinationGeo();
+    if(!dest||!Number.isFinite(Number(dest.lat))||!Number.isFinite(Number(dest.lon)))return null;
+    return {ident:ades,etim:'',etimRaw:'',passed:false,cfl:'',etimKey:null,geo:{...dest,source:'ADES do plano · trajetória terminal não especificada no histórico',kind:'airport'},destinationOnly:true,untimed:true};
+  }
+
+  // Compatibilidade pública: a antiga aproximação sintética foi deliberadamente desativada.
+  function pseudoDestinationTail() { return null; }
 
   function movementPoints(snapshot) {
     const actual=(snapshot?.points||[]).slice();
-    const tail=pseudoDestinationTail(snapshot);
-    return tail?actual.concat([tail.to]):actual;
+    return actual.concat(declaredRouteContinuation(snapshot));
+  }
+
+  function timedProgressLimit(snapshot) {
+    const move=movementPoints(snapshot);
+    if(!move.length)return 0;
+    const fractions=routeDistanceFractions(move);
+    let lastTimed=-1;
+    const actual=snapshot?.points||[];
+    for(let i=0;i<actual.length;i++)if(Number.isFinite(actual[i]?.etimKey))lastTimed=i;
+    if(lastTimed<0)return 0;
+    return clamp(Number.isFinite(fractions[lastTimed])?fractions[lastTimed]:lastTimed/Math.max(1,move.length-1),0,1);
   }
 
   function countResolvedGeos(snapshot){return (snapshot?.points||[]).filter(p=>p.geo&&Number.isFinite(Number(p.geo.lat))&&Number.isFinite(Number(p.geo.lon))).length}
@@ -1151,8 +1215,8 @@
     const badge=ensureMainBadge();
     ensureFixesToggle();ensureHandoffsToggle();
     if(!snapshot){if(badge)badge.hidden=true;renderProcessedVectorFixes(null);return false;}
-    const unresolved=snapshot.points.filter(p=>!p.geo).length,tail=pseudoDestinationTail(snapshot);
-    if(badge){badge.hidden=false;badge.classList.toggle('warn',unresolved>0);badge.textContent=unresolved?`ROTA PROCESSADA · ${unresolved} SEM COORD.`:`ROTA PROCESSADA · ${snapshot.points.length}/${snapshot.points.length}${tail?' · + APROX.':''}`;}
+    const unresolved=snapshot.points.filter(p=>!p.geo).length,continuation=declaredRouteContinuation(snapshot),destination=destinationRouteMarker(snapshot);
+    if(badge){badge.hidden=false;badge.classList.toggle('warn',unresolved>0);badge.textContent=unresolved?`ROTA PROCESSADA · ${unresolved} SEM COORD.`:`ROTA PROCESSADA · ${snapshot.points.length}/${snapshot.points.length}${continuation.length?` · +${continuation.length} DECL.`:''}`;}
     if(!snapshotIsComplete(snapshot))return false;
     const rms=bridge?.realMapState;
     try{
@@ -1166,24 +1230,30 @@
       model.nativeMapLayer.clearLayers();model.nativeFixLayer?.clearLayers?.();model.nativeTransferLayer?.clearLayers?.();
       const actualLatLngs=snapshot.points.map(p=>[Number(p.geo.lat),Number(p.geo.lon)]);
       const red=L.polyline(actualLatLngs,{color:'#d23a2d',weight:4,opacity:.94,lineCap:'round',lineJoin:'round',interactive:true});red.bindTooltip('Rota processada do histórico SAGITARIO',{sticky:true});red.addTo(model.nativeMapLayer);
-      let movementLatLngs=actualLatLngs.slice();
-      if(tail){const tailLatLngs=[[Number(tail.from.geo.lat),Number(tail.from.geo.lon)],[Number(tail.to.geo.lat),Number(tail.to.geo.lon)]];movementLatLngs=actualLatLngs.concat([tailLatLngs[1]]);const dashed=L.polyline(tailLatLngs,{color:'#7359dd',weight:3,opacity:.88,dashArray:'9 8',lineCap:'round',interactive:true});dashed.bindTooltip('Aproximação gráfica estimada: último ponto publicado → ADES',{sticky:true});dashed.addTo(model.nativeMapLayer);}
+      const movementLatLngs=movementPoints(snapshot).map(p=>[Number(p.geo.lat),Number(p.geo.lon)]);
+      if(continuation.length){
+        const declaredLatLngs=[[Number(snapshot.points.at(-1).geo.lat),Number(snapshot.points.at(-1).geo.lon)],...continuation.map(p=>[Number(p.geo.lat),Number(p.geo.lon)])];
+        const declared=L.polyline(declaredLatLngs,{color:'#0d7084',weight:3,opacity:.9,dashArray:'8 7',lineCap:'round',lineJoin:'round',interactive:true});
+        declared.bindTooltip(`Rota declarada ${esc(continuation[0]?.airway||'ATS')} · coordenadas publicadas · sem ETIM no histórico`,{sticky:true});declared.addTo(model.nativeMapLayer);
+      }
       if(model.fixesVisible&&model.nativeFixLayer){
         const occupied=collectMapObstacles(rms.map);
-        const plotPoints=tail?snapshot.points.concat([tail.to]):snapshot.points;
+        const plotPoints=snapshot.points.concat(continuation).concat(destination?[destination]:[]);
         plotPoints.forEach((p,i)=>{
-          const pseudo=!!p.pseudo;
-          const airport=/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===plotPoints.length-1||pseudo);
-          const mk=L.circleMarker([Number(p.geo.lat),Number(p.geo.lon)],{radius:airport?5.5:3.5,color:pseudo?'#7258ce':airport?'#a66b00':'#07576a',dashArray:pseudo?'4 3':null,weight:1.8,fillColor:airport?'#ffe59a':'#ffffff',fillOpacity:1,interactive:true});
+          const declared=!!p.declared,destOnly=!!p.destinationOnly;
+          const airport=destOnly||(/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===snapshot.points.length-1));
+          const mk=L.circleMarker([Number(p.geo.lat),Number(p.geo.lon)],{radius:airport?5.5:3.5,color:destOnly?'#a66b00':declared?'#0d7084':airport?'#a66b00':'#07576a',dashArray:(declared||destOnly)?'4 3':null,weight:1.8,fillColor:destOnly?'#fff1b9':declared?'#e7f6f9':airport?'#ffe59a':'#ffffff',fillOpacity:1,interactive:true});
           const place=labelPlacementFor(rms.map,p,i,plotPoints.length,occupied);
-          const meta=[p.etim?`ETIM ${p.etim}${p.passed?'*':''}`:'',p.cfl?`FL ${flightLevelLabel(p).replace(/^FL/,'')}`:'',pseudo?'ADES estimado':''].filter(Boolean).join(' · ');
-          mk.bindTooltip(mainFixLabelHtml(p,String(i+1).padStart(2,'0'))+(pseudo?'<br><small>ADES estimado</small>':''),{permanent:true,direction:place.direction,className:'ffrp-native-fix-label',offset:place.offset,opacity:.97,interactive:false});
+          const meta=declared?`ROTA DECLARADA ${p.airway||''} · SEM ETIM`:destOnly?'ADES · TRAJETO TERMINAL NÃO ESPECIFICADO':[p.etim?`ETIM ${p.etim}${p.passed?'*':''}`:'',p.cfl?`FL ${flightLevelLabel(p).replace(/^FL/,'')}`:''].filter(Boolean).join(' · ');
+          const suffix=declared?'<br><small>rota declarada · sem ETIM</small>':destOnly?'<br><small>ADES · sem trajetória terminal</small>':'';
+          mk.bindTooltip(mainFixLabelHtml(p,String(i+1).padStart(2,'0'))+suffix,{permanent:true,direction:place.direction,className:'ffrp-native-fix-label',offset:place.offset,opacity:.97,interactive:false});
           if(mk.bindPopup)mk.bindPopup(`<b>${esc(p.ident)}</b><br>${esc(meta||'Sem ETIM/CFL')}<br><small>${esc(p.geo.source||'')}</small>`);
           mk.addTo(model.nativeFixLayer);
         });
       }
       if(model.handoffsVisible&&model.nativeTransferLayer){transferMarkersForSnapshot(snapshot).forEach(t=>{const icon=L.divIcon?L.divIcon({className:'',html:'<div class="ffrp-transfer-marker"><span>⇄</span></div>',iconSize:[20,20],iconAnchor:[10,10]}):null;let mk;if(icon&&L.marker)mk=L.marker([Number(t.point.geo.lat),Number(t.point.geo.lon)],{icon,keyboard:false,zIndexOffset:800});else mk=L.circleMarker([Number(t.point.geo.lat),Number(t.point.geo.lon)],{radius:7,color:'#6e3498',fillColor:'#8a48bd',fillOpacity:1,weight:2});mk.bindTooltip(`<b>TRANSFERÊNCIA ${esc(t.label)}</b><br>${esc(t.detail)}<br>Ponto: ${esc(t.point.ident)}`,{sticky:true,className:'ffrp-transfer-tip'});mk.addTo(model.nativeTransferLayer);});}
-      const bounds=L.latLngBounds(movementLatLngs);rms.routeLatLngs=movementLatLngs;rms.routeBounds=bounds;suppressLegacyRouteVisuals(snapshot);if(fit&&!model.nativeFitDone&&bounds.isValid()){rms.map.fitBounds(bounds,{padding:[55,55],maxZoom:8,animate:false});model.nativeFitDone=true;}return true;
+      const displayLatLngs=movementLatLngs.concat(destination?[[Number(destination.geo.lat),Number(destination.geo.lon)]]:[]);
+      const bounds=L.latLngBounds(displayLatLngs);rms.routeLatLngs=movementLatLngs;rms.routeBounds=bounds;suppressLegacyRouteVisuals(snapshot);if(fit&&!model.nativeFitDone&&bounds.isValid()){rms.map.fitBounds(bounds,{padding:[55,55],maxZoom:8,animate:false});model.nativeFitDone=true;}return true;
     }catch(err){console.warn('[FlightFlow route] camada nativa:',err);renderProcessedVectorFixes(snapshot);return false;}
   }
 
@@ -1201,7 +1271,7 @@
     for(let i=0;i<events.length;i++){
       const existing=routes[i]||{};
       const target=progressForNativeEventIndex(i,events.length);
-      routes[i]={...existing,points,path:projectedPath(points),target,ffrpProcessed:true,ffrpVersion:VERSION,ffrpSnapshotBlock:routeSnapshot.blockIndex,ffrpPseudoTail:!!pseudoDestinationTail(routeSnapshot)};
+      routes[i]={...existing,points,path:projectedPath(points),target,ffrpProcessed:true,ffrpVersion:VERSION,ffrpSnapshotBlock:routeSnapshot.blockIndex,ffrpPseudoTail:false,ffrpDeclaredContinuation:declaredRouteContinuation(routeSnapshot).length};
       events[i].syntheticProgress=target;applied++;
     }
     const currentIndex=Number.isFinite(Number(state?.index))?clamp(Number(state.index),0,Math.max(0,events.length-1)):0;
@@ -1364,7 +1434,7 @@
           <input id="ffrpFileInput" class="ffrp-file-input" type="file" accept=".json,.geojson,.csv,.txt,.xlsx,.xls" />
         </div>
         <div class="ffrp-eventbar"><button id="ffrpPrevEvent" title="Evento anterior">◀</button><label>Evento FlightFlow <select id="ffrpEventSelect"></select></label><button id="ffrpGoEvent" title="Mostrar diretamente o evento selecionado no FlightFlow">Mostrar no FlightFlow</button><button id="ffrpNextEvent" title="Próximo evento">▶</button><span id="ffrpEventInfo" class="ffrp-event-info">Aguardando timeline</span></div>
-        <div class="ffrp-body"><div class="ffrp-map-wrap"><svg id="ffrpMap" class="ffrp-map" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet"></svg><div id="ffrpMapHud" class="ffrp-map-hud"></div><div id="ffrpLegend" class="ffrp-legend"><span><i class="ffrp-lg-dot ffrp-lg-airport"></i>Aeródromo</span><span><i class="ffrp-lg-dot"></i>Fixo/Waypoint</span><span><i class="ffrp-lg-dot ffrp-lg-coord"></i>Coordenada</span><span><i class="ffrp-lg-transfer"></i>Transferência</span><span><i class="ffrp-lg-line"></i>Rota processada</span><span><i class="ffrp-lg-tail"></i>Aproximação estimada</span></div><div id="ffrpMapNote" class="ffrp-map-note"></div></div><aside class="ffrp-side"><div class="ffrp-snap-head"><h3 id="ffrpSnapTitle">Quadro da rota</h3><button id="ffrpShowSnapEvent">Mostrar quadro no FlightFlow</button></div><div id="ffrpRouteList" class="ffrp-route-list"></div><div id="ffrpTailNote"></div><div id="ffrpUnresolved"></div></aside></div>
+        <div class="ffrp-body"><div class="ffrp-map-wrap"><svg id="ffrpMap" class="ffrp-map" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet"></svg><div id="ffrpMapHud" class="ffrp-map-hud"></div><div id="ffrpLegend" class="ffrp-legend"><span><i class="ffrp-lg-dot ffrp-lg-airport"></i>Aeródromo</span><span><i class="ffrp-lg-dot"></i>Fixo/Waypoint</span><span><i class="ffrp-lg-dot ffrp-lg-coord"></i>Coordenada</span><span><i class="ffrp-lg-transfer"></i>Transferência</span><span><i class="ffrp-lg-line"></i>Rota processada</span><span><i class="ffrp-lg-declared"></i>Rota declarada s/ ETIM</span><span><i class="ffrp-lg-destination"></i>ADES sem trajetória terminal</span></div><div id="ffrpMapNote" class="ffrp-map-note"></div></div><aside class="ffrp-side"><div class="ffrp-snap-head"><h3 id="ffrpSnapTitle">Quadro da rota</h3><button id="ffrpShowSnapEvent">Mostrar quadro no FlightFlow</button></div><div id="ffrpRouteList" class="ffrp-route-list"></div><div id="ffrpTailNote"></div><div id="ffrpUnresolved"></div></aside></div>
         <div class="ffrp-footer"><button id="ffrpPlay" class="ffrp-play">▶</button><input id="ffrpRange" class="ffrp-range" type="range" min="0" max="1000" value="0"/><span id="ffrpTime" class="ffrp-time">0%</span></div>
       </div>`;
       document.body.appendChild(wrap);
@@ -1390,7 +1460,7 @@
       qs('#ffrpPlay').addEventListener('click',()=>{
         if(playTimer){clearInterval(playTimer);playTimer=0;qs('#ffrpPlay').textContent='▶';return;}
         model.syncTimeline=false;qs('#ffrpTimelineBtn').classList.remove('active');qs('#ffrpPlay').textContent='❚❚';
-        playTimer=setInterval(()=>{model.routeProgress+=.0025;if(model.routeProgress>=1){model.routeProgress=1;clearInterval(playTimer);playTimer=0;qs('#ffrpPlay').textContent='▶';}renderModal(false)},45);
+        playTimer=setInterval(()=>{const snap=model.resolvedSnapshots[chooseSnapshotIndex()]||model.resolvedSnapshots[0],limit=timedProgressLimit(snap);model.routeProgress=Math.min(limit,model.routeProgress+.0025);if(model.routeProgress>=limit-1e-9){model.routeProgress=limit;clearInterval(playTimer);playTimer=0;qs('#ffrpPlay').textContent='▶';}renderModal(false)},45);
       });
     }
   }
@@ -1411,15 +1481,15 @@
 
   function renderMap(snapshot, progress) {
     const svg=qs('#ffrpMap');if(!svg)return;
-    const pts=snapshot?.points||[],tail=pseudoDestinationTail(snapshot),move=movementPoints(snapshot),plotPoints=tail?pts.concat([tail.to]):pts,b=routeBounds(move),pxy=projector(b);let html='';
+    const pts=snapshot?.points||[],continuation=declaredRouteContinuation(snapshot),destination=destinationRouteMarker(snapshot),move=movementPoints(snapshot),plotPoints=pts.concat(continuation).concat(destination?[destination]:[]),b=routeBounds(plotPoints),pxy=projector(b);let html='';
     for(let i=0;i<=5;i++){const x=62+i*(1076/5),y=62+i*(576/5),lon=b.minLon+i*(b.maxLon-b.minLon)/5,lat=b.maxLat-i*(b.maxLat-b.minLat)/5;html+=`<line class="grid" x1="${x}" y1="62" x2="${x}" y2="638"/><text class="grid-label" x="${x+4}" y="655">${Math.abs(lon).toFixed(1)}°${lon<0?'W':'E'}</text>`;html+=`<line class="grid" x1="62" y1="${y}" x2="1138" y2="${y}"/><text class="grid-label" x="67" y="${y-5}">${Math.abs(lat).toFixed(1)}°${lat<0?'S':'N'}</text>`;}
     let current=[];const flush=()=>{if(current.length>=2){const str=current.map(q=>`${q.x},${q.y}`).join(' ');html+=`<polyline class="route-underlay" points="${str}"/><polyline class="route-line" points="${str}"/>`;}current=[]};pts.forEach(pt=>{if(pt.geo)current.push(pxy(pt.geo.lat,pt.geo.lon));else flush()});flush();
     for(let i=0;i<pts.length;i++)if(!pts[i].geo){let l=i-1;while(l>=0&&!pts[l].geo)l--;let r=i+1;while(r<pts.length&&!pts[r].geo)r++;if(l>=0&&r<pts.length){const a=pxy(pts[l].geo.lat,pts[l].geo.lon),c=pxy(pts[r].geo.lat,pts[r].geo.lon);html+=`<line class="route-gap" x1="${a.x}" y1="${a.y}" x2="${c.x}" y2="${c.y}"/>`;i=r-1;}}
-    if(tail){const a=pxy(tail.from.geo.lat,tail.from.geo.lon),z=pxy(tail.to.geo.lat,tail.to.geo.lon),mx=(a.x+z.x)/2,my=(a.y+z.y)/2;html+=`<line class="route-tail" x1="${a.x}" y1="${a.y}" x2="${z.x}" y2="${z.y}"/><text class="tail-label" x="${mx+8}" y="${my-7}">APROXIMAÇÃO ESTIMADA → ${esc(tail.to.ident)}</text>`;}
+    if(continuation.length){const declaredPoints=[pts.at(-1),...continuation].filter(p=>p?.geo).map(p=>pxy(p.geo.lat,p.geo.lon)),str=declaredPoints.map(q=>`${q.x},${q.y}`).join(' ');if(declaredPoints.length>=2)html+=`<polyline class="route-underlay" points="${str}"/><polyline class="route-declared" points="${str}"/>`;}
     const occupied=[];
     const overlap=(a,c)=>Math.max(0,Math.min(a.x2,c.x2)-Math.max(a.x1,c.x1))*Math.max(0,Math.min(a.y2,c.y2)-Math.max(a.y1,c.y1));
     const placeLabel=(q,ident,index)=>{const w=Math.max(72,Math.min(150,56+String(ident||'').length*7.4)),h=28;const prefs=index%2?[[12,-13,'start'],[12,23,'start'],[-12,-13,'end'],[-12,23,'end'],[0,-30,'middle'],[0,35,'middle']]:[[12,23,'start'],[12,-13,'start'],[-12,23,'end'],[-12,-13,'end'],[0,35,'middle'],[0,-30,'middle']];let best=null,bestScore=Infinity;for(let rank=0;rank<prefs.length;rank++){const [dx,dy,anchor]=prefs[rank];let x=q.x+dx,y=q.y+dy;let x1=anchor==='start'?x:anchor==='end'?x-w:x-w/2;let y1=y-13;const r={x1,y1,x2:x1+w,y2:y1+h};let score=rank;for(const o of occupied)score+=overlap(r,o)*25;score+=(r.x1<70||r.x2>1130||r.y1<72||r.y2>625)?50000:0;if(score<bestScore){bestScore=score;best={x,y,anchor,rect:r}}}occupied.push(best.rect);return best;};
-    plotPoints.forEach((pt,i)=>{if(!pt.geo)return;const q=pxy(pt.geo.lat,pt.geo.lon),cls=[pt.geo.kind==='coordinate'?'coord':'',pt.geo.kind==='airport'?'airport':'',pt.pseudo?'pseudo':''].filter(Boolean).join(' '),meta=[pt.etim?pt.etim+(pt.passed?'*':''):'',pt.cfl?`FL${String(pt.cfl).replace(/^F/i,'')}`:'',pt.pseudo?'ADES estimado':''].filter(Boolean).join(' · '),lp=placeLabel(q,pt.ident,i);const lead=Math.hypot(lp.x-q.x,lp.y-q.y)>15?`<line class="label-leader" x1="${q.x}" y1="${q.y}" x2="${lp.x}" y2="${lp.y-3}"/>`:'';html+=`<g class="wp ${cls}"><title>${esc(pt.ident)} · ${esc(meta||'sem ETIM/FL')} · ${esc(pt.geo.source||'')}</title>${lead}<circle cx="${q.x}" cy="${q.y}" r="${pt.pseudo?7:(pt.geo.kind==='airport'?6.5:6)}"/> <text text-anchor="${lp.anchor}" x="${lp.x}" y="${lp.y-4}">${esc(pt.ident)}</text>${meta?`<text class="meta" text-anchor="${lp.anchor}" x="${lp.x}" y="${lp.y+9}">${esc(meta)}</text>`:''}</g>`;});
+    plotPoints.forEach((pt,i)=>{if(!pt.geo)return;const q=pxy(pt.geo.lat,pt.geo.lon),cls=[pt.geo.kind==='coordinate'?'coord':'',pt.geo.kind==='airport'?'airport':'',pt.declared?'declared':'',pt.destinationOnly?'destination':''].filter(Boolean).join(' '),meta=pt.declared?`ROTA DECLARADA ${pt.airway||''} · SEM ETIM`:pt.destinationOnly?'ADES · TRAJETO TERMINAL NÃO ESPECIFICADO':[pt.etim?pt.etim+(pt.passed?'*':''):'',pt.cfl?`FL${String(pt.cfl).replace(/^F/i,'')}`:''].filter(Boolean).join(' · '),lp=placeLabel(q,pt.ident,i);const lead=Math.hypot(lp.x-q.x,lp.y-q.y)>15?`<line class="label-leader" x1="${q.x}" y1="${q.y}" x2="${lp.x}" y2="${lp.y-3}"/>`:'';html+=`<g class="wp ${cls}"><title>${esc(pt.ident)} · ${esc(meta||'sem ETIM/FL')} · ${esc(pt.geo.source||'')}</title>${lead}<circle cx="${q.x}" cy="${q.y}" r="${pt.destinationOnly?7:(pt.geo.kind==='airport'?6.5:6)}"/> <text text-anchor="${lp.anchor}" x="${lp.x}" y="${lp.y-4}">${esc(pt.ident)}</text>${meta?`<text class="meta" text-anchor="${lp.anchor}" x="${lp.x}" y="${lp.y+9}">${esc(meta)}</text>`:''}</g>`;});
     if(model.handoffsVisible)transferMarkersForSnapshot(snapshot).forEach(t=>{const q=pxy(t.point.geo.lat,t.point.geo.lon);html+=`<g class="handoff-marker" transform="translate(${q.x} ${q.y})"><title>Transferência ${esc(t.label)} · ${esc(t.detail)} · ${esc(t.point.ident)}</title><polygon points="0,-10 10,0 0,10 -10,0"/><text x="14" y="4">TRF ${esc(t.label)}</text></g>`;});
     const plane=interpolateResolvedPoint(move,progress);if(plane){const q=pxy(plane.lat,plane.lon),bx=q.x+15,by=q.y-18;html+=`<g class="ffrp-plane"><line class="stem" x1="${q.x}" y1="${q.y}" x2="${bx}" y2="${by+4}"/><g transform="translate(${q.x} ${q.y}) rotate(${plane.bearing})"><path class="body" d="M0,-13 L4,-2 L14,2 L14,5 L4,3 L3,13 L0,15 L-3,13 L-4,3 L-14,5 L-14,2 L-4,-2 Z"/></g><g transform="translate(${bx} ${by})"><rect class="tag" x="0" y="-12" rx="8" ry="8" width="${Math.max(74, String(model.history?.callsign||'AERONAVE').length*8+24)}" height="22"/><text class="mini" x="10" y="3">${esc(model.history?.callsign||'AERONAVE')}</text></g></g>`;}
     svg.innerHTML=html;
@@ -1427,18 +1497,18 @@
 
   function renderModal(refreshRange=true) {
     ensureUi();if(!model.history||!model.resolvedSnapshots.length)return;
-    const idx=chooseSnapshotIndex();model.currentSnapshotIndex=idx;const snap=model.resolvedSnapshots[idx],move=movementPoints(snap),tail=pseudoDestinationTail(snap),timelineProgress=routePositionProgress(snap),progress=model.syncTimeline?timelineProgress:model.routeProgress;if(model.syncTimeline)model.routeProgress=progress;
+    const idx=chooseSnapshotIndex();model.currentSnapshotIndex=idx;const snap=model.resolvedSnapshots[idx],continuation=declaredRouteContinuation(snap),destination=destinationRouteMarker(snap),move=movementPoints(snap),timedLimit=timedProgressLimit(snap),timelineProgress=routePositionProgress(snap),requestedProgress=model.syncTimeline?timelineProgress:model.routeProgress,progress=Math.min(requestedProgress,timedLimit);if(model.syncTimeline)model.routeProgress=progress;
     qs('#ffrpTitle').textContent=`${model.history.callsign||'Plano'} · ${model.history.adep||'????'} → ${model.history.ades||'????'}`;qs('#ffrpSubtitle').textContent=`${model.sourceFile||'Histórico'} · ${model.history.snapshots.length} quadro(s) de PONTOS · rota declarada: ${model.history.route||'—'}`;qs('#ffrpIdPlano').innerHTML=renderIdPlanoMarkup(model.history.idPlano);qs('#ffrpSnapTitle').textContent=`Quadro ${idx+1}/${model.resolvedSnapshots.length} · ${snap.operation||'rota processada'}`;
     const nev=nativeEventCount(),nei=clamp(nativeEventIndex(),0,Math.max(0,nev-1)),sel=qs('#ffrpEventSelect');if(sel){const sig=`${nev}|${model.history.callsign}`;if(sel.dataset.sig!==sig){sel.innerHTML=Array.from({length:nev},(_,i)=>`<option value="${i}">${esc(nativeEventLabel(i))}</option>`).join('');sel.dataset.sig=sig;}if(nev)sel.value=String(nei)}const evInfo=qs('#ffrpEventInfo');if(evInfo)evInfo.textContent=nev?`Evento ${nei+1}/${nev} · ${model.syncTimeline?'seguindo timeline':'controle manual'}`:'Timeline não disponível';
     const transfers=transferMarkersForSnapshot(snap),transferByPoint=new Map(transfers.map(t=>[t.pointIndex,t]));
-    const plotPoints=tail?snap.points.concat([tail.to]):snap.points;
-    const list=qs('#ffrpRouteList');list.innerHTML=plotPoints.map((p,i)=>{const actualIndex=i<snap.points.length?i:-1,tr=actualIndex>=0?transferByPoint.get(actualIndex):null,kind=p.pseudo?'<em class="ffrp-route-kind pseudo">APROX.</em>':/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===plotPoints.length-1)?'<em class="ffrp-route-kind airport">AERÓDROMO</em>':p.geo?.kind==='coordinate'?'<em class="ffrp-route-kind coord">COORD.</em>':'<em class="ffrp-route-kind">FIXO</em>';return `<div class="ffrp-point ${p.geo?'':'unresolved'} ${tr?'transfer-point':''}" data-point-index="${actualIndex}" title="Posicionar a aeronave neste ponto"><span class="ffrp-point-index">${i+1}</span><div class="ffrp-point-main"><strong>${esc(p.ident)} ${kind}${tr?'<em class="ffrp-route-kind transfer">TRANSFERÊNCIA</em>':''}</strong><span>${esc([p.etim?`ETIM ${p.etim}${p.passed?'*':''}`:'',p.cfl?`CFL ${p.cfl}`:'',p.pseudo?'ADES estimado':'' ].filter(Boolean).join(' · ')||'Sem ETIM/CFL')}${tr?` · ${esc(tr.type)}`:''}</span></div><span class="ffrp-point-source">${esc(p.geo?.source||'sem coordenada')}${tr?` · limite ${esc(tr.label)}`:''}</span></div>`}).join('');
-    qsa('.ffrp-point',list).forEach((card,visualIndex)=>card.addEventListener('click',()=>{const raw=Number(card.dataset.pointIndex),i=Number.isFinite(raw)&&raw>=0?raw:move.length-1;const fractions=routeDistanceFractions(move);model.syncTimeline=false;model.routeProgress=Number.isFinite(fractions[i])?fractions[i]:(i/Math.max(1,move.length-1));qs('#ffrpTimelineBtn')?.classList.remove('active');renderModal(false)}));
+    const plotPoints=snap.points.concat(continuation).concat(destination?[destination]:[]);
+    const list=qs('#ffrpRouteList');list.innerHTML=plotPoints.map((p,i)=>{const actualIndex=i<snap.points.length?i:-1,tr=actualIndex>=0?transferByPoint.get(actualIndex):null,kind=p.declared?'<em class="ffrp-route-kind declared">DECLARADA</em>':p.destinationOnly?'<em class="ffrp-route-kind destination">ADES</em>':/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===snap.points.length-1)?'<em class="ffrp-route-kind airport">AERÓDROMO</em>':p.geo?.kind==='coordinate'?'<em class="ffrp-route-kind coord">COORD.</em>':'<em class="ffrp-route-kind">FIXO</em>',meta=p.declared?`ROTA ${p.airway||''} · SEM ETIM`:p.destinationOnly?'TRAJETO TERMINAL NÃO ESPECIFICADO':[p.etim?`ETIM ${p.etim}${p.passed?'*':''}`:'',p.cfl?`CFL ${p.cfl}`:''].filter(Boolean).join(' · ')||'Sem ETIM/CFL',extraClass=p.declared?'declared-point':p.destinationOnly?'destination-point':'';return `<div class="ffrp-point ${p.geo?'':'unresolved'} ${tr?'transfer-point':''} ${extraClass}" data-point-index="${actualIndex}" title="${p.declared||p.destinationOnly?'Referência geográfica sem movimento temporal':'Posicionar a aeronave neste ponto'}"><span class="ffrp-point-index">${i+1}</span><div class="ffrp-point-main"><strong>${esc(p.ident)} ${kind}${tr?'<em class="ffrp-route-kind transfer">TRANSFERÊNCIA</em>':''}</strong><span>${esc(meta)}${tr?` · ${esc(tr.type)}`:''}</span></div><span class="ffrp-point-source">${esc(p.geo?.source||'sem coordenada')}${tr?` · limite ${esc(tr.label)}`:''}</span></div>`}).join('');
+    qsa('.ffrp-point',list).forEach(card=>card.addEventListener('click',()=>{const raw=Number(card.dataset.pointIndex);if(!Number.isFinite(raw)||raw<0)return;const fractions=routeDistanceFractions(move),i=raw;model.syncTimeline=false;model.routeProgress=Math.min(timedLimit,Number.isFinite(fractions[i])?fractions[i]:(i/Math.max(1,move.length-1)));qs('#ffrpTimelineBtn')?.classList.remove('active');renderModal(false)}));
     const unresolved=snap.points.filter(p=>!p.geo).map(p=>p.ident);qs('#ffrpUnresolved').innerHTML=unresolved.length?`<div class="ffrp-unresolved"><b>${unresolved.length} ponto(s) ainda sem coordenada</b>${unresolved.map(x=>`<code>${esc(x)}</code>`).join('')}<div style="margin-top:5px">Use <b>Atualizar NAVDB AISWEB</b> ou instale a <b>Base Nacional AISWEB</b> (XLSX/CSV) uma única vez.</div></div>`:'';
-    const tailEl=qs('#ffrpTailNote');if(tailEl)tailEl.innerHTML=tail?`<div class="ffrp-tail-note"><b>Aproximação gráfica complementar</b><br>O histórico termina em <b>${esc(tail.from.ident)}</b>. Após esse ponto, a aeronave segue uma linha tracejada aproximada até <b>${esc(tail.to.ident)}</b> apenas para completar a visualização até o ADES. Esse trecho não é apresentado como fixo publicado.</div>`:'';
-    qs('#ffrpMapNote').textContent=unresolved.length?`Rota processada do histórico. ${unresolved.length} ponto(s) não foram resolvidos; os trechos correspondentes são mostrados como lacuna tracejada.`:tail?'Rota processada em vermelho. O trecho roxo tracejado do último ponto até o ADES é uma aproximação gráfica complementar, não uma trajetória radar.':'Rota processada do histórico, com coordenadas resolvidas localmente. Esta visualização representa o plano processado/estimado, não uma trajetória radar.';
-    const fractions=routeDistanceFractions(move);let seg=0;for(let i=0;i<fractions.length-1;i++){if(progress+1e-9>=fractions[i]&&progress<=fractions[i+1]+1e-9){seg=i;break;}if(progress>fractions[i+1])seg=i+1;}seg=Math.min(seg,Math.max(0,move.length-2));const a=move[seg],z=move[Math.min(move.length-1,seg+1)],fa=Number(fractions[seg]||0),fb=Number(fractions[Math.min(move.length-1,seg+1)]||1),fixProgress=Math.round(fb>fa?clamp((progress-fa)/(fb-fa),0,1)*100:100);const hud=qs('#ffrpMapHud');if(hud){const dep=model.movementProfile?.departureKey,dd=Number.isFinite(dep)?new Date(dep):null,depTxt=dd?`${String(dd.getUTCHours()).padStart(2,'0')}:${String(dd.getUTCMinutes()).padStart(2,'0')}:${String(dd.getUTCSeconds()).padStart(2,'0')}`:'—';hud.innerHTML=`<div class="ffrp-map-hud-card"><strong>${esc(model.history.callsign||'AERONAVE')} · ${Math.round(progress*100)}%</strong><span>${esc(a?.ident||'—')} → ${esc(z?.ident||'—')} · ${esc(flightLevelLabel(a)||'FL —')} · ${fixProgress}% do trecho</span></div><div class="ffrp-map-hud-card"><strong>DEP ${esc(depTxt)} · decolagem confirmada</strong><span>posição interpolada pelos ETIM entre fixos · ${tail?`rota publicada até ${esc(tail.from.ident)} + aproximação estimada até ${esc(tail.to.ident)}`:'rota processada alcança o ADES'} · ${snap.points.length} pontos</span></div>`;}
-    renderMap(snap,progress);const range=qs('#ffrpRange');if(range)range.value=Math.round(progress*1000);qs('#ffrpTime').textContent=`${Math.round(progress*100)}% · quadro ${idx+1}/${model.resolvedSnapshots.length}`;updateOpenBadge();
+    const tailEl=qs('#ffrpTailNote');if(tailEl)tailEl.innerHTML=continuation.length?`<div class="ffrp-tail-note"><b>Continuação declarada sem ETIM</b><br>O histórico processado termina em <b>${esc(snap.points.at(-1)?.ident||'—')}</b>. A rota do FPL/CPL declara <b>${esc(continuation[0]?.airway||'ATS')} ${esc(continuation.at(-1)?.ident||'')}</b>; por isso o FlightFlow exibe <b>${continuation.map(p=>esc(p.ident)).join(' → ')}</b> usando coordenadas publicadas, mas não movimenta a aeronave nesses pontos sem ETIM. ${destination?`O ADES <b>${esc(destination.ident)}</b> é mostrado apenas como referência; o trecho terminal após ${esc(continuation.at(-1)?.ident||'o último ponto declarado')} não é traçado porque não consta no histórico.`:''}</div>`:destination?`<div class="ffrp-tail-note"><b>Trajeto terminal não especificado</b><br>O ADES <b>${esc(destination.ident)}</b> é mostrado como referência, sem inventar uma trajetória após o último ponto processado.</div>`:'';
+    qs('#ffrpMapNote').textContent=unresolved.length?`Rota processada do histórico. ${unresolved.length} ponto(s) não foram resolvidos; os trechos correspondentes são mostrados como lacuna tracejada.`:continuation.length?'Rota processada em vermelho. A continuação azul tracejada contém somente fixos publicados da rota declarada e não possui interpolação temporal. O ADES é apenas referência quando o trajeto terminal não está no histórico.':'Rota processada do histórico, com coordenadas resolvidas localmente. Esta visualização representa o plano processado/estimado, não uma trajetória radar.';
+    const fractions=routeDistanceFractions(move);let seg=0;for(let i=0;i<fractions.length-1;i++){if(progress+1e-9>=fractions[i]&&progress<=fractions[i+1]+1e-9){seg=i;break;}if(progress>fractions[i+1])seg=i+1;}seg=Math.min(seg,Math.max(0,move.length-2));const a=move[seg],z=move[Math.min(move.length-1,seg+1)],fa=Number(fractions[seg]||0),fb=Number(fractions[Math.min(move.length-1,seg+1)]||1),fixProgress=Math.round(fb>fa?clamp((progress-fa)/(fb-fa),0,1)*100:100);const hud=qs('#ffrpMapHud');if(hud){const dep=model.movementProfile?.departureKey,dd=Number.isFinite(dep)?new Date(dep):null,depTxt=dd?`${String(dd.getUTCHours()).padStart(2,'0')}:${String(dd.getUTCMinutes()).padStart(2,'0')}:${String(dd.getUTCSeconds()).padStart(2,'0')}`:'—',lastTimed=[...snap.points].reverse().find(p=>Number.isFinite(p.etimKey));hud.innerHTML=`<div class="ffrp-map-hud-card"><strong>${esc(model.history.callsign||'AERONAVE')} · ${Math.round(progress*100)}%</strong><span>${esc(a?.ident||'—')} → ${esc(z?.ident||'—')} · ${esc(flightLevelLabel(a)||'FL —')} · ${fixProgress}% do trecho</span></div><div class="ffrp-map-hud-card"><strong>DEP ${esc(depTxt)} · decolagem confirmada</strong><span>posição temporal limitada aos ETIM do histórico${lastTimed?` · último ETIM em ${esc(lastTimed.ident)}`:''}${continuation.length?` · + ${continuation.length} fixos declarados sem ETIM até ${esc(continuation.at(-1).ident)}`:''}</span></div>`;}
+    renderMap(snap,progress);const range=qs('#ffrpRange');if(range){range.max=String(Math.max(0,Math.round(timedLimit*1000)));range.value=String(Math.min(Number(range.max),Math.round(progress*1000)));}qs('#ffrpTime').textContent=`${Math.round(progress*100)}% · limite ETIM · quadro ${idx+1}/${model.resolvedSnapshots.length}`;updateOpenBadge();
   }
 
   function updateOpenBadge() {
@@ -1787,7 +1857,7 @@
       applyProcessedRouteToFlightFlow,
       setFixesVisible:(value)=>{saveFixesVisiblePreference(value);const input=ensureFixesToggle();if(input)input.checked=!!model.fixesVisible;applyProcessedRouteToFlightFlow();return model.fixesVisible;},
       setHandoffsVisible:(value)=>{saveHandoffsVisiblePreference(value);const input=ensureHandoffsToggle();if(input)input.checked=!!model.handoffsVisible;applyProcessedRouteToFlightFlow();return model.handoffsVisible;},
-      movementPoints, pseudoDestinationTail, transferMarkersForSnapshot, nativeEventIndexForSnapshot, firstDepartureAnchor, buildMovementProfile, progressForNativeEventIndex, routeDistanceFractions, candidateProgressFromSnapshot, transitionPlanForEvents, transitionDurations,
+      movementPoints, pseudoDestinationTail, declaredRouteContinuation, destinationRouteMarker, timedProgressLimit, transferMarkersForSnapshot, nativeEventIndexForSnapshot, firstDepartureAnchor, buildMovementProfile, progressForNativeEventIndex, routeDistanceFractions, candidateProgressFromSnapshot, transitionPlanForEvents, transitionDurations,
       officialSeed:OFFICIAL_SEED.map(x=>({...x})),
       collectMapObstacles,
       labelPlacementFor,

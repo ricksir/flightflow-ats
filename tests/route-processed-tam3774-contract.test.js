@@ -52,6 +52,14 @@ const EXPECTED_UZ5 = Object.freeze({
   IMTBI: [-22.5677777778, -49.2108333333],
 });
 
+const EXPECTED_UZ5_CONTINUATION = Object.freeze({
+  VULRU: [-22.8975, -49.3013888889],
+  UBNID: [-23.2113888889, -49.3877777778],
+  GIKLU: [-23.4263888889, -49.4402777778],
+  USVIG: [-23.6322222222, -49.5047222222],
+  UMGUL: [-23.7438888889, -49.5358333333],
+});
+
 function loadRouteApi() {
   let source = fs.readFileSync(MODULE, 'utf8');
   const initMarker = "  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0),{once:true});else setTimeout(init,0);\n})();";
@@ -106,4 +114,61 @@ test('snapshot offline cobre os 14 fixos nominais UZ5 ausentes no TAM3774', () =
     assertNear(row.lat, lat, `${ident} latitude`);
     assertNear(row.lon, lon, `${ident} longitude`);
   }
+});
+
+
+test('TAM3774 expande somente a continuação publicada da UZ5 até UMGUL, sem inventar ETIM', () => {
+  const api = loadRouteApi();
+  const history = api.parseHistory(TAM3774_FIXTURE, 'TAM3774Cw.txt');
+  const model = api.getModel();
+  model.history = history;
+
+  const continuation = api.declaredRouteContinuation(history.snapshots[0]);
+  assert.deepEqual(
+    Array.from(continuation, point => point.ident),
+    ['VULRU', 'UBNID', 'GIKLU', 'USVIG', 'UMGUL'],
+    'a continuação deve seguir a ordem oficial da UZ5 após IMTBI'
+  );
+
+  for (const point of continuation) {
+    const expected = EXPECTED_UZ5_CONTINUATION[point.ident];
+    assert.ok(expected, `${point.ident} deve pertencer à continuação congelada`);
+    assert.equal(point.declared, true);
+    assert.equal(point.untimed, true);
+    assert.equal(point.etim, '', `${point.ident} não pode receber ETIM inventado`);
+    assert.equal(point.etimKey, null, `${point.ident} não pode receber chave temporal inventada`);
+    assert.equal(point.cfl, '', `${point.ident} não pode herdar CFL sem evidência do histórico`);
+    assertNear(point.geo.lat, expected[0], `${point.ident} latitude`);
+    assertNear(point.geo.lon, expected[1], `${point.ident} longitude`);
+  }
+});
+
+test('TAM3774 não cria mais aproximação sintética IMTBI → SBCT e limita o movimento ao último ETIM real', () => {
+  const api = loadRouteApi();
+  const history = api.parseHistory(TAM3774_FIXTURE, 'TAM3774Cw.txt');
+  const model = api.getModel();
+  model.history = history;
+
+  const seed = new Map(Array.from(api.officialSeed, row => [row.ident, row]));
+  const snapshot = {
+    ...history.snapshots[0],
+    points: history.snapshots[0].points.map(point => {
+      const geo = api.parseCoordinateIdent(point.ident) || seed.get(point.ident) || null;
+      return {...point, geo};
+    }),
+  };
+
+  const movement = api.movementPoints(snapshot);
+  assert.deepEqual(
+    Array.from(movement.slice(-6), point => point.ident),
+    ['IMTBI', 'VULRU', 'UBNID', 'GIKLU', 'USVIG', 'UMGUL']
+  );
+  assert.equal(movement.some(point => point.ident === 'SBCT'), false, 'ADES não pode ser inserido como trecho espacial inventado');
+  assert.equal(api.pseudoDestinationTail(snapshot), null, 'aproximação sintética até o ADES deve permanecer desativada');
+
+  const limit = api.timedProgressLimit(snapshot);
+  assert.ok(limit > 0 && limit < 1, 'último ETIM real deve terminar antes de 100% da continuação declarada');
+  const fractions = api.routeDistanceFractions(movement);
+  const imtbiIndex = movement.findIndex(point => point.ident === 'IMTBI');
+  assertNear(limit, fractions[imtbiIndex], 'limite temporal em IMTBI');
 });
