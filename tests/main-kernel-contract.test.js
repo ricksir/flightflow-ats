@@ -6,8 +6,8 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1114709;
-const EXPECTED_SHA256 = 'eae54fca21828ce37968ed072a07dab69b6d4182afe58c7f3cb575a02c5f46dd';
+const EXPECTED_BYTES = 1114852;
+const EXPECTED_SHA256 = '1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b';
 const EXPECTED_LINES = 5007;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
@@ -18,6 +18,7 @@ const EXTRACTED_CORE_UTILS = [
   'angleDifference', 'hashString', 'seeded', 'getPath', 'setPath', 'normalizeSearchText'
 ];
 const EXTRACTED_TYPOGRAPHY_UTILS = ['normalizeFontScale', 'fontLayoutForScale', 'fontLayoutDescription'];
+const EXTRACTED_TYPOGRAPHY_STEP_CONTROLLER = ['stepTypography'];
 const EXTRACTED_OPERATIONAL_STATE_UTILS = ['themeSwatch', 'stripTheme', 'statusClass'];
 const EXTRACTED_STRIP_COLOR_MEANING = ['stripColorMeaning'];
 const EXTRACTED_STRIP_CELL_RENDERER = ['stripCell'];
@@ -118,6 +119,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const TypographyUtils = window.FlightFlowTypographyUtils;',
     "if (!TypographyUtils) throw new Error('FlightFlowTypographyUtils não foi carregado.');",
     'const { normalizeFontScale, fontLayoutForScale, fontLayoutDescription } = TypographyUtils;',
+    'const TypographyStepController = window.FlightFlowTypographyStepController;',
+    "if (!TypographyStepController) throw new Error('FlightFlowTypographyStepController não foi carregado.');",
+    'const { stepTypography } = TypographyStepController.create({ state, applyTypography });',
     'const OperationalStateUtils = window.FlightFlowOperationalStateUtils;',
     "if (!OperationalStateUtils) throw new Error('FlightFlowOperationalStateUtils não foi carregado.');",
     'const { themeSwatch, stripTheme, statusClass } = OperationalStateUtils;',
@@ -278,8 +282,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 283);
-  assert.equal(counts.size, 283);
+  assert.equal(names.length, 282);
+  assert.equal(counts.size, 282);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -287,6 +291,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_RENDER_CURRENT,
     ...EXTRACTED_CORE_UTILS,
     ...EXTRACTED_TYPOGRAPHY_UTILS,
+    ...EXTRACTED_TYPOGRAPHY_STEP_CONTROLLER,
     ...EXTRACTED_OPERATIONAL_STATE_UTILS,
     ...EXTRACTED_STRIP_COLOR_MEANING,
     ...EXTRACTED_STRIP_CELL_RENDERER,

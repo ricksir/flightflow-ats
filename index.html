@@ -5483,6 +5483,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-render-current-controller" src="src/core/render-current-controller.js"></script>
 <script id="flightflow-event-navigation-controller" src="src/core/event-navigation-controller.js"></script>
 <script id="flightflow-typography-utils" src="src/ui/typography-utils.js"></script>
+<script id="flightflow-typography-step-controller" src="src/ui/typography-step-controller.js"></script>
 <script id="flightflow-operational-state-utils" src="src/ui/operational-state-utils.js"></script>
 <script id="flightflow-strip-color-meaning" src="src/ui/strip-color-meaning.js"></script>
 <script id="flightflow-strip-cell-renderer" src="src/ui/strip-cell-renderer.js"></script>
@@ -8425,9 +8426,9 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     if (options.notify) toast('Tela reorganizada e reenquadrada.', 'success');
   }
 
-  function stepTypography(delta) {
-    applyTypography((state.config.fontScale || 1) + delta, { persist: true, notify: false });
-  }
+  const TypographyStepController = window.FlightFlowTypographyStepController;
+  if (!TypographyStepController) throw new Error('FlightFlowTypographyStepController não foi carregado.');
+  const { stepTypography } = TypographyStepController.create({ state, applyTypography });
 
   /* ==================== MÚLTIPLAS FONTES ==================== */
 
