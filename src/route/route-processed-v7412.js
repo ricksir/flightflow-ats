@@ -1073,6 +1073,51 @@
     return badge;
   }
 
+
+  function routeDisplayContext(snapshot, progress=model.routeProgress) {
+    const points=snapshot?.points||[];
+    const continuation=declaredRouteContinuation(snapshot);
+    const destination=destinationRouteMarker(snapshot);
+    const plotPoints=points.concat(continuation).concat(destination?[destination]:[]);
+    const move=movementPoints(snapshot);
+    const fractions=routeDistanceFractions(move);
+    let focusMoveIndex=0;
+    let best=Infinity;
+    fractions.forEach((fraction,index)=>{
+      const distance=Math.abs(Number(fraction)-Number(progress||0));
+      if(distance<best){best=distance;focusMoveIndex=index;}
+    });
+    const focusIdent=move[focusMoveIndex]?.ident||points[0]?.ident||'';
+    let focusPlotIndex=plotPoints.findIndex(point=>norm(point?.ident)===norm(focusIdent));
+    if(focusPlotIndex<0)focusPlotIndex=0;
+    const transferIndexes=new Set(transferMarkersForSnapshot(snapshot).map(item=>item.pointIndex));
+    const permanent=new Set();
+    const add=index=>{if(Number.isInteger(index)&&index>=0&&index<plotPoints.length)permanent.add(index);};
+    add(0);
+    add(points.length-1);
+    add(focusPlotIndex);
+    add(model.selectedPointIndex);
+    transferIndexes.forEach(add);
+    if(continuation.length){add(points.length);add(points.length+continuation.length-1);}
+    if(destination)add(plotPoints.length-1);
+    if(!model.focusMode){
+      const step=plotPoints.length>22?4:plotPoints.length>14?3:2;
+      for(let index=0;index<plotPoints.length;index+=step)add(index);
+    }
+    return {plotPoints,continuation,destination,move,focusPlotIndex,transferIndexes,permanent};
+  }
+
+  function pointDisplayState(context,index) {
+    const point=context.plotPoints[index];
+    const current=index===context.focusPlotIndex;
+    const selected=index===model.selectedPointIndex;
+    const transfer=context.transferIndexes.has(index);
+    const endpoint=index===0||index===context.plotPoints.length-1;
+    const labelled=context.permanent.has(index);
+    const muted=model.focusMode&&!current&&!selected&&!transfer&&!endpoint;
+    return {point,current,selected,transfer,endpoint,labelled,muted};
+  }
+
   function renderProcessedVectorFixes(snapshot) {
     const svg=qs('#sceneSvg');
     if(!svg)return false;
@@ -1083,16 +1128,19 @@
     if(!model.fixesVisible || !snapshotIsComplete(snapshot))return true;
     const bridge=window.__FlightFlowFirBridge;
     if(!bridge?.projectGeo)return false;
+    const context=routeDisplayContext(snapshot,model.routeProgress);
     let html='';
     snapshot.points.forEach((p,i)=>{
       if(!p.geo)return;
       const q=bridge.projectGeo(Number(p.geo.lon),Number(p.geo.lat));
       const airport=/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===snapshot.points.length-1);
-      const cls=airport?'airport':(p.geo.kind==='coordinate'?'coord':'');
+      const state=pointDisplayState(context,i);
+      const cls=[airport?'airport':(p.geo.kind==='coordinate'?'coord':''),state.labelled?'labelled':'',state.current?'current':''].filter(Boolean).join(' ');
       const meta=[shortEtim(p),flightLevelLabel(p)].filter(Boolean).join(' · ');
-      html+=`<g class="ffrp-vfix ${cls}" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><circle r="5"/><text x="8" y="-6">${esc(p.ident)}</text>${meta?`<text class="meta" x="8" y="8">${esc(meta)}</text>`:''}</g>`;
+      const label=state.labelled?`<text x="8" y="-6">${esc(p.ident)}</text>${meta?`<text class="meta" x="8" y="8">${esc(meta)}</text>`:''}`:'';
+      html+=`<g class="ffrp-vfix ${cls}" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><title>${esc(p.ident)}${meta?` · ${esc(meta)}`:''}</title><circle r="${state.current?6:5}"/>${label}</g>`;
     });
-    if(model.handoffsVisible){transferMarkersForSnapshot(snapshot).forEach(t=>{const q=bridge.projectGeo(Number(t.point.geo.lon),Number(t.point.geo.lat));html+=`<g class="ffrp-vfix transfer" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><rect x="-7" y="-7" width="14" height="14" rx="2" transform="rotate(45)" fill="#8a48bd" stroke="#fff" stroke-width="2"/><text x="12" y="4">TRF ${esc(t.label)}</text></g>`;});}
+    if(model.handoffsVisible){transferMarkersForSnapshot(snapshot).forEach(t=>{const q=bridge.projectGeo(Number(t.point.geo.lon),Number(t.point.geo.lat));html+=`<g class="ffrp-vfix transfer" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><title>Transferência ${esc(t.label)} · ${esc(t.detail)}</title><rect x="-7" y="-7" width="14" height="14" rx="2" transform="rotate(45)" fill="#8a48bd" stroke="#fff" stroke-width="2"/><text x="12" y="4">TRF ${esc(t.label)}</text></g>`;});}
     group.innerHTML=html;
     return true;
   }
@@ -1261,16 +1309,19 @@
       }
       if(model.fixesVisible&&model.nativeFixLayer){
         const occupied=collectMapObstacles(rms.map);
-        const plotPoints=snapshot.points.concat(continuation).concat(destination?[destination]:[]);
-        plotPoints.forEach((p,i)=>{
+        const context=routeDisplayContext(snapshot,model.routeProgress);
+        context.plotPoints.forEach((p,i)=>{
           const declared=!!p.declared,destOnly=!!p.destinationOnly;
           const airport=destOnly||(/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===snapshot.points.length-1));
-          const mk=L.circleMarker([Number(p.geo.lat),Number(p.geo.lon)],{radius:airport?5.5:3.5,color:destOnly?'#a66b00':declared?'#0d7084':airport?'#a66b00':'#07576a',dashArray:(declared||destOnly)?'4 3':null,weight:1.8,fillColor:destOnly?'#fff1b9':declared?'#e7f6f9':airport?'#ffe59a':'#ffffff',fillOpacity:1,interactive:true});
-          const place=labelPlacementFor(rms.map,p,i,plotPoints.length,occupied);
+          const state=pointDisplayState(context,i);
+          const mk=L.circleMarker([Number(p.geo.lat),Number(p.geo.lon)],{radius:state.current?6.5:(airport?5.5:4),color:state.current?'#18a0c4':state.selected?'#d59a20':destOnly?'#a66b00':declared?'#0d7084':airport?'#a66b00':'#07576a',dashArray:(declared||destOnly)?'4 3':null,weight:state.current||state.selected?3:1.8,fillColor:destOnly?'#fff1b9':declared?'#e7f6f9':airport?'#ffe59a':'#ffffff',fillOpacity:state.muted?.55:1,opacity:state.muted?.55:1,interactive:true});
           const meta=declared?`ROTA DECLARADA ${p.airway||''} · SEM ETIM`:destOnly?'ADES · TRAJETO TERMINAL NÃO ESPECIFICADO':[p.etim?`ETIM ${p.etim}${p.passed?'*':''}`:'',p.cfl?`FL ${flightLevelLabel(p).replace(/^FL/,'')}`:''].filter(Boolean).join(' · ');
           const suffix=declared?'<br><small>rota declarada · sem ETIM</small>':destOnly?'<br><small>ADES · sem trajetória terminal</small>':'';
-          mk.bindTooltip(mainFixLabelHtml(p,String(i+1).padStart(2,'0'))+suffix,{permanent:true,direction:place.direction,className:'ffrp-native-fix-label',offset:place.offset,opacity:.97,interactive:false});
+          const permanent=state.labelled;
+          const place=permanent?labelPlacementFor(rms.map,p,i,context.plotPoints.length,occupied):{direction:'top',offset:[0,-7]};
+          mk.bindTooltip(mainFixLabelHtml(p)+suffix,{permanent,direction:place.direction,className:`ffrp-native-fix-label${permanent?'':' ffrp-native-fix-hover'}`,offset:place.offset,opacity:.98,interactive:false,sticky:!permanent});
           if(mk.bindPopup)mk.bindPopup(`<b>${esc(p.ident)}</b><br>${esc(meta||'Sem ETIM/CFL')}<br><small>${esc(p.geo.source||'')}</small>`);
+          if(mk.on)mk.on('click',()=>{model.selectedPointIndex=i;renderProcessedRouteOnNativeMap(snapshot);if(!modal()?.hidden)renderModal(false);});
           mk.addTo(model.nativeFixLayer);
         });
       }
