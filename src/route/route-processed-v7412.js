@@ -222,7 +222,7 @@
       .leaflet-tooltip.ffrp-native-fix-label{padding:5px 7px;font:800 11px/1.2 Inter,system-ui,sans-serif}.ffrp-native-fix-label b{font-size:11px}.ffrp-native-fix-label span{font-size:10px;line-height:1.2}.leaflet-tooltip.ffrp-native-fix-hover{background:rgba(255,255,255,.98);box-shadow:0 5px 14px rgba(3,29,57,.16)}
       #ffrpVectorFixLayer .ffrp-vfix{opacity:.35;transition:opacity .14s ease}#ffrpVectorFixLayer .ffrp-vfix.labelled,#ffrpVectorFixLayer .ffrp-vfix.current,#ffrpVectorFixLayer .ffrp-vfix.transfer{opacity:1}
       .ffrp-focus-btn[aria-pressed="true"]{background:#0d7084!important;color:#fff!important;border-color:#0d7084!important;box-shadow:0 4px 12px rgba(13,112,132,.20)!important}.ffrp-point.selected-point{border-color:#d6aa45;box-shadow:inset 3px 0 #d59a20,0 5px 14px rgba(90,65,12,.08)}
-      .ffrp-map .route-terminal{fill:none;stroke:#d59a20;stroke-width:4;stroke-dasharray:7 9;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px rgba(213,154,32,.18))}
+      .ffrp-map .route-terminal-underlay{fill:none;stroke:#d59a20;stroke-width:1.4;stroke-opacity:.34;stroke-linecap:round;stroke-linejoin:round}.ffrp-map .route-terminal{fill:none;stroke:#d59a20;stroke-width:4;stroke-dasharray:7 9;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px rgba(213,154,32,.18))}
       .ffrp-lg-terminal{display:inline-block;width:20px;height:0;border-top:3px dashed #d59a20}.ffrp-point.terminal-point{border-color:#e0bb65;background:#fffaf0}.ffrp-tail-note.terminal{border-color:#e0bb65;background:#fffaf0;color:#6d520f}
       @media(max-width:900px){.ffrp-map-note{font-size:.68rem}.ffrp-legend{top:8px;right:8px;max-width:calc(100% - 16px)}}
       @media(max-width:640px){.ffrp-map-note{font-size:.66rem;padding:8px 10px}.ffrp-legend{left:auto;right:8px;bottom:auto}.ffrp-map-hud{max-width:calc(100% - 110px)}}
@@ -1370,6 +1370,11 @@
       }
       if(terminal.active&&terminal.from?.geo&&terminal.destination?.geo){
         const terminalLatLngs=[[Number(terminal.from.geo.lat),Number(terminal.from.geo.lon)],[Number(terminal.destination.geo.lat),Number(terminal.destination.geo.lon)]];
+        // A linha fina contínua fica atrás do tracejado para garantir conexão visual
+        // até o ARP do ADES mesmo quando o último intervalo do dashArray cai no "gap".
+        // É apenas apresentação: a geometria continua sendo exatamente from -> ADES.
+        const terminalUnderlay=L.polyline(terminalLatLngs,{color:'#d59a20',weight:1.25,opacity:.32,lineCap:'round',lineJoin:'round',interactive:false});
+        terminalUnderlay.addTo(model.nativeMapLayer);
         const terminalLine=L.polyline(terminalLatLngs,{color:'#d59a20',weight:3.4,opacity:.96,dashArray:'6 9',lineCap:'round',lineJoin:'round',interactive:true});
         terminalLine.bindTooltip('Fechamento terminal derivado da Ordem TER · sem ETIM histórico · sem STAR/fixos inventados',{sticky:true,className:'ffrp-transfer-tip'});terminalLine.addTo(model.nativeMapLayer);
       }
@@ -1643,7 +1648,7 @@
     let current=[];const flush=()=>{if(current.length>=2){const str=current.map(q=>`${q.x},${q.y}`).join(' ');html+=`<polyline class="route-underlay" points="${str}"/><polyline class="route-line" points="${str}"/>`;}current=[]};pts.forEach(pt=>{if(pt.geo)current.push(pxy(pt.geo.lat,pt.geo.lon));else flush()});flush();
     for(let i=0;i<pts.length;i++)if(!pts[i].geo){let l=i-1;while(l>=0&&!pts[l].geo)l--;let r=i+1;while(r<pts.length&&!pts[r].geo)r++;if(l>=0&&r<pts.length){const a=pxy(pts[l].geo.lat,pts[l].geo.lon),c=pxy(pts[r].geo.lat,pts[r].geo.lon);html+=`<line class="route-gap" x1="${a.x}" y1="${a.y}" x2="${c.x}" y2="${c.y}"/>`;i=r-1;}}
     if(continuation.length){const declaredPoints=[pts.at(-1),...continuation].filter(p=>p?.geo).map(p=>pxy(p.geo.lat,p.geo.lon)),str=declaredPoints.map(q=>`${q.x},${q.y}`).join(' ');if(declaredPoints.length>=2)html+=`<polyline class="route-underlay" points="${str}"/><polyline class="route-declared" points="${str}"/>`;}
-    if(terminal.active&&terminal.from?.geo&&terminal.destination?.geo){const from=pxy(terminal.from.geo.lat,terminal.from.geo.lon),to=pxy(terminal.destination.geo.lat,terminal.destination.geo.lon);html+=`<line class="route-terminal" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"><title>Fechamento terminal derivado da Ordem TER · sem ETIM histórico</title></line>`;}
+    if(terminal.active&&terminal.from?.geo&&terminal.destination?.geo){const from=pxy(terminal.from.geo.lat,terminal.from.geo.lon),to=pxy(terminal.destination.geo.lat,terminal.destination.geo.lon);html+=`<line class="route-terminal-underlay" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/><line class="route-terminal" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"><title>Fechamento terminal derivado da Ordem TER · sem ETIM histórico</title></line>`;}
     const occupied=[];
     const overlap=(a,c)=>Math.max(0,Math.min(a.x2,c.x2)-Math.max(a.x1,c.x1))*Math.max(0,Math.min(a.y2,c.y2)-Math.max(a.y1,c.y1));
     const placeLabel=(q,ident,index)=>{const w=Math.max(82,Math.min(175,66+String(ident||'').length*8.2)),h=32;const prefs=index%2?[[14,-14,'start'],[14,25,'start'],[-14,-14,'end'],[-14,25,'end'],[0,-34,'middle'],[0,39,'middle']]:[[14,25,'start'],[14,-14,'start'],[-14,25,'end'],[-14,-14,'end'],[0,39,'middle'],[0,-34,'middle']];let best=null,bestScore=Infinity;for(let rank=0;rank<prefs.length;rank++){const [dx,dy,anchor]=prefs[rank];let x=q.x+dx,y=q.y+dy;let x1=anchor==='start'?x:anchor==='end'?x-w:x-w/2;let y1=y-15;const r={x1,y1,x2:x1+w,y2:y1+h};let score=rank;for(const o of occupied)score+=overlap(r,o)*25;score+=(r.x1<70||r.x2>1130||r.y1<72||r.y2>625)?50000:0;if(score<bestScore){bestScore=score;best={x,y,anchor,rect:r}}}occupied.push(best.rect);return best;};
