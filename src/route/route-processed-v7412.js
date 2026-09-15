@@ -39,6 +39,8 @@
     Object.freeze({ident:'MASVA',lat:-9.6213888889,lon:-48.3677777778,source:'AISWEB AIP ENR 3.2 · UZ26',kind:'waypoint',quality:'official'}),
     // TAM3542 / SBGO
     Object.freeze({ident:'UMSUB',lat:-16.2419861111,lon:-48.2932638889,source:'AISWEB SID RNAV UMSUB 1A · tabela WGS84',kind:'waypoint',quality:'official'}),
+    // TAM3774 / SBCT — ARP publicado no AISWEB AIP AD 2: 253154S 0491034W.
+    Object.freeze({ident:'SBCT',lat:-25.5316666667,lon:-49.1761111111,source:'AISWEB AIP AD 2 SBCT · ARP 253154S 0491034W',kind:'airport',quality:'official'}),
     // TAM3774 / UZ5 — pontos processados publicados na AIP ENR 3.2.
     // Mantém a rota real resolvível offline quando o WFS é bloqueado por CORS/proxy.
     Object.freeze({ident:'KUKOL',lat:-16.6897222222,lon:-48.4483333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
