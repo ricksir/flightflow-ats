@@ -1,0 +1,451 @@
+/*
+ * FlightFlow ATS — Main shell visual refinement
+ * Camada exclusivamente visual. Não altera DOM, estado, navegação, rota ou movimento.
+ * Carregada após os estilos inline para consolidar a hierarquia da interface principal.
+ */
+
+:root {
+  --shell-gap: 14px;
+  --shell-radius: 20px;
+  --shell-radius-sm: 13px;
+  --shell-border-dark: rgba(126,190,239,.17);
+  --shell-border-light: rgba(35,94,135,.14);
+  --shell-cyan: #35d7ff;
+  --shell-cyan-soft: rgba(53,215,255,.08);
+  --shell-shadow-dark: 0 22px 62px rgba(0,0,0,.27);
+  --shell-shadow-light: 0 18px 44px rgba(35,74,104,.11);
+}
+
+/* Estrutura geral: separa claramente header, área de trabalho e transporte. */
+.app {
+  padding: 14px;
+  gap: var(--shell-gap);
+}
+
+.topbar,
+.transport,
+.workspace-card,
+.inspector-card {
+  border-radius: var(--shell-radius);
+}
+
+.topbar {
+  min-height: 70px;
+  padding: 8px 14px;
+  gap: 14px;
+  overflow: visible;
+}
+
+.topbar::after {
+  display: none;
+}
+
+/* Marca e ações viram zonas funcionais, sem alterar os controles existentes. */
+.brand {
+  min-width: 238px;
+  gap: 10px;
+}
+
+.brand-mark {
+  flex: 0 0 auto;
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.brand-title {
+  line-height: 1.08;
+}
+
+.brand-subtitle {
+  margin-top: 4px;
+}
+
+.brand-credit {
+  margin-top: 3px;
+  opacity: .78;
+}
+
+.file-actions {
+  min-width: 280px;
+  padding: 7px 10px;
+  gap: 7px;
+  border-left: 1px solid var(--shell-border-dark);
+  border-right: 1px solid var(--shell-border-dark);
+}
+
+.file-actions .btn {
+  min-height: 36px;
+}
+
+.selected-file {
+  flex: 1 1 130px;
+  max-width: none;
+  padding-left: 3px;
+}
+
+.ops-live {
+  flex: 0 0 auto;
+  min-height: 42px;
+}
+
+.header-actions {
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 13px;
+  border: 1px solid var(--shell-border-dark);
+  background: rgba(255,255,255,.018);
+}
+
+.header-actions .icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+/* O mapa volta a ser o protagonista e o inspector ganha largura estável sem dominar a tela. */
+.content {
+  gap: var(--shell-gap);
+  grid-template-columns: minmax(0,1fr) minmax(360px,390px);
+}
+
+.workspace-card,
+.inspector-card {
+  box-shadow: var(--shell-shadow-dark);
+}
+
+.scene-head {
+  min-height: 72px;
+  padding: 13px 16px 12px;
+  gap: 12px;
+}
+
+.flight-id-block {
+  min-width: 0;
+}
+
+.flight-route {
+  gap: 11px;
+  flex-wrap: wrap;
+}
+
+.flight-route strong {
+  line-height: 1;
+}
+
+.scene-status {
+  padding: 6px;
+  gap: 6px;
+  border: 1px solid rgba(126,190,239,.10);
+  border-radius: 13px;
+  background: rgba(255,255,255,.018);
+}
+
+.status-badge,
+.stage-badge,
+.frame-counter {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.scene-protocol-toggle {
+  min-height: 28px;
+  padding: 5px 8px !important;
+  border-radius: 8px;
+}
+
+/* Superfície do cenário mais contida, sem alterar mapa ou SVG. */
+.scene-wrap {
+  margin: 0 11px;
+  border-radius: 18px;
+}
+
+.scene-caption {
+  left: 14px;
+  right: 14px;
+  bottom: 13px;
+  border-radius: 13px;
+}
+
+.scene-legend {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* Inspector: navegação superior coerente e cards mais legíveis. */
+.inspector-tabs {
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.tab {
+  min-width: 0;
+  height: 38px;
+  padding: 0 7px;
+  border-radius: 9px;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.tab.active {
+  position: relative;
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--shell-cyan);
+  box-shadow: 0 0 10px rgba(53,215,255,.35);
+}
+
+.tab-panel {
+  padding: 14px;
+}
+
+.panel-heading {
+  margin-bottom: 12px;
+}
+
+.panel-heading.sticky {
+  padding: 13px 14px 10px;
+}
+
+.panel-heading h2 {
+  font-size: .9rem;
+}
+
+.fields-grid {
+  gap: 8px;
+}
+
+.field-card {
+  min-height: 66px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  border-color: rgba(126,190,239,.09);
+}
+
+.field-card:hover {
+  transform: translateY(-1px);
+}
+
+.message-actions {
+  margin-top: 12px;
+  gap: 7px;
+}
+
+/* Rodapé de transporte com aparência de console único, sem alterar controles. */
+.transport {
+  min-height: 62px;
+  padding: 8px 14px;
+  gap: 12px;
+}
+
+.transport-left,
+.transport-right {
+  gap: 6px;
+}
+
+.transport-btn,
+.toggle-btn {
+  min-width: 36px;
+  min-height: 34px;
+  border-radius: 9px;
+}
+
+.play-btn {
+  width: 42px;
+  height: 42px;
+}
+
+.scrubber-wrap {
+  min-width: 180px;
+}
+
+.speed-control {
+  gap: 5px;
+}
+
+.speed-control select {
+  min-height: 32px;
+  border-radius: 8px;
+}
+
+/* Tema claro: mantém a mesma hierarquia com contraste menos pesado. */
+html[data-theme="light"] .file-actions {
+  border-color: var(--shell-border-light);
+}
+
+html[data-theme="light"] .header-actions,
+html[data-theme="light"] .scene-status {
+  border-color: rgba(35,94,135,.12);
+  background: rgba(25,94,136,.035);
+}
+
+html[data-theme="light"] .workspace-card,
+html[data-theme="light"] .inspector-card,
+html[data-theme="light"] .topbar,
+html[data-theme="light"] .transport {
+  box-shadow: var(--shell-shadow-light);
+}
+
+html[data-theme="light"] .field-card {
+  border-color: rgba(35,94,135,.08);
+}
+
+html[data-theme="light"] .tab.active::after {
+  background: #159dca;
+  box-shadow: 0 0 8px rgba(21,157,202,.22);
+}
+
+/* Fontes grandes: não força o header em uma única linha. */
+html:not([data-font-layout="normal"]) .topbar {
+  row-gap: 8px;
+}
+
+html:not([data-font-layout="normal"]) .file-actions {
+  border-left: 0;
+  border-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Responsividade progressiva. */
+@media (max-width: 1260px) {
+  .content {
+    grid-template-columns: minmax(0,1fr) minmax(340px,365px);
+  }
+  .ops-live {
+    display: none;
+  }
+  .brand {
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .topbar {
+    flex-wrap: wrap;
+  }
+  .file-actions {
+    order: 3;
+    width: 100%;
+    border-left: 0;
+    border-right: 0;
+    border-top: 1px solid var(--shell-border-dark);
+    padding: 8px 0 0;
+  }
+  html[data-theme="light"] .file-actions {
+    border-top-color: var(--shell-border-light);
+  }
+  .content {
+    grid-template-columns: minmax(0,1fr) 340px;
+  }
+  .inspector-tabs {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .app {
+    padding: 8px;
+    gap: 8px;
+  }
+  .topbar,
+  .transport,
+  .workspace-card,
+  .inspector-card {
+    border-radius: 15px;
+  }
+  .content {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .workspace-card {
+    min-height: 620px;
+  }
+  .inspector-card {
+    min-height: 520px;
+  }
+  .scene-head {
+    flex-wrap: wrap;
+  }
+  .scene-status {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .transport {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .topbar {
+    padding: 9px 10px;
+  }
+  .brand {
+    min-width: 0;
+    flex: 1 1 210px;
+  }
+  .brand-subtitle,
+  .brand-credit {
+    display: none;
+  }
+  .header-actions {
+    margin-left: auto;
+  }
+  .file-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .selected-file {
+    grid-column: 1 / -1;
+    padding: 2px 3px 0;
+  }
+  .scene-head {
+    padding: 11px 12px 9px;
+  }
+  .scene-status {
+    padding: 5px;
+  }
+  .scene-wrap {
+    margin: 0 7px;
+    border-radius: 14px;
+  }
+  .inspector-tabs {
+    padding: 6px;
+    gap: 4px;
+  }
+  .tab {
+    font-size: .62rem;
+  }
+  .tab-panel {
+    padding: 11px;
+  }
+  .transport {
+    padding: 8px 9px;
+  }
+  .transport-right {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-card:hover,
+  .btn:hover,
+  .icon-btn:hover,
+  .transport-btn:hover,
+  .toggle-btn:hover {
+    transform: none !important;
+  }
+}
