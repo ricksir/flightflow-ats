@@ -97,12 +97,18 @@ test('internalTransitionDetails permanece folha local e desacoplada de infraestr
   assert.ok(source.includes("const normalize = value => String(value == null ? '' : value).trim();"));
 });
 
-test('internalTransitionDetails mantém exatamente um consumidor real', () => {
+test('internalTransitionDetails mantém exatamente um consumidor real no inferidor modular', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
   assert.equal(kernel.includes('function internalTransitionDetails('), false, 'internalTransitionDetails não deve permanecer inline');
-  const consumers = [...kernel.matchAll(/(?<![\w$.])internalTransitionDetails\s*\(/g)].length;
-  assert.equal(consumers, EXPECTED_CONSUMERS);
+  const kernelConsumers = [...kernel.matchAll(/(?<![\w$.])internalTransitionDetails\s*\(/g)].length;
+  const inferSource = functionSource(moduleSource, 'inferCommunicationContext');
+  const inferConsumers = [...inferSource.matchAll(/(?<![\w$.])internalTransitionDetails\s*\(/g)].length;
+  assert.equal(kernelConsumers, 0);
+  assert.equal(inferConsumers, EXPECTED_CONSUMERS);
   assert.ok(kernel.includes('const { internalTransitionDetails } = CommunicationContextUtils;'));
+  assert.ok(kernel.includes('CommunicationContextUtils.createCommunicationContextInferer({'));
+  assert.ok(kernel.includes('internalTransitionDetails,'));
 });
 
 test('rawBlock prevalece sobre snapshot e preserva trim e regex case-insensitive', () => {
