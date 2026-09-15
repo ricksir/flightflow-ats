@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#193** e conclusão verde do workflow pós-merge **#489**.
+> Última verificação: **15/09/2026**, após o merge do PR **#197** e conclusão verde do workflow pós-merge **#499**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `3e49497c336ff215c5c5b5aa9b26bda89301417f`
-  — `refactor: extract communication context inferer` (PR #193).
+  `175912b2736288b31318985c908e5cbec2276387`
+  — `refactor: extract FPV minimizer` (PR #197).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -483,6 +483,113 @@ Workflows:
 
 - PR: **#488** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
 - pós-merge: **#489** — sucesso, **46 passed (2.8m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
+
+### PR #194 — checkpoint documental após `inferCommunicationContext`
+
+O PR **#194 — `docs: update AI current state after PR 193`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`356ec5056e7b2fbc6b7ca46c91937321453184c0`
+
+Workflows:
+
+- PR: **#490** — sucesso;
+- pós-merge: **#491** — sucesso;
+- ambos com os cinco gates verdes e **46/0/0/0**.
+
+### PR #195 — remapeamento analítico descartável após #194
+
+O PR **#195 — `chore: fresh kernel remap after PR 194`** refez o ranking sobre o `main` documental `356ec5056e7b2fbc6b7ca46c91937321453184c0`.
+
+Resultado refinado:
+
+- **0 candidatos estritamente puros** após excluir todas as fronteiras já extraídas;
+- melhor near-miss infra-only: `minimizeFpv`;
+- corpo exato: **86 bytes**;
+- SHA-256:
+  `37103f3e8cde8970f15adb8a89be34cf4aee6fd827f93c606872f3403138a482`;
+- dependência funcional: `setFpvVisible`;
+- escrita de estado restrita a `state.fpvMinimized=true`;
+- dois consumidores funcionais:
+  - botão de fechar da FPV;
+  - `toggleFpv`;
+- ausência de rota, DEP, timeline, scrubber, autoplay, planner, interpolação, mapa, movimento, geometria ou `currentEvent`.
+
+Head analítico final:
+
+`7b79a4425420d5522e05a1db9355afa0f4723b32`
+
+O workflow **#494** terminou verde em **46/0/0/0**. O PR foi fechado **sem merge**.
+
+### PR #196 — congelamento de `minimizeFpv`
+
+O PR **#196 — `test: freeze minimize fpv contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **86 bytes**;
+- SHA-256:
+  `37103f3e8cde8970f15adb8a89be34cf4aee6fd827f93c606872f3403138a482`;
+- ordem protegida:
+  1. `state.fpvMinimized=true`;
+  2. `setFpvVisible(false,{minimized:true})`;
+- dois consumidores funcionais protegidos;
+- repetição da minimização preservada;
+- propagação de erro de `setFpvVisible` preservada;
+- nenhum acoplamento temporal/espacial introduzido.
+
+Head final validado:
+
+`1241ffb036d0de22be64b2dd3e7013ce924d8315`
+
+Merge por squash:
+
+`969112a3cd096359abb5afbfcc4b6eb78d02de7f`
+
+Workflows:
+
+- PR: **#495** — sucesso, **46/0/0/0**;
+- pós-merge: **#496** — sucesso, **46/0/0/0**.
+
+### PR #197 — extração de `minimizeFpv`
+
+O PR **#197 — `refactor: extract FPV minimizer`** moveu `minimizeFpv` do IIFE principal para o novo módulo:
+
+`src/ui/fpv-window-controller.js`
+
+A extração preservou:
+
+- corpo congelado: **86 bytes**;
+- SHA-256:
+  `37103f3e8cde8970f15adb8a89be34cf4aee6fd827f93c606872f3403138a482`;
+- wiring explícito por `FlightFlowFpvWindowController.create({ state, setFpvVisible })`;
+- API pública do módulo: `create`;
+- retorno congelado: `minimizeFpv`;
+- 0 declarações inline de `minimizeFpv` no núcleo;
+- os mesmos dois consumidores funcionais.
+
+O primeiro head do PR foi bloqueado corretamente pelo inventário por criar uma nova repetição do nome `create`. A declaração interna da factory foi então renomeada para `createFpvWindowController`, mantendo a API pública `create` e restaurando o inventário sem novas repetições.
+
+Head final validado:
+
+`af1ad7de76fc4c9c019ac53dd354a59dcc6d2fc5`
+
+Merge por squash no `main`:
+
+`175912b2736288b31318985c908e5cbec2276387`
+
+Baselines resultantes:
+
+- kernel: **1.114.423 bytes**, **5.007 linhas**, **285 funções nomeadas**;
+- SHA-256 do kernel:
+  `7a0f27c620c72f7b96f4a2cf4d478283d663598c148d0c6bd9daa5d0c3818ac7`;
+- inventário global: **756 declarações function nomeadas / 745 nomes únicos / 9 nomes repetidos conhecidos**;
+- novo módulo FPV: ~**20 linhas / 2 funções nomeadas**.
+
+Workflows:
+
+- tentativa inicial #497: bloqueada no inventário antes dos testes de regressão;
+- head corrigido: workflow **#498** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+- pós-merge: workflow **#499** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
 Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado.
 
@@ -1251,13 +1358,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #193:
+Conforme `tests/main-kernel-contract.test.js` após o PR #197:
 
-- **1.114.266 bytes**;
-- **5.005 linhas**;
+- **1.114.423 bytes**;
+- **5.007 linhas**;
 - SHA-256:
-  `fda04cb84151bbb90e4e9d0619f15007f930ecc322ab7f70c543d09c416b4ed6`;
-- **286 funções nomeadas** no núcleo protegido.
+  `7a0f27c620c72f7b96f4a2cf4d478283d663598c148d0c6bd9daa5d0c3818ac7`;
+- **285 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -1299,6 +1406,24 @@ Conforme `tests/location-code-contract.test.js`:
   - `create({ normalizeLocalityCode })`;
 - retorno congelado:
   - `isLocationCode`.
+
+### FPV Window Controller
+
+Após o PR #197:
+
+- arquivo: `src/ui/fpv-window-controller.js`;
+- carregado pelo script `flightflow-fpv-window-controller` antes do núcleo;
+- API pública congelada:
+  - `create`;
+- factory interna nomeada `createFpvWindowController` para não criar repetição no inventário;
+- dependências injetadas:
+  - `state`;
+  - `setFpvVisible`;
+- retorno congelado:
+  - `minimizeFpv`;
+- corpo de `minimizeFpv`: **86 bytes**;
+- SHA-256:
+  `37103f3e8cde8970f15adb8a89be34cf4aee6fd827f93c606872f3403138a482`.
 
 ### Communication Context Utils
 
@@ -1669,17 +1794,17 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `inferCommunicationContext` está concluído em produção e validado no SHA exato:
+O ciclo `minimizeFpv` está concluído em produção e validado no SHA exato:
 
-`3e49497c336ff215c5c5b5aa9b26bda89301417f`
+`175912b2736288b31318985c908e5cbec2276387`
 
-Workflow pós-merge correspondente: **#489**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+Workflow pós-merge correspondente: **#499**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
 
-O corpo protegido permanece no módulo com **3.994 bytes** e SHA-256:
+O corpo protegido permanece no módulo `src/ui/fpv-window-controller.js` com **86 bytes** e SHA-256:
 
-`3aba0a949b32d9e8e42494686d581831ac920ae302e43b4782479fa4fa85cbe9`
+`37103f3e8cde8970f15adb8a89be34cf4aee6fd827f93c606872f3403138a482`
 
-**Não reutilizar o ranking do PR #191**, porque o kernel mudou com a extração do PR #193.
+**Não reutilizar o ranking do PR #195**, porque o kernel mudou com a extração do PR #197.
 
 Próximo fluxo seguro:
 
@@ -1709,12 +1834,14 @@ Próximo fluxo seguro:
    - `knowledgeDetailMarkup`;
    - `resolveKnowledgeEntry`;
    - `inferCommunicationContext`;
-5. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
+   - `minimizeFpv`;
+5. manter a separação entre candidatos estritamente puros e near-misses infra-only;
+6. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
-6. inspecionar manualmente o melhor candidato restante;
-7. abrir primeiro PR **somente de contrato**;
-8. validar no SHA exato e exigir **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
-9. só depois iniciar a extração mecânica em PR separado.
+7. inspecionar manualmente o melhor candidato restante;
+8. abrir primeiro PR **somente de contrato**;
+9. validar no SHA exato e exigir **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+10. só depois iniciar a extração mecânica em PR separado.
 
 Regra central:
 **remapeamento fresco → inspeção → contrato → gates verdes → merge do contrato → pós-merge verde → extração mecânica → gates verdes → merge → pós-merge verde → documentação → gates verdes → merge → pós-merge verde → novo remapeamento fresco**.
