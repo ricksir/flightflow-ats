@@ -220,6 +220,8 @@
       .leaflet-tooltip.ffrp-native-fix-label{padding:5px 7px;font:800 11px/1.2 Inter,system-ui,sans-serif}.ffrp-native-fix-label b{font-size:11px}.ffrp-native-fix-label span{font-size:10px;line-height:1.2}.leaflet-tooltip.ffrp-native-fix-hover{background:rgba(255,255,255,.98);box-shadow:0 5px 14px rgba(3,29,57,.16)}
       #ffrpVectorFixLayer .ffrp-vfix{opacity:.35;transition:opacity .14s ease}#ffrpVectorFixLayer .ffrp-vfix.labelled,#ffrpVectorFixLayer .ffrp-vfix.current,#ffrpVectorFixLayer .ffrp-vfix.transfer{opacity:1}
       .ffrp-focus-btn[aria-pressed="true"]{background:#0d7084!important;color:#fff!important;border-color:#0d7084!important;box-shadow:0 4px 12px rgba(13,112,132,.20)!important}.ffrp-point.selected-point{border-color:#d6aa45;box-shadow:inset 3px 0 #d59a20,0 5px 14px rgba(90,65,12,.08)}
+      .ffrp-map .route-terminal{fill:none;stroke:#d59a20;stroke-width:4;stroke-dasharray:7 9;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px rgba(213,154,32,.18))}
+      .ffrp-lg-terminal{display:inline-block;width:20px;height:0;border-top:3px dashed #d59a20}.ffrp-point.terminal-point{border-color:#e0bb65;background:#fffaf0}.ffrp-tail-note.terminal{border-color:#e0bb65;background:#fffaf0;color:#6d520f}
       @media(max-width:900px){.ffrp-map-note{font-size:.68rem}.ffrp-legend{top:8px;right:8px;max-width:calc(100% - 16px)}}
       @media(max-width:640px){.ffrp-map-note{font-size:.66rem;padding:8px 10px}.ffrp-legend{left:auto;right:8px;bottom:auto}.ffrp-map-hud{max-width:calc(100% - 110px)}}
 
@@ -1136,7 +1138,7 @@
     const continuation=declaredRouteContinuation(snapshot);
     const destination=destinationRouteMarker(snapshot);
     const plotPoints=points.concat(continuation).concat(destination?[destination]:[]);
-    const move=movementPoints(snapshot);
+    const move=movementPointsForProfile(snapshot);
     const fractions=routeDistanceFractions(move);
     let focusMoveIndex=0;
     let best=Infinity;
@@ -1343,7 +1345,7 @@
     const badge=ensureMainBadge();
     ensureFixesToggle();ensureHandoffsToggle();
     if(!snapshot){if(badge)badge.hidden=true;renderProcessedVectorFixes(null);return false;}
-    const unresolved=snapshot.points.filter(p=>!p.geo).length,continuation=declaredRouteContinuation(snapshot),destination=destinationRouteMarker(snapshot);
+    const unresolved=snapshot.points.filter(p=>!p.geo).length,continuation=declaredRouteContinuation(snapshot),destination=destinationRouteMarker(snapshot),terminal=terminalClosureState(snapshot);
     if(badge){badge.hidden=false;badge.classList.toggle('warn',unresolved>0);badge.textContent=unresolved?`ROTA PROCESSADA · ${unresolved} SEM COORD.`:`ROTA PROCESSADA · ${snapshot.points.length}/${snapshot.points.length}${continuation.length?` · +${continuation.length} DECL.`:''}`;}
     if(!snapshotIsComplete(snapshot))return false;
     const rms=bridge?.realMapState;
@@ -1364,6 +1366,11 @@
         const declared=L.polyline(declaredLatLngs,{color:'#0d7084',weight:3,opacity:.9,dashArray:'8 7',lineCap:'round',lineJoin:'round',interactive:true});
         declared.bindTooltip(`Rota declarada ${esc(continuation[0]?.airway||'ATS')} · coordenadas publicadas · sem ETIM no histórico`,{sticky:true});declared.addTo(model.nativeMapLayer);
       }
+      if(terminal.active&&terminal.from?.geo&&terminal.destination?.geo){
+        const terminalLatLngs=[[Number(terminal.from.geo.lat),Number(terminal.from.geo.lon)],[Number(terminal.destination.geo.lat),Number(terminal.destination.geo.lon)]];
+        const terminalLine=L.polyline(terminalLatLngs,{color:'#d59a20',weight:3.4,opacity:.96,dashArray:'6 9',lineCap:'round',lineJoin:'round',interactive:true});
+        terminalLine.bindTooltip('Fechamento terminal derivado da Ordem TER · sem ETIM histórico · sem STAR/fixos inventados',{sticky:true,className:'ffrp-transfer-tip'});terminalLine.addTo(model.nativeMapLayer);
+      }
       if(model.fixesVisible&&model.nativeFixLayer){
         const occupied=collectMapObstacles(rms.map);
         const context=routeDisplayContext(snapshot,model.routeProgress);
@@ -1372,8 +1379,8 @@
           const airport=destOnly||(/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===snapshot.points.length-1));
           const state=pointDisplayState(context,i);
           const mk=L.circleMarker([Number(p.geo.lat),Number(p.geo.lon)],{radius:state.current?6.5:(airport?5.5:4),color:state.current?'#18a0c4':state.selected?'#d59a20':destOnly?'#a66b00':declared?'#0d7084':airport?'#a66b00':'#07576a',dashArray:(declared||destOnly)?'4 3':null,weight:state.current||state.selected?3:1.8,fillColor:destOnly?'#fff1b9':declared?'#e7f6f9':airport?'#ffe59a':'#ffffff',fillOpacity:state.muted?.55:1,opacity:state.muted?.55:1,interactive:true});
-          const meta=declared?`ROTA DECLARADA ${p.airway||''} · SEM ETIM`:destOnly?'ADES · TRAJETO TERMINAL NÃO ESPECIFICADO':[p.etim?`ETIM ${p.etim}${p.passed?'*':''}`:'',p.cfl?`FL ${flightLevelLabel(p).replace(/^FL/,'')}`:''].filter(Boolean).join(' · ');
-          const suffix=declared?'<br><small>rota declarada · sem ETIM</small>':destOnly?'<br><small>ADES · sem trajetória terminal</small>':'';
+          const meta=declared?`ROTA DECLARADA ${p.airway||''} · SEM ETIM`:destOnly?(terminal.active?'ADES · FECHAMENTO TERMINAL DERIVADO · SEM ETIM':'ADES · TRAJETO TERMINAL NÃO ESPECIFICADO'):[p.etim?`ETIM ${p.etim}${p.passed?'*':''}`:'',p.cfl?`FL ${flightLevelLabel(p).replace(/^FL/,'')}`:''].filter(Boolean).join(' · ');
+          const suffix=declared?'<br><small>rota declarada · sem ETIM</small>':destOnly?(terminal.active?'<br><small>fechamento terminal derivado · sem ETIM</small>':'<br><small>ADES · sem trajetória terminal</small>'):'';
           const permanent=state.labelled;
           const place=permanent?labelPlacementFor(rms.map,p,i,context.plotPoints.length,occupied):{direction:'top',offset:[0,-7]};
           mk.bindTooltip(mainFixLabelHtml(p)+suffix,{permanent,direction:place.direction,className:`ffrp-native-fix-label${permanent?'':' ffrp-native-fix-hover'}`,offset:place.offset,opacity:.98,interactive:false,sticky:!permanent});
@@ -1573,7 +1580,7 @@
               <div id="ffrpMapHud" class="ffrp-map-hud"></div>
               <details id="ffrpLegend" class="ffrp-legend">
                 <summary>Legenda operacional</summary>
-                <div class="ffrp-legend-items"><span><i class="ffrp-lg-dot ffrp-lg-airport"></i>Aeródromo</span><span><i class="ffrp-lg-dot"></i>Fixo/Waypoint</span><span><i class="ffrp-lg-dot ffrp-lg-coord"></i>Coordenada</span><span><i class="ffrp-lg-transfer"></i>Transferência</span><span><i class="ffrp-lg-line"></i>Rota processada</span><span><i class="ffrp-lg-declared"></i>Rota declarada s/ ETIM</span><span><i class="ffrp-lg-destination"></i>ADES sem trajetória terminal</span></div>
+                <div class="ffrp-legend-items"><span><i class="ffrp-lg-dot ffrp-lg-airport"></i>Aeródromo</span><span><i class="ffrp-lg-dot"></i>Fixo/Waypoint</span><span><i class="ffrp-lg-dot ffrp-lg-coord"></i>Coordenada</span><span><i class="ffrp-lg-transfer"></i>Transferência</span><span><i class="ffrp-lg-line"></i>Rota processada</span><span><i class="ffrp-lg-declared"></i>Rota declarada s/ ETIM</span><span><i class="ffrp-lg-terminal"></i>Fechamento terminal / Ordem TER</span><span><i class="ffrp-lg-destination"></i>ADES</span></div>
               </details>
             </div>
             <div id="ffrpMapNote" class="ffrp-map-note" role="status"></div>
