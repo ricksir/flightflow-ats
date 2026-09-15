@@ -258,7 +258,7 @@ test('transição de estados preserva origem, destino e descrição previous →
   const currentOnly = loadFunction({
     parseAddresses: () => [],
     internalTransitionDetails: () => ({ previous: '', current: 'COORDENADO' }),
-  })({ operation: 'TRANSICAO DE ESTADOS', snapshot: {} });
+  })({ operation: 'TRANSIÇÃO DE ESTADOS', snapshot: {} });
   assert.equal(currentOnly.originLabel, 'GERENCIADOR DE ESTADOS');
   assert.equal(currentOnly.flow, 'Atualização interna do estado para: COORDENADO');
 
@@ -288,7 +288,7 @@ test('criação preserva distinção RPL, destino ACC e ID do plano', () => {
   assert.equal(rpl.flow, 'Criação e gravação interna do plano na base de dados operacional.');
 
   const manual = fn({
-    operation: 'CRIACAO MANUAL',
+    operation: 'CRIAÇÃO MANUAL',
     snapshot: { callsign: 'AZU5678' },
   });
   assert.equal(manual.originLabel, 'MÓDULO DE CRIAÇÃO');
