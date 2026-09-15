@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1114423;
-const EXPECTED_SHA256 = '7a0f27c620c72f7b96f4a2cf4d478283d663598c148d0c6bd9daa5d0c3818ac7';
-const EXPECTED_LINES = 5007;
+const EXPECTED_BYTES = 1114588;
+const EXPECTED_SHA256 = 'd27d411aa139443463a8229a78ac9b691e573056f13b246a7227e40e682c29b6';
+const EXPECTED_LINES = 5009;
 const EXPECTED_DUPLICATES = [];
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
 const EXTRACTED_EVENT_NAVIGATION = ['goTo'];
@@ -26,6 +26,7 @@ const EXTRACTED_SOURCE_MANAGER = ['initSourceManager'];
 const EXTRACTED_FIELD_LAYOUT_UTILS = ['normalizeFieldLayout'];
 const EXTRACTED_FIELD_CARD_RENDERER = ['fieldCardMarkup'];
 const EXTRACTED_FPV_WINDOW_CONTROLLER = ['minimizeFpv'];
+const EXTRACTED_STRIP_WINDOW_CONTROLLER = ['minimizeStrip'];
 const EXTRACTED_KNOWLEDGE_ENTRIES = ['knowledgeEntries'];
 const EXTRACTED_KNOWLEDGE_FIELD_LABEL_RENDERER = ['renderKnowledgeFieldLabel'];
 const EXTRACTED_COORDINATE_UTILS = [
@@ -139,6 +140,9 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const FpvWindowController = window.FlightFlowFpvWindowController;',
     "if (!FpvWindowController) throw new Error('FlightFlowFpvWindowController não foi carregado.');",
     'const { minimizeFpv } = FpvWindowController.create({ state, setFpvVisible });',
+    'const StripWindowController = window.FlightFlowStripWindowController;',
+    "if (!StripWindowController) throw new Error('FlightFlowStripWindowController não foi carregado.');",
+    'const { minimizeStrip } = StripWindowController.create({ state, setStripVisible });',
     "if (!FieldCardRenderer) throw new Error('FlightFlowFieldCardRenderer não foi carregado.');",
     'const { fieldCardMarkup } = FieldCardRenderer.create({',
     'const KnowledgeEntries = window.FlightFlowKnowledgeEntries;',
@@ -270,8 +274,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 285);
-  assert.equal(counts.size, 285);
+  assert.equal(names.length, 284);
+  assert.equal(counts.size, 284);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,
@@ -287,6 +291,7 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
     ...EXTRACTED_FIELD_LAYOUT_UTILS,
     ...EXTRACTED_FIELD_CARD_RENDERER,
     ...EXTRACTED_FPV_WINDOW_CONTROLLER,
+    ...EXTRACTED_STRIP_WINDOW_CONTROLLER,
     ...EXTRACTED_KNOWLEDGE_ENTRIES,
     ...EXTRACTED_KNOWLEDGE_FIELD_LABEL_RENDERER,
     ...EXTRACTED_COORDINATE_UTILS,
