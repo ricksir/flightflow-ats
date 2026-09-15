@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'ui', 'typography-step-controller.js');
 const FUNCTION_NAME = 'stepTypography';
 const EXPECTED_SOURCE = 'function stepTypography(delta) {\n    applyTypography((state.config.fontScale || 1) + delta, { persist: true, notify: false });\n  }';
 const EXPECTED_BYTES = 130;
@@ -68,24 +69,28 @@ function extractNamedFunction(source, name) {
   throw new Error('fim de ' + name + ' não encontrado');
 }
 
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
+
 function loadFunction(state, applyTypography) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'state',
-    'applyTypography',
-    source + '\nreturn stepTypography;'
-  )(state, applyTypography);
+  const source = moduleSource();
+  const context = { window: {} };
+  Function('window', source)(context.window);
+  return context.window.FlightFlowTypographyStepController
+    .create({ state, applyTypography })
+    .stepTypography;
 }
 
 test('stepTypography congela exatamente a fronteira selecionada no remap #207', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('stepTypography não contém lógica temporal, espacial, cartográfica ou externa direta', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   for (const token of [
     'currentEvent', 'goTo', 'renderCurrent', 'timeline', 'scrubber', 'autoplay',
     'route', 'planner', 'interpol', 'aircraft', 'map', 'realMap', 'googleMap',
@@ -100,10 +105,16 @@ test('stepTypography não contém lógica temporal, espacial, cartográfica ou e
   assert.equal((source.match(/\bstate\.config\.fontScale\b/g) || []).length, 1);
 });
 
-test('stepTypography mantém exatamente os dois consumidores dos botões de escala', () => {
+test('stepTypography sai do kernel, preserva wiring e mantém exatamente os dois consumidores dos botões de escala', () => {
   const kernel = kernelSource();
-  assert.equal(kernel.split('function stepTypography(').length - 1, 1);
+  const module = moduleSource();
+  assert.equal(kernel.split('function stepTypography(').length - 1, 0);
+  assert.equal(module.split('function stepTypography(').length - 1, 1);
   assert.equal(kernel.split('stepTypography').length - 1, EXPECTED_CONSUMERS + 1);
+
+  assert.ok(kernel.includes('const TypographyStepController = window.FlightFlowTypographyStepController;'));
+  assert.ok(kernel.includes("if (!TypographyStepController) throw new Error('FlightFlowTypographyStepController não foi carregado.');"));
+  assert.ok(kernel.includes('const { stepTypography } = TypographyStepController.create({ state, applyTypography });'));
   assert.ok(kernel.includes("els.fontScaleDownBtn.addEventListener('click', () => stepTypography(-0.05));"));
   assert.ok(kernel.includes("els.fontScaleUpBtn.addEventListener('click', () => stepTypography(0.05));"));
 });
