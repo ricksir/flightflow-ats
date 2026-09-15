@@ -7705,7 +7705,12 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     const route=state.geo.eventRoutes[state.index];if(!route||!route.points)return;
     const routeLatLngs=svgRouteToLatLngs(route.points);realMapState.routeLatLngs=routeLatLngs;
     const routeLayer=realMapState.layers.route;routeLayer.clearLayers();
-    L.polyline(routeLatLngs,{renderer:realMapState.renderer,color:'#7359dd',weight:3,opacity:.80,dashArray:'8 8',lineCap:'round',interactive:false}).addTo(routeLayer);
+    const processedRoute=route.ffrpProcessed===true;
+    // Quando a Rota Processada é a fonte autoritativa, não desenhe a rota legada
+    // roxa/azul nem por um único frame. O módulo de rota já mantém suas próprias
+    // camadas histórica, declarada e terminal; desenhar ambas causava o "flash"
+    // observado ao avançar/retroceder eventos.
+    if(!processedRoute)L.polyline(routeLatLngs,{renderer:realMapState.renderer,color:'#7359dd',weight:3,opacity:.80,dashArray:'8 8',lineCap:'round',interactive:false}).addTo(routeLayer);
     realMapState.routeBounds=L.latLngBounds(routeLatLngs);
     renderLeafletRouteHistory();
     renderLeafletRevisionMarkers();
@@ -7714,7 +7719,7 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     const hit=pointAlongPolyline(route.points,mapProgress);
     const g=unprojectGeo(hit.point.x,hit.point.y);
     updateLeafletAircraftMarker(g.lat,g.lon,state.motion.heading||0,event.snapshot.callsign||state.parsed.meta.callsign||'ACFT');
-    updateLeafletCompletedRoute(route.points,mapProgress);
+    if(!processedRoute)updateLeafletCompletedRoute(route.points,mapProgress);
   }
 
   function renderLeafletRouteHistory(){
@@ -7969,10 +7974,15 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
   function renderGoogleMapEvent(event){
     const route=state.geo.eventRoutes[state.index];if(!route||!event)return;
     const latlngs=svgRouteToLatLngs(route.points);realMapState.routeLatLngs=latlngs;
+    const processedRoute=route.ffrpProcessed===true;
     if(realMapState.googleFutureRoute)realMapState.googleFutureRoute.setMap(null);
     if(realMapState.googleDoneRoute)realMapState.googleDoneRoute.setMap(null);
-    realMapState.googleFutureRoute=new google.maps.Polyline({map:realMapState.map,path:latlngs.map(p=>({lat:p[0],lng:p[1]})),strokeColor:'#7359dd',strokeOpacity:.82,strokeWeight:3,geodesic:false,icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,scale:3},offset:'0',repeat:'16px'}]});addGoogleOverlay(realMapState.googleFutureRoute);
-    updateGoogleCompletedRoute();
+    realMapState.googleFutureRoute=null;
+    realMapState.googleDoneRoute=null;
+    if(!processedRoute){
+      realMapState.googleFutureRoute=new google.maps.Polyline({map:realMapState.map,path:latlngs.map(p=>({lat:p[0],lng:p[1]})),strokeColor:'#7359dd',strokeOpacity:.82,strokeWeight:3,geodesic:false,icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,scale:3},offset:'0',repeat:'16px'}]});addGoogleOverlay(realMapState.googleFutureRoute);
+      updateGoogleCompletedRoute();
+    }
     const hit=pointAlongPolyline(route.points,state.motion.currentProgress||route.target||0),g=unprojectGeo(hit.point.x,hit.point.y);
     updateGoogleAircraftMarker(g.lat,g.lon,state.motion.heading||0,event.snapshot.callsign||state.parsed.meta.callsign||'ACFT');updateRealMapStatus(route);
   }
