@@ -1,5 +1,7 @@
 # Auditoria inicial — FlightFlow ATS
 
+> **Documento histórico:** este arquivo registra o diagnóstico de 04/09/2026. Recomendações sobre privacidade, arquitetura e modularização refletem aquele momento e podem ter sido superadas. Para o estado vigente, consulte `README.md`, `docs/AI_CURRENT_STATE.md` e `docs/ARCHITECTURE.md`.
+
 Data da auditoria: 2026-09-04.
 
 ## Resumo técnico
@@ -57,7 +59,7 @@ Embora não haja `<script src>` externo estático, o código referencia/carrega 
 
 ### 6. Conteúdo não apropriado para publicação pública sem revisão
 
-Foi detectado conteúdo de treinamento/conhecimento incorporado que inclui dados de contato pessoal. Além disso, o programa contém conhecimento e dados operacionais ATS. O repositório deve permanecer privado até sanitização explícita.
+Na auditoria inicial foi detectado conteúdo de treinamento/conhecimento incorporado que exigia revisão antes de publicação. **Essa foi uma recomendação histórica daquele checkpoint.** O repositório é atualmente público; qualquer novo conteúdo operacional ou dado pessoal deve continuar sendo revisado antes do commit.
 
 ## Hotspots funcionais
 
