@@ -5491,6 +5491,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-field-layout-utils" src="src/ui/field-layout-utils.js"></script>
 <script id="flightflow-field-card-renderer" src="src/ui/field-card-renderer.js"></script>
 <script id="flightflow-fpv-window-controller" src="src/ui/fpv-window-controller.js"></script>
+<script id="flightflow-strip-window-controller" src="src/ui/strip-window-controller.js"></script>
 <script id="flightflow-knowledge-entries" src="src/knowledge/knowledge-entries.js"></script>
 <script id="flightflow-knowledge-field-label-renderer" src="src/knowledge/knowledge-field-label-renderer.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
@@ -9436,7 +9437,9 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
   }
 
   function setStripVisible(visible,options={}){state.stripVisible=Boolean(visible);state.stripMinimized=options.minimized===undefined?(!visible&&state.stripMinimized):Boolean(options.minimized);if(els.stripWindow)els.stripWindow.hidden=!state.stripVisible;if(els.stripToggleBtn)els.stripToggleBtn.setAttribute('aria-pressed',String(state.stripVisible));if(state.stripVisible){state.stripMinimized=false;if(currentEvent())renderStrip(currentEvent());}updateWindowDock();}
-  function minimizeStrip(){state.stripMinimized=true;setStripVisible(false,{minimized:true});}
+  const StripWindowController = window.FlightFlowStripWindowController;
+  if (!StripWindowController) throw new Error('FlightFlowStripWindowController não foi carregado.');
+  const { minimizeStrip } = StripWindowController.create({ state, setStripVisible });
   function toggleStrip(){state.stripVisible?minimizeStrip():setStripVisible(true);}
   function maybeAutoOpenStrip(event){if(state.config.autoOpenStrip&&event&&clamp01(event.progress)>=Number(state.config.stripShowFromProgress||.22)&&!state.stripAutoOpened&&!state.stripMinimized){state.stripAutoOpened=true;setStripVisible(true);}}
   function toggleStripExpand(){if(!els.stripWindow)return;els.stripWindow.classList.toggle('expanded');els.stripExpandBtn.textContent=els.stripWindow.classList.contains('expanded')?'🗗':'⛶';}

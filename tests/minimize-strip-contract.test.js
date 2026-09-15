@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'ui', 'strip-window-controller.js');
 const FUNCTION_NAME = 'minimizeStrip';
 const EXPECTED_SOURCE = 'function minimizeStrip(){state.stripMinimized=true;setStripVisible(false,{minimized:true});}';
 const EXPECTED_BYTES = 92;
@@ -68,24 +69,28 @@ function extractNamedFunction(source, name) {
   throw new Error('fim de ' + name + ' não encontrado');
 }
 
+function moduleSource() {
+  return fs.readFileSync(MODULE, 'utf8');
+}
+
 function loadFunction(state, setStripVisible) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
-  return Function(
-    'state',
-    'setStripVisible',
-    source + '\nreturn minimizeStrip;'
-  )(state, setStripVisible);
+  const source = moduleSource();
+  const context = { window: {} };
+  Function('window', source)(context.window);
+  return context.window.FlightFlowStripWindowController
+    .create({ state, setStripVisible })
+    .minimizeStrip;
 }
 
 test('minimizeStrip congela exatamente a fronteira selecionada no remap #199', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   assert.equal(source, EXPECTED_SOURCE);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
 });
 
 test('minimizeStrip não contém lógica temporal, espacial, de mapa ou infraestrutura externa', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(moduleSource(), FUNCTION_NAME);
   for (const token of [
     'currentEvent', 'goTo', 'renderCurrent', 'timeline', 'scrubber', 'autoplay',
     'route', 'planner', 'interpol', 'aircraft', 'map', 'realMap', 'googleMap',
@@ -100,10 +105,15 @@ test('minimizeStrip não contém lógica temporal, espacial, de mapa ou infraest
   assert.equal((source.match(/\bstate\.stripMinimized\b/g) || []).length, 1);
 });
 
-test('minimizeStrip mantém exatamente dois consumidores funcionais', () => {
+test('minimizeStrip sai do kernel, preserva wiring e mantém exatamente dois consumidores funcionais', () => {
   const kernel = kernelSource();
-  assert.equal(kernel.split('function minimizeStrip(').length - 1, 1);
+  const module = moduleSource();
+  assert.equal(kernel.split('function minimizeStrip(').length - 1, 0);
+  assert.equal(module.split('function minimizeStrip(').length - 1, 1);
   assert.equal(kernel.split('minimizeStrip').length - 1, EXPECTED_CONSUMERS + 1);
+  assert.ok(kernel.includes('const StripWindowController = window.FlightFlowStripWindowController;'));
+  assert.ok(kernel.includes("if (!StripWindowController) throw new Error('FlightFlowStripWindowController não foi carregado.');"));
+  assert.ok(kernel.includes('const { minimizeStrip } = StripWindowController.create({ state, setStripVisible });'));
   assert.ok(kernel.includes("els.stripCloseBtn.addEventListener('click', minimizeStrip);"));
 
   const toggle = extractNamedFunction(kernel, 'toggleStrip');
