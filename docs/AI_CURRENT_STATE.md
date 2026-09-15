@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#205** e conclusão verde do workflow pós-merge **#514**.
+> Última verificação: **15/09/2026**, após o merge do PR **#209** e conclusão verde do workflow pós-merge **#521**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `2b82578017150a94d946e44f8e143fd4b094ff89`
-  — `refactor: extract knowledge popover hider` (PR #205).
+  `98384510f1ae62ce1d33b55aee23bb80accdef7e`
+  — `refactor: extract typography step controller` (PR #209).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,121 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #206 — checkpoint documental após `hideKnowledgePopover`
+
+O PR **#206 — `docs: update AI current state after PR 205`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`ce070275fad13d1c9c110441401035d110943000`
+
+Workflows:
+
+- PR: **#515** — sucesso;
+- pós-merge: **#516** — sucesso;
+- ambos com os cinco gates verdes e **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+### PR #207 — remapeamento analítico descartável após #206
+
+O PR **#207 — `chore: fresh kernel remap after PR 206`** recalculou o ranking do zero sobre o `main` documental `ce070275fad13d1c9c110441401035d110943000`.
+
+Resultado:
+
+- **0 candidatos estritamente puros**;
+- melhor near-miss infra-only: `stepTypography`;
+- corpo exato: **130 bytes**;
+- SHA-256:
+  `a9fdef5d62eea60e5f3ea207a99f78bc26f83897da68384d5ce5eedec0914afd`;
+- dependência funcional única: `applyTypography`;
+- leitura de estado restrita a `state.config.fontScale`;
+- exatamente **2 consumidores funcionais**:
+  1. botão de reduzir fonte com `stepTypography(-0.05)`;
+  2. botão de aumentar fonte com `stepTypography(0.05)`;
+- delegação preservada com `{ persist: true, notify: false }`;
+- ausência de rota, DEP, `goTo`, `renderCurrent`, `currentEvent`, timeline, scrubber, autoplay, planner, interpolação, mapa, movimento, ground e geometria.
+
+Head analítico final:
+
+`1ee1b803a073eed7f1dfca2e46e1e3a209ef9a3d`
+
+Workflow **#517** — sucesso, **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+O PR foi fechado **sem merge**.
+
+### PR #208 — congelamento de `stepTypography`
+
+O PR **#208 — `test: freeze step typography contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **130 bytes**;
+- SHA-256:
+  `a9fdef5d62eea60e5f3ea207a99f78bc26f83897da68384d5ce5eedec0914afd`;
+- exatamente **2 consumidores funcionais**;
+- dependência funcional única: `applyTypography`;
+- leitura de `state.config.fontScale`;
+- fallback `fontScale || 1`;
+- delegação com `{ persist: true, notify: false }`;
+- não mutação direta e propagação de erro protegidas;
+- nenhum acoplamento temporal, espacial, cartográfico, de rota ou transporte introduzido.
+
+Head final validado:
+
+`dd0d2792d67a8ab8aa1727ba756d55e9374d1d5f`
+
+Merge por squash:
+
+`e10f677fd2d9ba4a3717afb2779969417a6f82f7`
+
+Workflows:
+
+- PR: **#518** — sucesso, **46/0/0/0/0**;
+- pós-merge: **#519** — sucesso, **46/0/0/0/0**.
+
+### PR #209 — extração de `stepTypography`
+
+O PR **#209 — `refactor: extract typography step controller`** moveu mecanicamente `stepTypography` do IIFE principal para:
+
+`src/ui/typography-step-controller.js`
+
+A extração preservou:
+
+- corpo congelado: **130 bytes**;
+- SHA-256:
+  `a9fdef5d62eea60e5f3ea207a99f78bc26f83897da68384d5ce5eedec0914afd`;
+- wiring explícito por
+  `FlightFlowTypographyStepController.create({ state, applyTypography })`;
+- dependências injetadas:
+  - `state`;
+  - `applyTypography`;
+- API pública congelada:
+  - `create`;
+- retorno congelado:
+  - `stepTypography`;
+- 0 declarações inline de `stepTypography` no núcleo;
+- os mesmos dois consumidores funcionais.
+
+Baselines resultantes:
+
+- kernel: **1.114.852 bytes**;
+- **5.007 linhas**;
+- **282 funções nomeadas**;
+- SHA-256 do kernel:
+  `1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b`;
+- inventário global: **759 declarações function nomeadas / 748 nomes únicos / 9 nomes repetidos conhecidos**;
+- módulo Typography Step Controller: **22 linhas / 2 funções nomeadas**.
+
+Head final validado:
+
+`71ed7bcdf8d2e083ea5b1df7e8ad7dc498350bfc`
+
+Merge por squash no `main`:
+
+`98384510f1ae62ce1d33b55aee23bb80accdef7e`
+
+Workflows:
+
+- PR: **#520** — sucesso, **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**;
+- pós-merge: **#521** — sucesso, **46 passed (3.0m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, ground, timeline, scrubber, teclado ou autoplay foi alterado.
 
 ### PR #202 — checkpoint documental após `minimizeStrip`
 
@@ -1593,13 +1708,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #205:
+Conforme `tests/main-kernel-contract.test.js` após o PR #209:
 
-- **1.114.709 bytes**;
+- **1.114.852 bytes**;
 - **5.007 linhas**;
 - SHA-256:
-  `eae54fca21828ce37968ed072a07dab69b6d4182afe58c7f3cb575a02c5f46dd`;
-- **283 funções nomeadas** no núcleo protegido.
+  `1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b`;
+- **282 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -1626,6 +1741,27 @@ Conforme `tests/core-utils-contract.test.js` após o PR #139:
 
 `normalizeSearchText` mantém no módulo os mesmos **151 bytes** e o mesmo
 SHA-256 congelado no PR #138.
+
+### Typography Step Controller
+
+Após o PR #209:
+
+- arquivo: `src/ui/typography-step-controller.js`;
+- **22 linhas / 2 funções nomeadas**;
+- carregado pelo script `flightflow-typography-step-controller` antes do núcleo;
+- API pública congelada:
+  - `create`;
+- factory interna nomeada `createTypographyStepController`;
+- dependências injetadas:
+  - `state`;
+  - `applyTypography`;
+- retorno congelado:
+  - `stepTypography`;
+- corpo de `stepTypography`: **130 bytes**;
+- SHA-256:
+  `a9fdef5d62eea60e5f3ea207a99f78bc26f83897da68384d5ce5eedec0914afd`;
+- exatamente dois consumidores funcionais preservados;
+- declaração inline no IIFE principal: **0**.
 
 ### Locality Utils
 
@@ -1917,18 +2053,19 @@ Conforme `tests/merge-config-contract.test.js` após o PR #172:
 
 ### Inventário global
 
-Após o PR #205, confirmado pelo workflow pós-merge #514:
+Após o PR #209, confirmado pelo workflow pós-merge #521:
 
-- **758 declarações function nomeadas** entre o HTML e scripts locais;
-- **747 nomes únicos**;
+- **759 declarações function nomeadas** entre o HTML e scripts locais;
+- **748 nomes únicos**;
 - **9 nomes repetidos conhecidos**;
-- o IIFE principal contém **283 funções nomeadas**;
+- o IIFE principal contém **282 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **32 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
 - `src/ui/field-layout-utils.js` contém **2 funções nomeadas**;
 - `src/ui/field-card-renderer.js` contém **2 funções nomeadas**;
 - `src/ui/strip-cell-renderer.js` contém **2 funções nomeadas**;
+- `src/ui/typography-step-controller.js` contém **2 funções nomeadas**;
 - `src/config/config-merger.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-entries.js` contém **2 funções nomeadas**;
 - `src/knowledge/knowledge-field-label-renderer.js` contém **2 funções nomeadas**;
@@ -1948,6 +2085,25 @@ Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates v
 3. **Timeline and route regression tests / Node**;
 4. **Browser availability**;
 5. **UI navigation regression tests / Playwright**.
+
+Referência do ciclo mais recente (`stepTypography`):
+
+- checkpoint documental #206:
+  - workflow **#515** no head exato `4a3b01e46052e55c7ed353ed268dfafdc3305fe7` — sucesso;
+  - pós-merge: workflow **#516** no SHA `ce070275fad13d1c9c110441401035d110943000` — sucesso;
+  - ambos em **46/0/0/0/0**.
+- remapeamento descartável #207:
+  - workflow **#517** no head exato `1ee1b803a073eed7f1dfca2e46e1e3a209ef9a3d` — sucesso;
+  - **46/0/0/0/0**;
+  - fechado sem merge.
+- PR de contrato #208:
+  - workflow **#518** no head exato `dd0d2792d67a8ab8aa1727ba756d55e9374d1d5f` — sucesso;
+  - pós-merge: workflow **#519** no SHA `e10f677fd2d9ba4a3717afb2779969417a6f82f7` — sucesso;
+  - ambos em **46/0/0/0/0**.
+- PR de extração #209:
+  - workflow **#520** no head exato `71ed7bcdf8d2e083ea5b1df7e8ad7dc498350bfc` — sucesso;
+  - pós-merge: workflow **#521** no SHA `98384510f1ae62ce1d33b55aee23bb80accdef7e` — sucesso;
+  - ambos em **46/0/0/0/0**.
 
 Referência do ciclo mais recente (`hideKnowledgePopover`):
 
@@ -2111,31 +2267,31 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `hideKnowledgePopover` está concluído em produção e validado no SHA exato:
+O ciclo `stepTypography` está concluído em produção e validado no SHA exato:
 
-`2b82578017150a94d946e44f8e143fd4b094ff89`
+`98384510f1ae62ce1d33b55aee23bb80accdef7e`
 
-Workflow pós-merge correspondente: **#514**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+Workflow pós-merge correspondente: **#521**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
 
-O corpo protegido permanece no módulo `src/knowledge/knowledge-popover-controller.js` com **156 bytes** e SHA-256:
+O corpo protegido permanece no módulo `src/ui/typography-step-controller.js` com **130 bytes** e SHA-256:
 
-`57adc4878279173c3b09aefef808da7eb213d614219e579479970315061003cc`
+`a9fdef5d62eea60e5f3ea207a99f78bc26f83897da68384d5ce5eedec0914afd`
 
 Baseline atual do núcleo:
 
-- **1.114.709 bytes**;
+- **1.114.852 bytes**;
 - **5.007 linhas**;
-- **283 funções nomeadas**;
+- **282 funções nomeadas**;
 - SHA-256:
-  `eae54fca21828ce37968ed072a07dab69b6d4182afe58c7f3cb575a02c5f46dd`.
+  `1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b`.
 
 Inventário global atual:
 
-- **758 declarações function nomeadas**;
-- **747 nomes únicos**;
+- **759 declarações function nomeadas**;
+- **748 nomes únicos**;
 - **9 nomes repetidos conhecidos**.
 
-**Não reutilizar o ranking do PR #203**, porque o kernel mudou com a extração do PR #205.
+**Não reutilizar o ranking do PR #207**, porque o kernel mudou com a extração do PR #209.
 
 Próximo fluxo seguro:
 
@@ -2168,6 +2324,7 @@ Próximo fluxo seguro:
    - `minimizeFpv`;
    - `minimizeStrip`;
    - `hideKnowledgePopover`;
+   - `stepTypography`;
 5. manter a separação entre candidatos estritamente puros e near-misses infra-only;
 6. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
    planner, interpolação, mapa, movimento, ground, geometria e outras fronteiras de alto blast radius;
