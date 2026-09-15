@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#197** e conclusão verde do workflow pós-merge **#499**.
+> Última verificação: **15/09/2026**, após o merge do PR **#201** e conclusão verde do workflow pós-merge **#507**.
 
 ## 1. Fonte de verdade atual
 
@@ -10,8 +10,8 @@
 - Visibilidade atual: **público**.
 - Branch principal: `main`.
 - Último commit com alteração de produção verificado neste checkpoint:
-  `175912b2736288b31318985c908e5cbec2276387`
-  — `refactor: extract FPV minimizer` (PR #197).
+  `f8c50a056b8e73c5dded1dc9ac8caf74b7241cd4`
+  — `refactor: extract Strip minimizer` (PR #201).
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0` aponta exatamente para:
   `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -20,6 +20,123 @@
 Este arquivo é um checkpoint, não um substituto para o GitHub. Ao retomar o trabalho, conferir primeiro o `main`, os PRs mais recentes e os workflows. Um commit posterior exclusivamente documental pode fazer o SHA de `main` avançar sem alterar o baseline de produção abaixo.
 
 ## 2. Último ciclo concluído
+
+### PR #198 — checkpoint documental após `minimizeFpv`
+
+O PR **#198 — `docs: update AI current state after PR 197`** consolidou o ciclo anterior e foi mergeado por squash em:
+
+`868cce90804ee6f394c8a490b8c22abc69ef0dce`
+
+Workflows:
+
+- PR: **#500** — sucesso;
+- pós-merge: **#501** — sucesso;
+- ambos com os cinco gates verdes e **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+### PR #199 — remapeamento analítico descartável após #198
+
+O PR **#199 — `chore: fresh kernel remap after PR 198`** refez o ranking do zero sobre o `main` documental `868cce90804ee6f394c8a490b8c22abc69ef0dce`.
+
+O primeiro ranking ainda expôs candidatos ligados ao domínio `ground`/geometria espacial, incluindo `nearestGraphKey`, `dedupeGroundPoints` e `groundDistance`. Esses candidatos foram rejeitados e o filtro foi endurecido para `ground`.
+
+Resultado refinado:
+
+- **0 candidatos estritamente puros**;
+- melhor near-miss infra-only: `minimizeStrip`;
+- corpo exato: **92 bytes**;
+- SHA-256:
+  `b773e96b5cc2f540ecb2133459cfacb176b2ff3ee1a88be1f3c9a6f0f8fac048`;
+- dependência funcional única: `setStripVisible`;
+- escrita de estado restrita a `state.stripMinimized=true`;
+- exatamente **2 consumidores funcionais**:
+  - botão de fechar da Strip;
+  - `toggleStrip`;
+- ausência direta de rota, DEP, `goTo`, `renderCurrent`, `currentEvent`, mapa, planner, interpolação, movimento, ground, geometria, timeline, scrubber ou autoplay.
+
+Head analítico final:
+
+`d9253338e0404c794ed07d5dce272d533f35fe90`
+
+Workflow **#503** — sucesso, **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+O PR foi fechado **sem merge**.
+
+### PR #200 — congelamento de `minimizeStrip`
+
+O PR **#200 — `test: freeze minimize strip contract`** congelou a fronteira antes da extração:
+
+- corpo exato: **92 bytes**;
+- SHA-256:
+  `b773e96b5cc2f540ecb2133459cfacb176b2ff3ee1a88be1f3c9a6f0f8fac048`;
+- exatamente dois consumidores funcionais protegidos;
+- dependência funcional única: `setStripVisible`;
+- ordem protegida:
+  1. `state.stripMinimized=true`;
+  2. `setStripVisible(false,{minimized:true})`;
+- repetição da operação quando já minimizada preservada;
+- propagação de erro da dependência preservada;
+- ausência de acoplamento temporal, espacial, cartográfico ou externo direto.
+
+Head final validado:
+
+`112e935bc8263808d0b251309d4feb4b6b1176a7`
+
+Merge por squash:
+
+`c404b82b499cf89cad20122838cae4c8422712b3`
+
+Workflows:
+
+- PR: **#504** — sucesso, **46/0/0/0/0**;
+- pós-merge: **#505** — sucesso, **46/0/0/0/0**.
+
+### PR #201 — extração de `minimizeStrip`
+
+O PR **#201 — `refactor: extract Strip minimizer`** moveu mecanicamente `minimizeStrip` do IIFE principal para:
+
+`src/ui/strip-window-controller.js`
+
+A extração preservou exatamente:
+
+- corpo congelado: **92 bytes**;
+- SHA-256:
+  `b773e96b5cc2f540ecb2133459cfacb176b2ff3ee1a88be1f3c9a6f0f8fac048`;
+- wiring explícito por
+  `FlightFlowStripWindowController.create({ state, setStripVisible })`;
+- dependências injetadas:
+  - `state`;
+  - `setStripVisible`;
+- API pública congelada:
+  - `create`;
+- retorno congelado:
+  - `minimizeStrip`;
+- 0 declarações inline de `minimizeStrip` no núcleo;
+- os mesmos dois consumidores funcionais.
+
+Baselines resultantes:
+
+- kernel: **1.114.588 bytes**;
+- **5.009 linhas**;
+- **284 funções nomeadas**;
+- SHA-256 do kernel:
+  `d27d411aa139443463a8229a78ac9b691e573056f13b246a7227e40e682c29b6`;
+- inventário global: **757 declarações function nomeadas / 746 nomes únicos / 9 nomes repetidos conhecidos**;
+- módulo Strip: **20 linhas / 2 funções nomeadas**.
+
+Head final validado:
+
+`5452061076d7412b4e4a2557409c7999bb90d9a3`
+
+Merge por squash no `main`:
+
+`f8c50a056b8e73c5dded1dc9ac8caf74b7241cd4`
+
+Workflows:
+
+- PR: **#506** — sucesso, **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**;
+- pós-merge: **#507** — sucesso, **46 passed (2.9m) / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+
+Nenhum código de rota, DEP, `goTo()`, `renderCurrent()`, planner, interpolação, mapa, movimento, ground, timeline, scrubber, teclado ou autoplay foi alterado.
 
 ### PR #177 — checkpoint documental após `entryMatchesToken`
 
@@ -1358,13 +1475,13 @@ mapa, movimento, timeline, scrubber, teclado ou autoplay foi alterado nesse cicl
 
 ### Núcleo principal
 
-Conforme `tests/main-kernel-contract.test.js` após o PR #197:
+Conforme `tests/main-kernel-contract.test.js` após o PR #201:
 
-- **1.114.423 bytes**;
-- **5.007 linhas**;
+- **1.114.588 bytes**;
+- **5.009 linhas**;
 - SHA-256:
-  `7a0f27c620c72f7b96f4a2cf4d478283d663598c148d0c6bd9daa5d0c3818ac7`;
-- **285 funções nomeadas** no núcleo protegido.
+  `d27d411aa139443463a8229a78ac9b691e573056f13b246a7227e40e682c29b6`;
+- **284 funções nomeadas** no núcleo protegido.
 
 ### Core Utils
 
@@ -1424,6 +1541,26 @@ Após o PR #197:
 - corpo de `minimizeFpv`: **86 bytes**;
 - SHA-256:
   `37103f3e8cde8970f15adb8a89be34cf4aee6fd827f93c606872f3403138a482`.
+
+### Strip Window Controller
+
+Após o PR #201:
+
+- arquivo: `src/ui/strip-window-controller.js`;
+- carregado pelo script `flightflow-strip-window-controller` antes do núcleo;
+- API pública congelada:
+  - `create`;
+- factory interna nomeada `createStripWindowController`;
+- dependências injetadas:
+  - `state`;
+  - `setStripVisible`;
+- retorno congelado:
+  - `minimizeStrip`;
+- corpo de `minimizeStrip`: **92 bytes**;
+- SHA-256:
+  `b773e96b5cc2f540ecb2133459cfacb176b2ff3ee1a88be1f3c9a6f0f8fac048`;
+- exatamente dois consumidores funcionais preservados;
+- declaração inline no IIFE principal: **0**.
 
 ### Communication Context Utils
 
@@ -1641,11 +1778,12 @@ Conforme `tests/merge-config-contract.test.js` após o PR #172:
 
 ### Inventário global
 
-Após o PR #193:
+Após o PR #201, confirmado pelo workflow pós-merge #507:
 
-- **755 declarações function nomeadas** entre o HTML e scripts locais;
-- **744 nomes únicos**;
-- o IIFE principal contém **286 funções nomeadas**;
+- **757 declarações function nomeadas** entre o HTML e scripts locais;
+- **746 nomes únicos**;
+- **9 nomes repetidos conhecidos**;
+- o IIFE principal contém **284 funções nomeadas**;
 - `src/core/core-utils.js` contém **12 funções nomeadas**;
 - `src/timeline/communication-context-utils.js` contém **32 funções nomeadas**;
 - `src/ui/source-manager-controller.js` contém **2 funções nomeadas**;
@@ -1664,11 +1802,31 @@ Após o PR #193:
 
 Nenhum PR de produção ou documentação deve ser mergeado sem todos os gates verdes:
 
+
 1. **Static audit**;
 2. **Function declaration inventory**;
 3. **Timeline and route regression tests / Node**;
 4. **Browser availability**;
 5. **UI navigation regression tests / Playwright**.
+
+Referência do ciclo mais recente (`minimizeStrip`):
+
+- checkpoint documental #198:
+  - workflow **#500** no head exato `f045000bef661fd648e2c2043f28e12f210a2799` — sucesso;
+  - pós-merge: workflow **#501** no SHA `868cce90804ee6f394c8a490b8c22abc69ef0dce` — sucesso;
+  - ambos em **46/0/0/0/0**.
+- remapeamento descartável #199:
+  - workflow final **#503** no head exato `d9253338e0404c794ed07d5dce272d533f35fe90` — sucesso;
+  - **46/0/0/0/0**;
+  - fechado sem merge.
+- PR de contrato #200:
+  - workflow **#504** no head exato `112e935bc8263808d0b251309d4feb4b6b1176a7` — sucesso;
+  - pós-merge: workflow **#505** no SHA `c404b82b499cf89cad20122838cae4c8422712b3` — sucesso;
+  - ambos em **46/0/0/0/0**.
+- PR de extração #201:
+  - workflow **#506** no head exato `5452061076d7412b4e4a2557409c7999bb90d9a3` — sucesso;
+  - pós-merge: workflow **#507** no SHA `f8c50a056b8e73c5dded1dc9ac8caf74b7241cd4` — sucesso;
+  - ambos em **46/0/0/0/0**.
 
 Referência do ciclo mais recente (`inferCommunicationContext`):
 
@@ -1794,17 +1952,31 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `minimizeFpv` está concluído em produção e validado no SHA exato:
+O ciclo `minimizeStrip` está concluído em produção e validado no SHA exato:
 
-`175912b2736288b31318985c908e5cbec2276387`
+`f8c50a056b8e73c5dded1dc9ac8caf74b7241cd4`
 
-Workflow pós-merge correspondente: **#499**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**.
+Workflow pós-merge correspondente: **#507**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
 
-O corpo protegido permanece no módulo `src/ui/fpv-window-controller.js` com **86 bytes** e SHA-256:
+O corpo protegido permanece no módulo `src/ui/strip-window-controller.js` com **92 bytes** e SHA-256:
 
-`37103f3e8cde8970f15adb8a89be34cf4aee6fd827f93c606872f3403138a482`
+`b773e96b5cc2f540ecb2133459cfacb176b2ff3ee1a88be1f3c9a6f0f8fac048`
 
-**Não reutilizar o ranking do PR #195**, porque o kernel mudou com a extração do PR #197.
+Baseline atual do núcleo:
+
+- **1.114.588 bytes**;
+- **5.009 linhas**;
+- **284 funções nomeadas**;
+- SHA-256:
+  `d27d411aa139443463a8229a78ac9b691e573056f13b246a7227e40e682c29b6`.
+
+Inventário global atual:
+
+- **757 declarações function nomeadas**;
+- **746 nomes únicos**;
+- **9 nomes repetidos conhecidos**.
+
+**Não reutilizar o ranking do PR #199**, porque o kernel mudou com a extração do PR #201.
 
 Próximo fluxo seguro:
 
@@ -1835,12 +2007,13 @@ Próximo fluxo seguro:
    - `resolveKnowledgeEntry`;
    - `inferCommunicationContext`;
    - `minimizeFpv`;
+   - `minimizeStrip`;
 5. manter a separação entre candidatos estritamente puros e near-misses infra-only;
 6. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
-   planner, interpolação, mapa, movimento, geometria e outras fronteiras de alto blast radius;
+   planner, interpolação, mapa, movimento, ground, geometria e outras fronteiras de alto blast radius;
 7. inspecionar manualmente o melhor candidato restante;
 8. abrir primeiro PR **somente de contrato**;
-9. validar no SHA exato e exigir **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG`**;
+9. validar no SHA exato e exigir **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**;
 10. só depois iniciar a extração mecânica em PR separado.
 
 Regra central:
