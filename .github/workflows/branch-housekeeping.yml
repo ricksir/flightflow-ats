@@ -37,7 +37,7 @@ jobs:
           repo = os.environ["GH_REPOSITORY"]
           default_branch = os.environ.get("GH_DEFAULT_BRANCH") or "main"
           api = os.environ.get("GITHUB_API_URL") or "https://api.github.com"
-          safe_prefixes = ("analysis/", "chore/", "docs/", "refactor/", "test/")
+          safe_prefixes = ("analysis/", "chore/", "docs/", "refactor/", "test/", "feat/", "fix/")
           legacy_orphans = {
               "chore/map-next-kernel-candidates",
               "refactor/extract-aircraft-visual-utils",
@@ -91,7 +91,7 @@ jobs:
               return refs
 
           open_refs = local_head_refs(open_prs)
-          closed_refs = local_head_refs(closed_prs)
+          merged_refs = local_head_refs([pr for pr in closed_prs if pr.get("merged_at")])
 
           candidates = []
           for entry in branches:
@@ -106,12 +106,13 @@ jobs:
                   continue
 
               # analysis/* is an explicitly disposable namespace.
-              # Other maintenance branches still require a closed PR record,
-              # except for the small audited list of legacy orphans below.
+              # All other temporary namespaces require a PR that GitHub reports
+              # as actually merged. A merely closed/unmerged PR is preserved.
+              # The explicit legacy orphan allowlist remains independently audited.
               disposable_analysis = name.startswith("analysis/")
-              historically_closed = name in closed_refs
+              historically_merged = name in merged_refs
               audited_legacy_orphan = name in legacy_orphans
-              if not (disposable_analysis or historically_closed or audited_legacy_orphan):
+              if not (disposable_analysis or historically_merged or audited_legacy_orphan):
                   continue
 
               candidates.append(name)
@@ -141,7 +142,8 @@ jobs:
                   summary.write(f"- deleted: **{len(deleted)}**\n")
                   summary.write(f"- failures: **{len(failures)}**\n")
                   summary.write("- `release/*`, protected branches and branches with open PRs are always preserved.\n")
-                  summary.write("- `analysis/*` is treated as disposable when no PR is open; other orphan cleanup is explicit and audited.\n")
+                  summary.write("- `feat/*`, `fix/*`, `chore/*`, `docs/*`, `refactor/*` and `test/*` are removed only after GitHub reports their PR as merged.\n")
+                  summary.write("- `analysis/*` is treated as disposable when no PR is open; legacy orphan cleanup remains explicit and audited.\n")
 
           if failures:
               raise SystemExit(1)
