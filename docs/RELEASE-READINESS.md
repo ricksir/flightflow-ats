@@ -1,5 +1,7 @@
 # Release Readiness — FlightFlow ATS
 
+> **Status:** a release `v0.2.0` já foi publicada. Este documento permanece como checklist reutilizável para futuras versões estáveis.
+
 Este documento define quando o FlightFlow ATS pode ser considerado pronto para uma versão estável.
 
 ## Estado de referência
@@ -94,4 +96,4 @@ A fase Release Readiness termina quando:
 4. a documentação de execução/testes está coerente com o estado atual;
 5. o commit candidato é marcado como versão estável.
 
-A modularização adicional do `index.html` pode continuar depois disso como manutenção arquitetural. Ela não é, por si só, requisito para bloquear uma versão funcional quando os contratos acima estiverem protegidos.
+A modularização adicional do `index.html` não é requisito de release. A rodada contínua foi encerrada após o PR #211; novas extrações só devem ocorrer quando houver necessidade concreta de produto, correção ou manutenção.
