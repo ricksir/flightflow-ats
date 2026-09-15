@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const RENDERER_MODULE = path.join(ROOT, 'src', 'knowledge', 'knowledge-field-label-renderer.js');
 const FUNCTION_NAME = 'resolveKnowledgeEntry';
 const EXPECTED_BYTES = 1907;
 const EXPECTED_SHA256 = '95ca385afde918ceb769218088baaacfe7f146b4334666989846333e24590cc2';
@@ -117,10 +118,15 @@ test('resolveKnowledgeEntry permanece sem acoplamento temporal, espacial ou de i
 
 test('resolveKnowledgeEntry mantém um único consumidor funcional em renderKnowledgeFieldLabel', () => {
   const kernel = kernelSource();
+  const rendererSource = fs.readFileSync(RENDERER_MODULE, 'utf8');
   assert.equal(kernel.split('resolveKnowledgeEntry').length - 1, 2);
   assert.equal(kernel.split('function resolveKnowledgeEntry(').length - 1, 1);
   assert.ok(kernel.includes('const { renderKnowledgeFieldLabel } = KnowledgeFieldLabelRenderer.create({'));
   assert.ok(kernel.includes('resolveKnowledgeEntry,'));
+
+  const consumer = extractNamedFunction(rendererSource, 'renderKnowledgeFieldLabel');
+  assert.equal(consumer.split('resolveKnowledgeEntry(').length - 1, 1);
+  assert.ok(consumer.includes('const entry = resolveKnowledgeEntry(key, rawValue, event);'));
 });
 
 test('resolveKnowledgeEntry encerra cedo quando a normalização fica vazia', () => {
@@ -181,6 +187,12 @@ test('resolveKnowledgeEntry preserva preferência canônica de mensagem normativ
     knowledgeEntries: () => [complementary],
   });
   assert.equal(fnComplementary('operation', 'ABC', null), complementary);
+
+  const viaAlias = { key: 'ALIAS', code: 'XYZ', aliases: ['A-B/C'], category: 'message', normative: true };
+  const fnAlias = loadFunction({
+    knowledgeEntries: () => [viaAlias],
+  });
+  assert.equal(fnAlias('messageType', 'ABC', null), viaAlias);
 });
 
 test('resolveKnowledgeEntry preserva prioridades por tipo de campo no fallback por token', () => {
