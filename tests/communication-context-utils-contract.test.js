@@ -76,7 +76,7 @@ test('API pública preserva contratos existentes e expõe fábricas isoladas', (
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createRelatedKnowledgeButtons', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createRelatedKnowledgeButtons', 'createKnowledgeDetailMarkup', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.parseAddresses, 'function');
@@ -134,6 +134,35 @@ test('API pública preserva contratos existentes e expõe fábricas isoladas', (
   assert.deepEqual(Object.keys(relatedScoped), ['relatedKnowledgeButtons']);
   assert.equal(relatedScoped.relatedKnowledgeButtons({ key: 'ROOT', related: ['ABC'] }), '<div class="knowledge-related"><button type="button" data-related-knowledge="REL:A">ABC · Alpha</button></div>');
   assert.equal(relatedScoped.relatedKnowledgeButtons({ key: 'REL:A', related: ['ABC'] }), '');
+  assert.equal(typeof api.createKnowledgeDetailMarkup, 'function');
+  assert.throws(() => api.createKnowledgeDetailMarkup({}), /FlightFlowCommunicationContextUtils requer escapeHtml para detalhe de conhecimento/);
+  assert.throws(() => api.createKnowledgeDetailMarkup({ escapeHtml: value => String(value) }), /FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentLabel para detalhe de conhecimento/);
+  assert.throws(() => api.createKnowledgeDetailMarkup({
+    escapeHtml: value => String(value),
+    knowledgeEntryDocumentLabel: () => 'DOC',
+  }), /FlightFlowCommunicationContextUtils requer knowledgeCategoryLabel para detalhe de conhecimento/);
+  assert.throws(() => api.createKnowledgeDetailMarkup({
+    escapeHtml: value => String(value),
+    knowledgeEntryDocumentLabel: () => 'DOC',
+    knowledgeCategoryLabel: () => 'CAT',
+  }), /FlightFlowCommunicationContextUtils requer relatedKnowledgeButtons para detalhe de conhecimento/);
+  const detailScoped = api.createKnowledgeDetailMarkup({
+    escapeHtml: value => String(value),
+    knowledgeEntryDocumentLabel: () => 'DOC',
+    knowledgeCategoryLabel: () => 'CAT',
+    relatedKnowledgeButtons: () => '<R/>',
+    knowledgeDisclaimer: 'DISCLAIMER',
+  });
+  assert.equal(Object.isFrozen(detailScoped), true);
+  assert.deepEqual(Object.keys(detailScoped), ['knowledgeDetailMarkup']);
+  assert.equal(detailScoped.knowledgeDetailMarkup(null), '<div class="knowledge-empty">Selecione uma mensagem, status ou termo.</div>');
+  assert.ok(detailScoped.knowledgeDetailMarkup({
+    code: 'ABC',
+    category: 'message',
+    title: 'Alpha',
+    definition: 'Definição',
+    source: 'Fonte',
+  }).includes('<R/>'));
   assert.equal(typeof api.createKnowledgeDocumentLabeler, 'function');
   assert.throws(() => api.createKnowledgeDocumentLabeler({}), /FlightFlowCommunicationContextUtils requer knowledgeDocumentLabels/);
   assert.throws(() => api.createKnowledgeDocumentLabeler({ knowledgeDocumentLabels: {} }), /FlightFlowCommunicationContextUtils requer knowledgeEntryDocumentKey para rótulos/);

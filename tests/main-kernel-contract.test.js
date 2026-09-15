@@ -37,7 +37,7 @@ const EXTRACTED_STAND_HINT_UTILS = ['extractStandHint'];
 const EXTRACTED_AIRPORT_SURFACE_UTILS = ['airportSurfacePreset'];
 const EXTRACTED_ROUTE_UPDATE_UTILS = ['isMeaningfulRouteChange', 'isRouteUpdateEvent'];
 const EXTRACTED_ROUTE_REVISION_REASON = ['routeRevisionReason'];
-const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'canonicalKnowledgeCode', 'entryMatchesToken', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'relatedKnowledgeButtons', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
+const EXTRACTED_COMMUNICATION_CONTEXT_UTILS = ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'canonicalKnowledgeCode', 'entryMatchesToken', 'findKnowledgeEntryByKey', 'findKnowledgeEntriesByCode', 'relatedKnowledgeButtons', 'knowledgeDetailMarkup', 'knowledgeEntryDocumentLabel', 'knowledgeCategoryLabel', 'knowledgeContextSummary', 'formatAddressCode', 'formatAddressDisplay', 'formatFieldDisplay'];
 const EXTRACTED_PLAYBACK = ['startPlayback', 'stopPlayback', 'togglePlayback', 'scheduleNext'];
 const EXTRACTED_TRANSPORT = ['restartTransport', 'previousTransport', 'nextTransport', 'scrubTransport'];
 const EXTRACTED_KEYBOARD = ['handleKeyboard'];
@@ -177,6 +177,11 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const { relatedKnowledgeButtons } = CommunicationContextUtils.createRelatedKnowledgeButtons({',
     'findKnowledgeEntriesByCode,',
     'escapeHtml,',
+    'const { knowledgeDetailMarkup } = CommunicationContextUtils.createKnowledgeDetailMarkup({',
+    'knowledgeEntryDocumentLabel,',
+    'knowledgeCategoryLabel,',
+    'relatedKnowledgeButtons,',
+    'knowledgeDisclaimer: KNOWLEDGE_DISCLAIMER,',
     'const { knowledgeEntryDocumentLabel } = CommunicationContextUtils.createKnowledgeDocumentLabeler({',
     'const { knowledgeCategoryLabel } = CommunicationContextUtils.createKnowledgeCategoryLabeler({',
     'const CurrentEventSelector = window.FlightFlowCurrentEventSelector;',
@@ -255,8 +260,8 @@ test('inventário interno do núcleo mantém nomes únicos após extrações por
   for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
   const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort();
 
-  assert.equal(names.length, 289);
-  assert.equal(counts.size, 289);
+  assert.equal(names.length, 288);
+  assert.equal(counts.size, 288);
   assert.deepEqual(duplicates, EXPECTED_DUPLICATES);
   for (const name of [
     ...EXTRACTED_CURRENT_EVENT,

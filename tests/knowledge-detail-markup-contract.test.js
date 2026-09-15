@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
+const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'knowledgeDetailMarkup';
 const EXPECTED_BYTES = 1739;
 const EXPECTED_SHA256 = '3a516046ca6d13484c3cb8ad157285cb05566e83a05d434887cee03b82c24285';
@@ -65,7 +66,7 @@ function extractNamedFunction(source, name) {
 }
 
 function loadFunction(overrides = {}) {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   const deps = {
     escapeHtml: value => String(value),
     knowledgeEntryDocumentLabel: () => 'DOC',
@@ -91,7 +92,7 @@ function loadFunction(overrides = {}) {
 }
 
 test('knowledgeDetailMarkup congela exatamente a fronteira selecionada no remapeamento #183', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   assert.equal(Buffer.byteLength(source, 'utf8'), EXPECTED_BYTES);
   assert.equal(crypto.createHash('sha256').update(source, 'utf8').digest('hex'), EXPECTED_SHA256);
   assert.ok(source.startsWith('function knowledgeDetailMarkup(entry, options = {}) {'));
@@ -100,7 +101,7 @@ test('knowledgeDetailMarkup congela exatamente a fronteira selecionada no remape
 });
 
 test('knowledgeDetailMarkup permanece sem acoplamento temporal, espacial ou de infraestrutura', () => {
-  const source = extractNamedFunction(kernelSource(), FUNCTION_NAME);
+  const source = extractNamedFunction(fs.readFileSync(MODULE, 'utf8'), FUNCTION_NAME);
   for (const token of [
     'state.', 'els.', 'document.', 'window.', 'localStorage', 'sessionStorage', 'indexedDB',
     'fetch(', 'setTimeout(', 'setInterval(', 'requestAnimationFrame(', 'navigator.', 'google.', 'L.',
@@ -118,9 +119,18 @@ test('knowledgeDetailMarkup permanece sem acoplamento temporal, espacial ou de i
   assert.equal(source.split('KNOWLEDGE_DISCLAIMER').length - 1, 1);
 });
 
-test('knowledgeDetailMarkup preserva exatamente três consumidores funcionais no núcleo', () => {
+test('knowledgeDetailMarkup sai do núcleo, preserva wiring e mantém três consumidores funcionais', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+
+  assert.equal(kernel.split('function knowledgeDetailMarkup(').length - 1, 0);
+  assert.equal(moduleSource.split('function knowledgeDetailMarkup(').length - 1, 1);
   assert.equal(kernel.split('knowledgeDetailMarkup').length - 1, 4);
+  assert.ok(kernel.includes('const { knowledgeDetailMarkup } = CommunicationContextUtils.createKnowledgeDetailMarkup({'));
+  assert.ok(kernel.includes('knowledgeEntryDocumentLabel,'));
+  assert.ok(kernel.includes('knowledgeCategoryLabel,'));
+  assert.ok(kernel.includes('relatedKnowledgeButtons,'));
+  assert.ok(kernel.includes('knowledgeDisclaimer: KNOWLEDGE_DISCLAIMER,'));
 
   const openDetail = extractNamedFunction(kernel, 'openKnowledgeDetail');
   const relatedClick = extractNamedFunction(kernel, 'handleKnowledgeRelatedClick');
