@@ -1950,7 +1950,7 @@
       applyProcessedRouteToFlightFlow,
       setFixesVisible:(value)=>{saveFixesVisiblePreference(value);const input=ensureFixesToggle();if(input)input.checked=!!model.fixesVisible;applyProcessedRouteToFlightFlow();return model.fixesVisible;},
       setHandoffsVisible:(value)=>{saveHandoffsVisiblePreference(value);const input=ensureHandoffsToggle();if(input)input.checked=!!model.handoffsVisible;applyProcessedRouteToFlightFlow();return model.handoffsVisible;},
-      movementPoints, pseudoDestinationTail, declaredRouteContinuation, destinationRouteMarker, timedProgressLimit, transferMarkersForSnapshot, nativeEventIndexForSnapshot, firstDepartureAnchor, buildMovementProfile, progressForNativeEventIndex, routeDistanceFractions, candidateProgressFromSnapshot, transitionPlanForEvents, transitionDurations,
+      movementPoints, pseudoDestinationTail, declaredRouteContinuation, destinationRouteMarker, timedProgressLimit, transferMarkersForSnapshot, routeDisplayContext, pointDisplayState, nativeEventIndexForSnapshot, firstDepartureAnchor, buildMovementProfile, progressForNativeEventIndex, routeDistanceFractions, candidateProgressFromSnapshot, transitionPlanForEvents, transitionDurations,
       officialSeed:OFFICIAL_SEED.map(x=>({...x})),
       collectMapObstacles,
       labelPlacementFor,
