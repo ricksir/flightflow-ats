@@ -109,7 +109,7 @@ test('normalizeKnowledgeText permanece puro e desacoplado de infraestrutura', ()
   assert.equal((source.match(/\.trim\(\)/g) || []).length, 1);
 });
 
-test('normalizeKnowledgeText mantém consumidores distribuídos entre núcleo e token matcher extraído', () => {
+test('normalizeKnowledgeText mantém consumidores distribuídos entre núcleo e módulo communication', () => {
   const kernel = kernelSource();
   const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const declarations = [...kernel.matchAll(/\bfunction\s+normalizeKnowledgeText\s*\(/g)].length;
@@ -120,7 +120,6 @@ test('normalizeKnowledgeText mantém consumidores distribuídos entre núcleo e 
 
   for (const token of [
     'CommunicationContextUtils.createCanonicalKnowledgeCode({ normalizeKnowledgeText })',
-    "const normalized = normalizeKnowledgeText(textParts.filter(Boolean).join(' '));",
     "const query = normalizeKnowledgeText(els.knowledgeSearchInput ? els.knowledgeSearchInput.value : '');",
     "const haystack = normalizeKnowledgeText([entry.code, entry.title, entry.short, entry.definition, entry.direction, entry.when, entry.source, knowledgeEntryDocumentLabel(entry), ...(entry.aliases || [])].join(' '));",
     'const codeA = normalizeKnowledgeText(a.code);',
@@ -132,9 +131,14 @@ test('normalizeKnowledgeText mantém consumidores distribuídos entre núcleo e 
   ]) assert.ok(kernel.includes(token), `consumidor ausente no núcleo: ${token}`);
 
   assert.ok(kernel.includes('CommunicationContextUtils.createEntryMatchesToken({'));
+  assert.ok(kernel.includes('CommunicationContextUtils.createResolveKnowledgeEntry({'));
   assert.ok(kernel.includes('normalizeKnowledgeText,'));
+
   const matcher = extractNamedFunction(moduleSource, 'entryMatchesToken');
   assert.ok(matcher.includes('.map(normalizeKnowledgeText).filter(Boolean)'));
+  const resolver = extractNamedFunction(moduleSource, 'resolveKnowledgeEntry');
+  assert.equal((resolver.match(/\bnormalizeKnowledgeText\s*\(/g) || []).length, 1);
+  assert.ok(resolver.includes("const normalized = normalizeKnowledgeText(textParts.filter(Boolean).join(' '));"));
 });
 
 test('normalizeKnowledgeText remove diacríticos, usa caixa alta e normaliza travessões', () => {
