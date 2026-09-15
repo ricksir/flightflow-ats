@@ -39,6 +39,22 @@
     Object.freeze({ident:'MASVA',lat:-9.6213888889,lon:-48.3677777778,source:'AISWEB AIP ENR 3.2 · UZ26',kind:'waypoint',quality:'official'}),
     // TAM3542 / SBGO
     Object.freeze({ident:'UMSUB',lat:-16.2419861111,lon:-48.2932638889,source:'AISWEB SID RNAV UMSUB 1A · tabela WGS84',kind:'waypoint',quality:'official'}),
+    // TAM3774 / UZ5 — pontos processados publicados na AIP ENR 3.2.
+    // Mantém a rota real resolvível offline quando o WFS é bloqueado por CORS/proxy.
+    Object.freeze({ident:'KUKOL',lat:-16.6897222222,lon:-48.4483333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'SIRUL',lat:-17.7119444444,lon:-48.5341666667,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'VUDOT',lat:-18.3055555556,lon:-48.5872222222,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'EDMIN',lat:-18.675,lon:-48.6208333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'UDIGI',lat:-19.1702777778,lon:-48.6655555556,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'MEVIK',lat:-20.2786111111,lon:-48.7811111111,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'ASTOB',lat:-20.68,lon:-48.8230555556,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'VUPOG',lat:-20.7422222222,lon:-48.8330555556,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'UPONA',lat:-21.2108333333,lon:-48.9077777778,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'ISISA',lat:-21.6555555556,lon:-48.9791666667,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'ENPEG',lat:-21.7608333333,lon:-49.005,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'PALCA',lat:-22.0988888889,lon:-49.0883333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'ANSOK',lat:-22.3938888889,lon:-49.1613888889,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
+    Object.freeze({ident:'IMTBI',lat:-22.5677777778,lon:-49.2108333333,source:'AISWEB AIP ENR 3.2 · UZ5',kind:'waypoint',quality:'official'}),
     Object.freeze({ident:'SIREM',lat:-16.5501666667,lon:-48.6463333333,source:'AISWEB STAR RNAV SIREM 2B · tabela WGS84',kind:'waypoint',quality:'official'}),
   ]);
 
