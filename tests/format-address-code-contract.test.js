@@ -113,11 +113,12 @@ test('formatAddressCode permanece sem acoplamento direto de infraestrutura', () 
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('formatAddressCode mantém dois consumidores no módulo e não volta inline ao núcleo', () => {
+test('formatAddressCode mantém consumidores diretos e callbacks após extração do inferidor', () => {
   const kernel = kernelSource();
   const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const displaySource = extractNamedFunction(moduleSource, 'formatAddressDisplay');
   const fieldSource = extractNamedFunction(moduleSource, 'formatFieldDisplay');
+  const inferSource = extractNamedFunction(moduleSource, 'inferCommunicationContext');
 
   const kernelOccurrences = [...kernel.matchAll(/\bformatAddressCode\s*\(/g)].length;
   const moduleOccurrences = [...moduleSource.matchAll(/\bformatAddressCode\s*\(/g)].length - 1;
@@ -129,8 +130,12 @@ test('formatAddressCode mantém dois consumidores no módulo e não volta inline
   assert.ok(fieldSource.includes("return code ? formatAddressCode(code) : '—';"));
   assert.ok(displaySource.includes("return normalized ? formatAddressCode(normalized) : (raw || '—');"));
   assert.ok(displaySource.includes(".map(formatAddressCode).join(' · ')"));
+  assert.equal((inferSource.match(/\bformatAddressCode\b/g) || []).length, 2);
+  assert.equal((inferSource.match(/\.map\(formatAddressCode\)/g) || []).length, 2);
   assert.equal(kernel.includes('function formatAddressCode('), false);
   assert.ok(kernel.includes('const { formatAddressCode } = CommunicationContextUtils.createAddressFormatter({ normalizeLocalityCode, lookupLocality });'));
+  assert.ok(kernel.includes('CommunicationContextUtils.createCommunicationContextInferer({'));
+  assert.ok(kernel.includes('formatAddressCode,'));
 });
 
 test('formatAddressCode retorna travessão quando a normalização fica vazia', () => {
