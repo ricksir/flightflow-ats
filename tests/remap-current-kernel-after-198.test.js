@@ -80,7 +80,7 @@ test('fresh remap of low-coupling kernel candidates after PR 198', () => {
   ]);
 
   const sensitiveTerms = [
-    'goto','rendercurrent','currentevent','dep','route','fix','aircraft','movement','motion',
+    'goto','rendercurrent','currentevent','dep','route','fix','aircraft','movement','motion','ground',
     'planner','interpol','coordinate','runway','airport','aerodrome','bearing','centroid',
     'polygon','polyline','bounds','progress','realmap','googlemap','leaflet','geometry',
     'timeline','scrubber','autoplay'
