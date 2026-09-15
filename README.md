@@ -14,11 +14,27 @@ O projeto permanece em manutenção evolutiva. A rodada de modularização do ci
 
 ## Executar
 
-Para uso direto:
+Forma recomendada:
 
-1. abra `index.html` em Chrome, Edge ou Firefox;
-2. carregue o histórico desejado;
-3. utilize timeline, mapa, Rota Processada, STRIP, FPV e demais ferramentas normalmente.
+```bash
+npm install
+npm start
+```
+
+Depois, abra no navegador:
+
+```text
+http://127.0.0.1:4173
+```
+
+O servidor local usa apenas recursos nativos do Node.js e não adiciona dependências de runtime.
+
+Como alternativa, a aplicação também pode ser aberta diretamente pelo arquivo `index.html` em Chrome, Edge ou Firefox.
+
+Depois de abrir a aplicação:
+
+1. carregue o histórico desejado;
+2. utilize timeline, mapa, Rota Processada, STRIP, FPV e demais ferramentas normalmente.
 
 Alguns recursos cartográficos e consultas externas dependem de conectividade, mas o projeto também mantém dados e recursos locais.
 
