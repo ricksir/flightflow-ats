@@ -54,9 +54,9 @@ const EXPECTED_UZ5 = Object.freeze({
 
 function loadRouteApi() {
   let source = fs.readFileSync(MODULE, 'utf8');
-  const initMarker = "  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0),{once:true});else setTimeout(init,0);\\n})();";
+  const initMarker = "  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0),{once:true});else setTimeout(init,0);\n})();";
   assert.ok(source.includes(initMarker), 'bootstrap conhecido da Rota Processada deve permanecer localizável');
-  source = source.replace(initMarker, '  window.FlightFlowRouteProcessedV7412=publicApi();\\n})();');
+  source = source.replace(initMarker, '  window.FlightFlowRouteProcessedV7412=publicApi();\n})();');
 
   const sandbox = { console };
   sandbox.window = sandbox;
@@ -102,7 +102,7 @@ test('snapshot offline cobre os 14 fixos nominais UZ5 ausentes no TAM3774', () =
     const row = seed.get(ident);
     assert.ok(row, `${ident} deve estar disponível offline`);
     assert.equal(row.quality, 'official', `${ident} deve usar coordenada oficial`);
-    assert.match(row.source, /AISWEB AIP ENR 3\\.2 · UZ5/);
+    assert.match(row.source, /AISWEB AIP ENR 3\.2 · UZ5/);
     assertNear(row.lat, lat, `${ident} latitude`);
     assertNear(row.lon, lon, `${ident} longitude`);
   }
