@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const MODULE = path.join(ROOT, 'src', 'route', 'route-processed-v7412.js');
 
-const TAM3774_FIXTURE = \`
+const TAM3774_FIXTURE = `
 Indicativo do plano: TAM3774
 ADEP: SBBR
 ADES: SBCT
@@ -27,7 +27,7 @@ ETIM   : 09-00:13    09-00:16    09-00:25    09-00:28    09-00:28    09-00:32
 PONTOS : 2127S04856W ISISA       ENPEG       PALCA       ANSOK       IMTBI
 CFL/IFL: 340         340         340         340         340         340
 ETIM   : 09-00:34    09-00:36    09-00:36    09-00:39    09-00:42    09-00:43
-\`;
+`;
 
 const EXPECTED_POINTS = [
   'SBBR', 'UMSUB', 'KUKOL', 'SIRUL', 'VUDOT', 'EDMIN',
@@ -67,8 +67,8 @@ function loadRouteApi() {
 }
 
 function assertNear(actual, expected, label) {
-  assert.ok(Number.isFinite(actual), \`\${label} deve ser numérico\`);
-  assert.ok(Math.abs(actual - expected) < 1e-9, \`\${label}: esperado \${expected}, recebido \${actual}\`);
+  assert.ok(Number.isFinite(actual), `${label} deve ser numérico`);
+  assert.ok(Math.abs(actual - expected) < 1e-9, `${label}: esperado ${expected}, recebido ${actual}`);
 }
 
 test('TAM3774 preserva a sequência processada de 18 pontos da UZ5', () => {
@@ -100,10 +100,10 @@ test('snapshot offline cobre os 14 fixos nominais UZ5 ausentes no TAM3774', () =
 
   for (const [ident, [lat, lon]] of Object.entries(EXPECTED_UZ5)) {
     const row = seed.get(ident);
-    assert.ok(row, \`\${ident} deve estar disponível offline\`);
-    assert.equal(row.quality, 'official', \`\${ident} deve usar coordenada oficial\`);
+    assert.ok(row, `${ident} deve estar disponível offline`);
+    assert.equal(row.quality, 'official', `${ident} deve usar coordenada oficial`);
     assert.match(row.source, /AISWEB AIP ENR 3\\.2 · UZ5/);
-    assertNear(row.lat, lat, \`\${ident} latitude\`);
-    assertNear(row.lon, lon, \`\${ident} longitude\`);
+    assertNear(row.lat, lat, `${ident} latitude`);
+    assertNear(row.lon, lon, `${ident} longitude`);
   }
 });
