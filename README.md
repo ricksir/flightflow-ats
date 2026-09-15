@@ -8,6 +8,8 @@ Aplicação web para análise e visualização de históricos ATS, ciclo de vida
 - **Execução:** aplicação web sem etapa obrigatória de build
 - **Branch de referência:** `main`
 - **Quality gates:** auditoria estática, inventário de funções, testes Node, disponibilidade do navegador e Playwright
+- **Design System:** documentado em `docs/DESIGN_SYSTEM.md`
+- **Estado técnico certificado:** documentado em `docs/AI_CURRENT_STATE.md`
 - **Modularização contínua:** encerrada após o PR #211; novas extrações só devem ocorrer quando houver necessidade funcional concreta
 
 O projeto permanece em manutenção evolutiva. A rodada de modularização do ciclo v0.3.0 reduziu o acoplamento do núcleo e consolidou módulos já extraídos em `src/`, sem alterar os contratos temporais e espaciais protegidos.
@@ -73,7 +75,9 @@ Mudanças não podem introduzir regressões em:
 - equivalência entre Próximo, Anterior, timeline, scrubber, teclado e autoplay;
 - sequência crítica `PADIL → IRISO → LIBEC → EGDOD → IBGAM → PMS → ILVES → MASVA`;
 - `ILVES 01:34` antes de `MASVA 01:36`;
-- fechamento do perfil de rota no destino esperado.
+- continuação declarada sem ETIM não pode receber tempo inventado;
+- fechamento por Ordem TER deve permanecer explicitamente derivado/não histórico e sem ETIM/STAR/fixos fabricados;
+- fechamento do perfil de rota no destino esperado quando houver evidência operacional aplicável.
 
 Consulte `docs/REGRESSION-CHECKLIST.md` e `docs/RELEASE-READINESS.md`.
 
@@ -84,7 +88,7 @@ Consulte `docs/REGRESSION-CHECKLIST.md` e `docs/RELEASE-READINESS.md`.
 ├── index.html              # aplicação e orquestração principal
 ├── src/                    # módulos por domínio
 ├── tests/                  # contratos Node e regressões E2E/Playwright
-├── docs/                   # arquitetura, operação, regressão e histórico técnico
+├── docs/                   # arquitetura, operação, regressão, Design System e histórico técnico
 ├── tools/                  # auditoria estática e inventário
 ├── .github/                # workflow e template de pull request
 ├── AGENTS.md               # regras para agentes automatizados
@@ -93,7 +97,7 @@ Consulte `docs/REGRESSION-CHECKLIST.md` e `docs/RELEASE-READINESS.md`.
 └── playwright.config.js    # configuração E2E
 ```
 
-Um mapa da documentação está disponível em `docs/README.md`.
+Um mapa da documentação está disponível em `docs/README.md`. Para mudanças de interface, consulte também `docs/DESIGN_SYSTEM.md` antes de criar novos estilos ou componentes.
 
 ## Princípio de desenvolvimento
 

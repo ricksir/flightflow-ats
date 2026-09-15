@@ -28,12 +28,18 @@ Use este checklist em qualquer mudança que toque histórico, rota, mapa, timeli
 
 ## D. Rota processada
 
-- [ ] fixos estão em ordem cronológica.
+- [ ] fixos históricos permanecem na ordem original do histórico.
 - [ ] ETIM não aparece fora de sequência.
 - [ ] nenhum fixo existente no intervalo entre dois eventos é pulado.
 - [ ] aeronave cruza visualmente o ponto do fixo correspondente.
 - [ ] avanço e retrocesso usam a mesma geometria.
-- [ ] último fixo conecta corretamente ao destino.
+- [ ] pontos de continuação declarada sem ETIM permanecem sem tempo inventado.
+- [ ] sem Ordem TER, não existe fechamento espacial sintético até o ADES.
+- [ ] com Ordem TER, o fechamento até o ADES é explicitamente marcado como derivado/não histórico.
+- [ ] o fechamento por Ordem TER não cria ETIM, CFL, STAR nem fixos intermediários.
+- [ ] Anterior a partir da Ordem TER retorna ao estado espacial imediatamente anterior.
+- [ ] o ADES derivado por Ordem TER não vira checkpoint ETIM histórico.
+- [ ] a conexão ao destino só ocorre quando existir evidência operacional aplicável ou a regra explícita de fechamento por Ordem TER.
 
 ## E. DEP e temporização
 
@@ -55,6 +61,14 @@ Use este checklist em qualquer mudança que toque histórico, rota, mapa, timeli
 - [ ] localStorage legado não quebra a inicialização.
 - [ ] exportação/backup continua possível.
 
-## Caso crítico conhecido para manter como teste
+## Casos críticos conhecidos para manter como teste
 
 Em trechos onde há múltiplos fixos entre dois eventos nativos da timeline, a animação deve criar/usar etapas intermediárias e passar por cada fixo em ordem, sem saltar diretamente para o ponto posterior.
+
+Para o TAM3774:
+
+- [ ] preservar os 18 pontos históricos de SBBR até IMTBI;
+- [ ] preservar a continuação declarada UZ5 `VULRU → UBNID → GIKLU → USVIG → UMGUL` sem ETIM inventado;
+- [ ] sem Ordem TER, não movimentar a aeronave sinteticamente até SBCT;
+- [ ] na Ordem TER, permitir somente o fechamento derivado direto até SBCT, claramente identificado como não histórico;
+- [ ] Próximo até TER termina no ADES e Anterior a partir de TER restaura o estado pré-TER.

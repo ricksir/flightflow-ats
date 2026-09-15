@@ -7,6 +7,7 @@ Este diretório reúne documentação operacional, arquitetural, de testes e o h
 | Documento | Finalidade |
 |---|---|
 | `AI_CURRENT_STATE.md` | checkpoint técnico para continuidade entre sessões/agentes |
+| `DESIGN_SYSTEM.md` | tokens, tipografia, layout, responsividade e regras visuais do produto |
 | `ARCHITECTURE.md` | arquitetura vigente e princípios de manutenção |
 | `REGRESSION-CHECKLIST.md` | invariantes e regressões críticas |
 | `RELEASE-READINESS.md` | gates e checklist para futuras releases |
@@ -29,6 +30,8 @@ Para saber **o que fazer agora**, comece por `AI_CURRENT_STATE.md`.
 Para entender **como o sistema está organizado**, use `ARCHITECTURE.md`.
 
 Para modificar uma área crítica, consulte também `REGRESSION-CHECKLIST.md` e os testes correspondentes.
+
+Para criar ou alterar interface, leia `DESIGN_SYSTEM.md` e preserve as fronteiras entre estilo visual e lógica operacional.
 
 Documentos históricos não devem ser usados isoladamente para inferir o estado atual do `main`.
 

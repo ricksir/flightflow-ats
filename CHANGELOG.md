@@ -5,6 +5,12 @@
 - documentação do repositório reorganizada e alinhada ao estado atual;
 - adicionadas políticas de contribuição e segurança;
 - adicionado housekeeping de branches temporárias encerradas para evitar novo acúmulo no GitHub;
+- refinada a **Rota Processada** para alta densidade: legenda recolhível, faixa explicativa separada, Modo foco, labels prioritários e seleção por mouse/teclado, sem alteração de `goTo()` ou da lógica temporal;
+- implementado o **fechamento terminal derivado por Ordem TER**: o ADES pode encerrar visualmente o perfil somente após o evento TER, com trecho explicitamente não histórico e sem fabricar ETIM, CFL, STAR ou fixos intermediários;
+- incorporado o ARP oficial de **SBCT** à base offline mínima para permitir o encerramento terminal do TAM3774 sem depender de WFS/proxy;
+- consolidado o **FlightFlow ATS Design System 1.0**, com tokens de spacing/tipografia/radius, temas claro/escuro, hierarquia de shell, mapa dominante, inspector/timeline, transporte, responsividade e focus-visible;
+- adicionada `docs/DESIGN_SYSTEM.md` e contratos Node/Playwright para estrutura visual, legibilidade, dark theme, foco por teclado e layout vertical abaixo de 900 px;
+- certificação mais recente: **627/627 testes Node + 50/50 Playwright**, com zero failed, flaky, retry e `SPATIAL_EQ_DIAG`;
 
 ## 0.2.0 — 2026-09-11
 
