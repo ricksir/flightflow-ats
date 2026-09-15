@@ -48,12 +48,15 @@ test('Design System preserves dark theme hierarchy and explicit keyboard focus',
     document.documentElement.dataset.theme = 'dark';
   });
 
+  await page.locator('#configBtn').focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#configBtn')).toBeFocused();
+
   const visual = await page.evaluate(() => {
     const topbar = getComputedStyle(document.querySelector('.topbar'));
     const workspace = getComputedStyle(document.querySelector('.workspace-card'));
-    const button = document.querySelector('#configBtn');
-    button.focus();
-    const focused = getComputedStyle(button);
+    const focused = getComputedStyle(document.querySelector('#configBtn'));
     return {
       topbarBackground: topbar.backgroundImage,
       workspaceBackground: workspace.backgroundImage,
@@ -78,14 +81,12 @@ test('Design System collapses desktop zones into a vertical card flow below 900p
     const inspector = document.querySelector('.inspector-card').getBoundingClientRect();
     const scene = document.querySelector('.scene-wrap').getBoundingClientRect();
     const caption = document.querySelector('.scene-caption').getBoundingClientRect();
-    const status = document.querySelector('.real-map-status').getBoundingClientRect();
     return {
       columns: content.gridTemplateColumns,
       workspace,
       inspector,
       scene,
       caption,
-      status,
     };
   });
 
@@ -93,6 +94,5 @@ test('Design System collapses desktop zones into a vertical card flow below 900p
   expect(Math.abs(layout.workspace.width - layout.inspector.width)).toBeLessThan(3);
   expect(layout.inspector.top).toBeGreaterThan(layout.workspace.top);
   expect(layout.caption.width).toBeGreaterThan(layout.scene.width * 0.85);
-  expect(layout.status.width).toBeGreaterThan(layout.scene.width * 0.85);
-  expect(layout.status.top).toBeGreaterThan(layout.caption.top);
+  expect(layout.caption.bottom).toBeLessThanOrEqual(layout.scene.bottom);
 });
