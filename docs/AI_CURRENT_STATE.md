@@ -1,10 +1,10 @@
 # FlightFlow ATS — AI Current State
 
-> Checkpoint operacional para continuidade entre conversas.
+> Checkpoint operacional para continuidade entre conversas/agentes.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#218** e a certificação pós-merge do workflow **#540**.
+> Última verificação: **15/09/2026**, após o merge do PR **#227** e a certificação pós-merge do workflow **#562**.
 >
-> **A rodada contínua de modularização está encerrada. A fase atual é PRODUTO, BUGS, UX/UI e validação com históricos reais.**
+> **A modularização contínua continua encerrada. A fase atual é PRODUTO, VALIDAÇÃO OPERACIONAL e preparação de release.**
 
 ## 1. Fonte de verdade
 
@@ -12,125 +12,186 @@
 - Visibilidade: **público**.
 - Branch principal: `main`.
 - SHA de produção certificado:
-  `febadf6cc59a207260fc3522c00cd1a623be7bb2`
-  — `fix: expand TAM3774 UZ5 without fabricated timing (#218)`.
-- Release estável: **FlightFlow ATS v0.2.0**.
+  `bb46d863236f5e1edd3d3ce81aa660e16e79623d`
+  — `feat: establish FlightFlow ATS design system (#227)`.
+- Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0`: `e089820456c08eb42df968faa9da59b062a32b6f`.
-- Após o merge do #218 não havia PR funcional aberto.
+- As mudanças dos PRs #225–#227 estão em **Unreleased** até nova decisão de release.
+- Após a certificação do #227: nenhum PR funcional aberto e nenhuma branch temporária `feat/*`/`fix/*` remanescente.
 
 Este arquivo é um checkpoint. Ao retomar, conferir primeiro o SHA real de `main`, PRs abertos e workflows recentes.
 
 ## 2. Certificação atual
 
-### PR #218
+### PR #227 — Design System / reconstrução visual
 
-- Head: `35e4f93255362a339bb8754e77c36cfb04722ebb`.
-- Workflow PR **#539**: sucesso.
-- Node: **611/611 passed**.
-- Playwright: **46 passed**.
-- **0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG / 0 failed**.
+- Head certificado: `e4184f827a457d4f33015cdee5b6fc062c7ab049`.
+- Workflow PR **#561**: sucesso.
+- Node: **627/627 passed**.
+- Playwright: **50/50 passed**.
+- **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG**.
 
 ### Pós-merge
 
-- `main`: `febadf6cc59a207260fc3522c00cd1a623be7bb2`.
-- Workflow **#540**: sucesso.
-- Node: **611/611 passed**.
-- Playwright: **46 passed**.
-- **0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG / 0 failed**.
+- `main`: `bb46d863236f5e1edd3d3ce81aa660e16e79623d`.
+- Workflow **#562**: sucesso.
+- Node: **627/627 passed**.
+- Playwright: **50/50 passed**.
+- **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG**.
+- Housekeeping **#14**: sucesso.
 
 Gates obrigatórios antes e depois de merge:
 
 1. `npm run audit`;
-2. `npm run audit:functions`;
+2. inventário de funções;
 3. `npm test`;
 4. disponibilidade Chromium;
-5. `npx playwright test tests/e2e/ui-navigation.spec.js`.
+5. `npm run test:ui`;
+6. leitura do log bruto do SHA efetivamente validado.
 
-Nunca fazer merge apenas pelo badge verde. Ler o log bruto do SHA atual.
+Nunca fazer merge apenas pelo badge verde.
 
-## 3. Fase de produto concluída até aqui
+## 3. Rodada de produto concluída em 15/09/2026
 
-### PR #216 — TAM3774 / NAVDB offline
-
-Corrigiu a causa dos **14 pontos sem coordenada** do histórico real TAM3774.
-
-Coordenadas oficiais AISWEB/AIP ENR 3.2 incorporadas para:
-
-`KUKOL → SIRUL → VUDOT → EDMIN → UDIGI → MEVIK → ASTOB → VUPOG → UPONA → ISISA → ENPEG → PALCA → ANSOK → IMTBI`.
-
-Foi adicionado contrato de regressão TAM3774.
+### PR #225 — Rota Processada: foco operacional e redução de densidade
 
 Merge:
-`5414a271cf9e4ecc72fda5d1c0604cff61c65c82`.
+`e54ca332ce37e6f7bb82cc1aecfe7f96a685d5a0`.
 
-Pós-merge #536:
-**609/609 Node + 46 Playwright**, sem flaky/retry/SPATIAL_EQ_DIAG/failed.
+Certificação pós-merge **#555**:
 
-### PR #217 — refinamento visual da Rota Processada
+- **619/619 Node**;
+- **47/47 Playwright**;
+- zero failed/flaky/retry/SPATIAL_EQ_DIAG.
 
-Refinamento incremental inspirado na organização de WebApps modernos, mantendo a identidade cromática FlightFlow.
+Entregas:
 
-Mudanças principais:
+- legenda operacional recolhível;
+- faixa explicativa separada do palco do mapa;
+- tipografia operacional ampliada;
+- Modo foco;
+- redução de labels permanentes;
+- prioridade visual para origem, último ponto, ponto atual, transferências e seleção;
+- detalhes secundários por hover/click;
+- seleção por mouse e teclado;
+- mesma política aplicada à camada Leaflet e ao fallback SVG;
+- mapa preservado como protagonista.
 
-- controles agrupados em **Visualização / Dados da rota / Ações / Status**;
-- melhor hierarquia de header e superfícies;
-- cards, espaçamento e sombras discretas;
+Nenhuma mudança em `goTo()` ou no contrato temporal protegido.
+
+### PR #226 — Ordem TER: fechamento terminal derivado no ADES
+
+Merge:
+`453aa2f5bb0c132689621944973741cd8e65ca46`.
+
+Certificação pós-merge **#559**:
+
+- **622/622 Node**;
+- **47/47 Playwright**;
+- zero failed/flaky/retry/SPATIAL_EQ_DIAG.
+
+Comportamento vigente:
+
+- `movementPoints()` continua reservado ao histórico + continuação declarada;
+- a existência de **Ordem TER** habilita um perfil espacial de fechamento separado;
+- no evento TER, a posição-alvo chega a 100% no ADES;
+- o trecho terminal é exibido como **derivado / não histórico**;
+- representação: linha amarela tracejada;
+- nenhum ETIM, `etimKey`, CFL, STAR ou fixo intermediário é inventado;
+- antes da Ordem TER, a posição continua limitada pelas evidências temporais reais;
+- sem Ordem TER, o ADES não é inserido como fechamento sintético;
+- Próximo até TER chega ao ADES;
+- Anterior a partir do TER retorna ao estado pré-TER;
+- o ADES derivado não vira checkpoint ETIM.
+
+Também foi incorporado o ARP oficial de **SBCT** à base offline mínima:
+
+- `253154S 0491034W`;
+- fonte registrada no código: AISWEB AIP AD 2 SBCT.
+
+`pseudoDestinationTail()` permanece desativado.
+
+### PR #227 — FlightFlow ATS Design System
+
+Merge:
+`bb46d863236f5e1edd3d3ce81aa660e16e79623d`.
+
+Foi criada uma camada visual consistente em:
+
+`src/ui/shell-visual-refinement.css`
+
+e a documentação:
+
+`docs/DESIGN_SYSTEM.md`.
+
+Referências de design adaptadas:
+
+- Arounda / Velox — dashboard de tela única;
+- Behance / Velox — UI/UX e componentes de aviação.
+
+Princípios aplicados sem copiar a identidade Velox:
+
+- azul/ciano FlightFlow preservado;
+- amarelo operacional preservado;
+- dark/light coerentes;
+- zonas funcionais estáveis;
+- mapa dominante;
+- inspector com largura controlada;
+- tipografia/spacing/radius por tokens;
+- sombras em níveis;
+- glow somente para foco/atividade;
 - estados hover/focus/active/disabled;
-- breakpoints responsivos;
-- nenhum parser, ETIM, `goTo()`, timeline, scrubber, teclado ou movimento alterado.
+- layout vertical responsivo abaixo de 900 px;
+- integração visual de Rota Processada, FPV e STRIP sem mudar semântica interna.
 
-Merge:
-`9e6b7b2c08f1bfb2df590ec4d686dc8434622511`.
+Contratos novos de navegador validam:
 
-Pós-merge #538:
-**609/609 Node + 46 Playwright**, sem flaky/retry/SPATIAL_EQ_DIAG/failed.
+- dominância do mapa em desktop;
+- legibilidade mínima de controles;
+- tema escuro;
+- foco explícito por teclado;
+- fluxo vertical abaixo de 900 px.
 
-### PR #218 — continuação UZ5 sem fabricar tempo
+## 4. Histórico real TAM3774 — contrato atual
 
-Removeu a aproximação sintética **IMTBI → SBCT**.
-
-Para a rota declarada `KUKOL UZ5 UMGUL`, a continuação espacial publicada agora é:
-
-`IMTBI → VULRU → UBNID → GIKLU → USVIG → UMGUL`.
-
-Regras:
-
-- pontos posteriores a IMTBI são **rota declarada / sem ETIM**;
-- nenhum ETIM, `etimKey` ou CFL é inventado;
-- a aeronave não é animada pelos pontos sem ETIM;
-- scrubber/autoplay da Rota Processada ficam limitados ao último ETIM real;
-- `SBCT` pode aparecer apenas como referência de ADES;
-- **não existe linha inventada UMGUL → SBCT**;
-- a trajetória terminal só pode ser implementada quando houver fonte real que a determine.
-
-Merge:
-`febadf6cc59a207260fc3522c00cd1a623be7bb2`.
-
-## 4. Histórico real TAM3774
-
-Referência funcional atual:
+Referência:
 
 - callsign: `TAM3774`;
 - ADEP: `SBBR`;
 - ADES: `SBCT`;
 - rota declarada: `KUKOL UZ5 UMGUL`;
-- quadro processado no histórico de Brasília: **18 pontos**, terminando em `IMTBI`;
-- CPL/PCM para Curitiba continua pela `UZ5 UMGUL`;
-- não há ETIM no histórico de Brasília para `VULRU/UBNID/GIKLU/USVIG/UMGUL`;
-- não há STAR no histórico que permita reconstruir com segurança `UMGUL → SBCT`.
+- quadro processado no histórico de Brasília: **18 pontos**, terminando em `IMTBI`.
 
-Regra vigente:
+Sequência histórica protegida:
 
-> **Geometria publicada pode ser mostrada; movimento temporal só pode usar ETIM real.**
+`SBBR → UMSUB → KUKOL → SIRUL → VUDOT → EDMIN → 1853S04832W → UDIGI → MEVIK → ASTOB → VUPOG → UPONA → 2127S04856W → ISISA → ENPEG → PALCA → ANSOK → IMTBI`.
+
+Continuação espacial publicada, sem ETIM no histórico:
+
+`VULRU → UBNID → GIKLU → USVIG → UMGUL`.
+
+Regras:
+
+1. nenhum dos 18 pontos processados pode ser removido, pulado ou reordenado;
+2. `VULRU/UBNID/GIKLU/USVIG/UMGUL` continuam sem ETIM inventado;
+3. sem Ordem TER, não existe movimento sintético até SBCT;
+4. na Ordem TER, o FlightFlow pode encerrar visualmente o plano em SBCT por um trecho direto **explicitamente derivado/não histórico**;
+5. esse fechamento não cria STAR, ETIM, CFL ou fixos intermediários;
+6. retroceder da Ordem TER restaura o estado espacial anterior;
+7. `pseudoDestinationTail()` continua `null`.
+
+Regra de produto:
+
+> **Geometria publicada pode ser mostrada; movimento temporal usa evidência real. O fechamento de Ordem TER é uma exceção espacial explícita, derivada e identificada como não histórica.**
 
 ## 5. Regras inegociáveis
 
-Fidelidade temporal e espacial é prioridade absoluta.
+Fidelidade temporal e espacial continua sendo prioridade absoluta.
 
 Nunca introduzir regressões em:
 
 - não pular fixos;
-- aeronave exatamente sobre os fixos;
+- aeronave exatamente sobre os fixos/checkpoints;
 - ordem correta dos fixos;
 - horários corretos;
 - DEP como referência temporal;
@@ -139,53 +200,90 @@ Nunca introduzir regressões em:
 - scrubber equivalente;
 - teclado equivalente;
 - autoplay equivalente;
-- retrocesso fiel.
+- retrocesso fiel;
+- distinção entre histórico, rota declarada sem ETIM e fechamento terminal derivado;
+- sequência crítica `PADIL → IRISO → LIBEC → EGDOD → IBGAM → PMS → ILVES → MASVA`;
+- `ILVES 01:34` antes de `MASVA 01:36`.
 
-### Modularização contínua encerrada
+### `goTo()`
+
+Não alterar `goTo()` sem:
+
+1. necessidade funcional concreta;
+2. testes dedicados;
+3. comparação explícita de Próximo/Anterior/timeline/scrubber/teclado/autoplay;
+4. certificação completa antes e depois do merge.
+
+## 6. Modularização
+
+A rodada contínua de modularização está encerrada.
 
 Não:
 
-- criar fresh remap automaticamente;
+- iniciar fresh remap automaticamente;
 - extrair funções apenas porque ainda existem no IIFE;
 - abrir sequências de PRs de refatoração sem objetivo funcional;
-- voltar ao ranking contínuo de candidatos de modularização.
+- usar contagem de funções como meta de produto.
 
-Foco atual:
+Foco permitido:
 
-1. bugs observados em uso real;
-2. fidelidade com históricos reais;
-3. UX/UI incremental;
-4. shell/header/cards/timeline/modais/responsividade;
-5. NAVDB/AISWEB e topologia de rota somente com fonte verificável;
-6. testes e contratos antes de alterações sensíveis.
+1. bug observado;
+2. fidelidade com histórico real;
+3. produto/UX/UI;
+4. desempenho e acessibilidade;
+5. NAVDB/AISWEB com fonte verificável;
+6. testes e contratos;
+7. preparação de release.
 
-## 6. Próximas fronteiras
+## 7. Design System
 
-1. Validar novamente o TAM3774 com o `main` atual em execução local.
-2. Confirmar visualmente:
-   - todos os 18 pontos processados até IMTBI;
-   - continuação declarada UZ5 até UMGUL;
-   - ausência de linha inventada até SBCT;
-   - aeronave limitada temporalmente ao último ETIM real;
-   - Próximo/Anterior/timeline/scrubber/autoplay;
-   - STRIP e FPV.
-3. Continuar refinamento visual incremental na interface principal, sem redesenho destrutivo.
-4. Generalizar expansão de aerovias somente com fonte de topologia confiável e contratos por rota.
-5. Para `UMGUL → SBCT`, aguardar evidência de rota terminal/STAR do voo antes de implementar geometria.
+Fonte de verdade:
 
-## 7. Política de continuidade
+`docs/DESIGN_SYSTEM.md`.
+
+Ao criar ou alterar interface:
+
+- reutilizar tokens `--ffds-*`;
+- não reduzir fonte para resolver overflow;
+- não criar cores sem significado;
+- preservar semântica ATS;
+- testar claro/escuro;
+- testar desktop e breakpoints;
+- incluir focus-visible;
+- respeitar `prefers-reduced-motion`;
+- adicionar teste se a mudança for estrutural.
+
+O Design System é uma camada visual. Não deve passar a controlar navegação ou estado de domínio.
+
+## 8. Próximas fronteiras
+
+A reconstrução A/B/C está concluída. Próximas atividades devem ser decididas por evidência de uso.
+
+Prioridades possíveis:
+
+1. aceitação visual manual com históricos reais e vídeos do operador;
+2. validar Rota Processada/Ordem TER em diferentes ADES além de SBCT;
+3. validar responsividade em máquinas/monitores operacionais reais;
+4. preparar uma próxima release quando houver decisão de versionamento;
+5. registrar novos bugs de produto antes de qualquer refatoração adicional.
+
+Não há nova rodada automática de reconstrução ou modularização pendente neste checkpoint.
+
+## 9. Política de continuidade
 
 Antes de qualquer nova mudança:
 
 1. conferir `main`;
 2. conferir PRs abertos;
 3. conferir workflows recentes;
-4. confirmar que o checkpoint ainda corresponde ao GitHub;
-5. criar branch pequena e de objetivo funcional claro;
-6. adicionar/ajustar contrato antes de mudança sensível;
-7. rodar todos os gates;
-8. ler log bruto;
-9. merge;
-10. repetir gates e log bruto no novo `main`.
+4. conferir `docs/AI_CURRENT_STATE.md`;
+5. reproduzir o problema ou objetivo;
+6. criar branch pequena;
+7. criar/ajustar contrato;
+8. rodar todos os gates;
+9. ler log bruto;
+10. merge;
+11. repetir gates no novo `main`;
+12. confirmar housekeeping.
 
-O histórico detalhado das antigas rodadas de modularização permanece disponível no histórico Git deste arquivo e não deve comandar a próxima fase de trabalho.
+O histórico detalhado das rodadas anteriores permanece no Git e não deve substituir este checkpoint.
