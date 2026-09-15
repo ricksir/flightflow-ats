@@ -30,6 +30,105 @@
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[–—]/g,'-').replace(/[^A-Z0-9-]+/g,' ').replace(/\s+/g,' ').trim();
   }
 
+  function createCommunicationContextInferer(options = {}) {
+    const parseAddresses = options.parseAddresses;
+    const formatAddressCode = options.formatAddressCode;
+    const internalTransitionDetails = options.internalTransitionDetails;
+    if (typeof parseAddresses !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer parseAddresses para inferir contexto.');
+    }
+    if (typeof formatAddressCode !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer formatAddressCode para inferir contexto.');
+    }
+    if (typeof internalTransitionDetails !== 'function') {
+      throw new Error('FlightFlowCommunicationContextUtils requer internalTransitionDetails para inferir contexto.');
+    }
+
+  function inferCommunicationContext(event) {
+    const s = (event && event.snapshot) || {};
+    const originators = parseAddresses(s.originator || event.originator || '');
+    const recipients = parseAddresses(s.recipients || event.recipients || '');
+    const external = Boolean(originators.length || recipients.length);
+    if (external) {
+      return {
+        external: true,
+        originators,
+        recipients,
+        originLabel: originators.length ? originators.map(formatAddressCode).join(' · ') : 'ORIGEM NÃO INFORMADA',
+        destinationLabel: recipients.length ? recipients.map(formatAddressCode).join(' · ') : 'DESTINO NÃO INFORMADO',
+        originRaw: originators.join(' · ') || '—',
+        destinationRaw: recipients.join(' · ') || '—',
+        originHeading: 'Origem ATS',
+        destinationHeading: 'Destino ATS',
+        flow: 'Fluxo ATS identificado no histórico',
+        format: event.protocol || s.protocol || 'Formato inferido'
+      };
+    }
+
+    const operation = String(event.operation || s.operation || 'Evento interno');
+    const upper = operation.toUpperCase();
+    const transition = internalTransitionDetails(event);
+    const position = String(s.position || '').trim() || 'SAGITÁRIO';
+    const environment = String(s.environment || '').trim();
+    const callsign = String(s.callsign || '').trim() || 'PLANO DE VOO';
+    let originLabel = `${position}${environment ? ` · ${environment}` : ''}`;
+    let destinationLabel = callsign;
+    let originRaw = `PROCESSAMENTO INTERNO · ${position}`;
+    let destinationRaw = `BASE DE DADOS DO PLANO · ${callsign}`;
+    let flow = 'Evento interno processado sem emissão de mensagem ATS externa.';
+
+    if (/TRANSI(?:Ç|C)ÃO DE ESTADOS/.test(upper)) {
+      originLabel = /COMANDOS DE SOLO/.test(upper) ? 'COMANDOS DE SOLO' : 'GERENCIADOR DE ESTADOS';
+      destinationLabel = transition.current ? `ESTADO: ${transition.current}` : 'ESTADO DO PLANO';
+      originRaw = `${position}${environment ? ` · AMBIENTE ${environment}` : ''}`;
+      destinationRaw = transition.current || 'ATUALIZAÇÃO DO ESTADO OPERACIONAL';
+      flow = transition.previous && transition.current
+        ? `Transição interna: ${transition.previous} → ${transition.current}`
+        : transition.current
+          ? `Atualização interna do estado para: ${transition.current}`
+          : 'Atualização interna do estado operacional do plano.';
+    } else if (/CRIA(?:Ç|C)ÃO/.test(upper)) {
+      originLabel = /RPL/.test(upper) ? 'ARQUIVO DE RPL' : 'MÓDULO DE CRIAÇÃO';
+      destinationLabel = 'BASE DE DADOS DO ACC';
+      originRaw = operation;
+      destinationRaw = `${callsign}${s.idPlano ? ` · ID ${s.idPlano}` : ''}`;
+      flow = 'Criação e gravação interna do plano na base de dados operacional.';
+    } else if (/CORRELA(?:Ç|C)ÃO/.test(upper)) {
+      originLabel = 'PROCESSADOR DE CORRELAÇÃO';
+      destinationLabel = callsign;
+      flow = 'Correlação interna entre o plano de voo e a informação de vigilância.';
+    } else if (/ESTIMAD/.test(upper)) {
+      originLabel = 'PROCESSADOR DE ESTIMADOS';
+      destinationLabel = callsign;
+      flow = 'Atualização interna dos horários e pontos estimados do plano.';
+    } else if (/SSR/.test(upper)) {
+      originLabel = 'GERENCIADOR SSR';
+      destinationLabel = callsign;
+      flow = 'Atualização interna do código SSR associado ao plano.';
+    } else if (/ARQUIV/.test(upper)) {
+      originLabel = 'BASE OPERACIONAL';
+      destinationLabel = 'ARQUIVO DE PLANOS';
+      flow = 'Encerramento e arquivamento interno do registro do plano de voo.';
+    }
+
+    return {
+      external: false,
+      originators: [],
+      recipients: [],
+      originLabel,
+      destinationLabel,
+      originRaw,
+      destinationRaw,
+      originHeading: 'Origem interna',
+      destinationHeading: 'Destino interno',
+      flow,
+      format: `${event.protocol || s.protocol || 'EVENTO INTERNO'} · sem mensagem ATS externa`
+    };
+  }
+
+    return Object.freeze({ inferCommunicationContext });
+  }
+
   function createCanonicalKnowledgeCode(options = {}) {
     const normalizeKnowledgeText = options.normalizeKnowledgeText;
     if (typeof normalizeKnowledgeText !== 'function') {
@@ -356,6 +455,7 @@ Destinatário(s): ${context.recipients}`;
     parseAddresses,
     knowledgeEntryDocumentKey,
     normalizeKnowledgeText,
+    createCommunicationContextInferer,
     createCanonicalKnowledgeCode,
     createEntryMatchesToken,
     createResolveKnowledgeEntry,
