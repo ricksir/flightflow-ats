@@ -5494,6 +5494,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-strip-window-controller" src="src/ui/strip-window-controller.js"></script>
 <script id="flightflow-knowledge-entries" src="src/knowledge/knowledge-entries.js"></script>
 <script id="flightflow-knowledge-field-label-renderer" src="src/knowledge/knowledge-field-label-renderer.js"></script>
+<script id="flightflow-knowledge-popover-controller" src="src/knowledge/knowledge-popover-controller.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
 <script id="flightflow-locality-utils" src="src/geo/locality-utils.js"></script>
     <script id="flightflow-airport-ground-query" src="src/geo/airport-ground-query.js"></script>
@@ -9003,11 +9004,9 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     });
   }
 
-  function hideKnowledgePopover() {
-    if (!els.knowledgePopover) return;
-    els.knowledgePopover.hidden = true;
-    state.activeKnowledgeAnchor = null;
-  }
+  const KnowledgePopoverController = window.FlightFlowKnowledgePopoverController;
+  if (!KnowledgePopoverController) throw new Error('FlightFlowKnowledgePopoverController não foi carregado.');
+  const { hideKnowledgePopover } = KnowledgePopoverController.create({ els, state });
 
   function openActiveKnowledgeDetail() {
     const entry = findKnowledgeEntryByKey(state.activeKnowledgeKey);
