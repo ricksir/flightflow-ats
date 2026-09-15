@@ -5490,6 +5490,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <script id="flightflow-source-manager-controller" src="src/ui/source-manager-controller.js"></script>
 <script id="flightflow-field-layout-utils" src="src/ui/field-layout-utils.js"></script>
 <script id="flightflow-field-card-renderer" src="src/ui/field-card-renderer.js"></script>
+<script id="flightflow-fpv-window-controller" src="src/ui/fpv-window-controller.js"></script>
 <script id="flightflow-knowledge-entries" src="src/knowledge/knowledge-entries.js"></script>
 <script id="flightflow-knowledge-field-label-renderer" src="src/knowledge/knowledge-field-label-renderer.js"></script>
 <script id="flightflow-coordinate-utils" src="src/geo/coordinate-utils.js"></script>
@@ -9397,7 +9398,9 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
     if(state.fpvVisible){state.fpvMinimized=false;if(currentEvent())renderFpv(currentEvent());}
     updateWindowDock();
   }
-  function minimizeFpv(){state.fpvMinimized=true;setFpvVisible(false,{minimized:true});}
+  const FpvWindowController = window.FlightFlowFpvWindowController;
+  if (!FpvWindowController) throw new Error('FlightFlowFpvWindowController não foi carregado.');
+  const { minimizeFpv } = FpvWindowController.create({ state, setFpvVisible });
   function toggleFpv(){state.fpvVisible?minimizeFpv():setFpvVisible(true);}
   function maybeAutoOpenFpv(event){if(state.config.autoOpenFPV&&event&&event.fpv&&event.fpv.visible&&!state.fpvAutoOpened&&!state.fpvMinimized){state.fpvAutoOpened=true;setFpvVisible(true);}}
   function toggleFpvExpand(){if(!els.fpvWindow)return;els.fpvWindow.classList.toggle('expanded');els.fpvExpandBtn.textContent=els.fpvWindow.classList.contains('expanded')?'🗗':'⛶';}
