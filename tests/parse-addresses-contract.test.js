@@ -10,7 +10,9 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'parseAddresses';
-const EXPECTED_CONSUMERS = 4;
+const EXPECTED_KERNEL_CONSUMERS = 2;
+const EXPECTED_INFER_CONSUMERS = 2;
+const EXPECTED_TOTAL_CONSUMERS = 4;
 const EXPECTED_SOURCE = [
   '  function parseAddresses(value) {',
   "    const text = String(value || '').toUpperCase();",
@@ -110,16 +112,25 @@ test('parseAddresses permanece puro e sem acoplamento de infraestrutura', () => 
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('parseAddresses mantém exatamente quatro consumidores no núcleo e não permanece inline', () => {
+test('parseAddresses mantém quatro consumidores distribuídos entre núcleo e inferência modular', () => {
   const kernel = kernelSource();
-  const occurrences = [...kernel.matchAll(/\bparseAddresses\s*\(/g)].length;
-  assert.equal(occurrences, EXPECTED_CONSUMERS);
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
+  const kernelOccurrences = [...kernel.matchAll(/\bparseAddresses\s*\(/g)].length;
+  const inferSource = extractNamedFunction(moduleSource, 'inferCommunicationContext');
+  const inferOccurrences = [...inferSource.matchAll(/\bparseAddresses\s*\(/g)].length;
+
+  assert.equal(kernelOccurrences, EXPECTED_KERNEL_CONSUMERS);
+  assert.equal(inferOccurrences, EXPECTED_INFER_CONSUMERS);
+  assert.equal(kernelOccurrences + inferOccurrences, EXPECTED_TOTAL_CONSUMERS);
+
   assert.ok(kernel.includes('const originators = parseAddresses(originatorRaw);'));
   assert.ok(kernel.includes('const recipients = parseAddresses(recipientsRaw);'));
-  assert.ok(kernel.includes("const originators = parseAddresses(s.originator || event.originator || '');"));
-  assert.ok(kernel.includes("const recipients = parseAddresses(s.recipients || event.recipients || '');"));
+  assert.ok(inferSource.includes("const originators = parseAddresses(s.originator || event.originator || '');"));
+  assert.ok(inferSource.includes("const recipients = parseAddresses(s.recipients || event.recipients || '');"));
   assert.equal(kernel.includes('function parseAddresses('), false);
   assert.ok(kernel.includes('const { parseAddresses } = CommunicationContextUtils;'));
+  assert.ok(kernel.includes('CommunicationContextUtils.createCommunicationContextInferer({'));
+  assert.ok(kernel.includes('parseAddresses,'));
 });
 
 test('parseAddresses normaliza AFTN para maiúsculas, preserva ordem e remove duplicatas', () => {
