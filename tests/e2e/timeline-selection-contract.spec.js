@@ -44,6 +44,10 @@ test('navegação com Eventos aberto move seleção e rola somente o novo ativo'
   await page.locator('.tab[data-tab="timeline"]').click();
   await expect(page.locator('[data-panel="timeline"]')).toHaveClass(/active/);
   await expect.poll(() => page.evaluate(() => window.__timelineScrollCalls.at(-1)?.index)).toBe('0');
+  // A abertura da aba pode concluir um segundo scroll assíncrono do mesmo item
+  // ativo enquanto renderCurrent/bridge terminam o ciclo. Só depois desse estado
+  // ficar quieto começamos a medir a navegação Próximo.
+  await page.waitForTimeout(180);
   await page.evaluate(() => { window.__timelineScrollCalls.length = 0; });
   await page.locator('#nextBtn').click();
   await expect(page.locator('.timeline-item.active')).toHaveAttribute('data-event-index', '1');
