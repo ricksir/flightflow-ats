@@ -31,3 +31,10 @@ Para entender **como o sistema está organizado**, use `ARCHITECTURE.md`.
 Para modificar uma área crítica, consulte também `REGRESSION-CHECKLIST.md` e os testes correspondentes.
 
 Documentos históricos não devem ser usados isoladamente para inferir o estado atual do `main`.
+
+## Governança do repositório
+
+- `../CONTRIBUTING.md` — convenções de contribuição, branches e testes;
+- `../SECURITY.md` — política para conteúdo sensível e vulnerabilidades;
+- `../AGENTS.md` — regras para agentes automatizados;
+- `.github/workflows/branch-housekeeping.yml` — remoção segura de branches temporárias já encerradas.
