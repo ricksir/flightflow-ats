@@ -99,7 +99,7 @@ test('relatedKnowledgeButtons permanece sem acoplamento temporal, espacial ou de
   assert.equal(source.split('escapeHtml(').length - 1, 3);
 });
 
-test('relatedKnowledgeButtons sai do núcleo, preserva wiring e mantém um consumidor funcional em knowledgeDetailMarkup', () => {
+test('relatedKnowledgeButtons sai do núcleo, preserva wiring e mantém consumidor em knowledgeDetailMarkup modular', () => {
   const kernel = kernelSource();
   const moduleSource = fs.readFileSync(MODULE, 'utf8');
   assert.equal(kernel.split('function relatedKnowledgeButtons(').length - 1, 0);
@@ -108,8 +108,10 @@ test('relatedKnowledgeButtons sai do núcleo, preserva wiring e mantém um consu
   assert.ok(kernel.includes('const { relatedKnowledgeButtons } = CommunicationContextUtils.createRelatedKnowledgeButtons({'));
   assert.ok(kernel.includes('findKnowledgeEntriesByCode,'));
   assert.ok(kernel.includes('escapeHtml,'));
+  assert.ok(kernel.includes('const { knowledgeDetailMarkup } = CommunicationContextUtils.createKnowledgeDetailMarkup({'));
+  assert.ok(kernel.includes('relatedKnowledgeButtons,'));
 
-  const consumer = extractNamedFunction(kernel, 'knowledgeDetailMarkup');
+  const consumer = extractNamedFunction(moduleSource, 'knowledgeDetailMarkup');
   assert.equal(consumer.split('relatedKnowledgeButtons(').length - 1, 1);
 });
 

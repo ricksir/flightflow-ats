@@ -11,7 +11,7 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const FUNCTION_NAME = 'knowledgeCategoryLabel';
-const EXPECTED_CONSUMERS = 4;
+const EXPECTED_CONSUMERS = 3;
 const EXPECTED_SOURCE = [
   '  function knowledgeCategoryLabel(category) {',
   '    return KNOWLEDGE_CATEGORY_LABELS[category] || humanize(category);',
@@ -115,15 +115,19 @@ test('knowledgeCategoryLabel permanece puro e sem acoplamento de infraestrutura'
   ]) assert.equal(source.includes(token), false, `acoplamento inesperado: ${token}`);
 });
 
-test('knowledgeCategoryLabel mantém exatamente quatro consumidores no núcleo e não permanece inline', () => {
+test('knowledgeCategoryLabel mantém três consumidores no núcleo e um no módulo de detalhe', () => {
   const kernel = kernelSource();
+  const moduleSource = fs.readFileSync(MODULE, 'utf8');
   const occurrences = [...kernel.matchAll(/\bknowledgeCategoryLabel\s*\(/g)].length;
   assert.equal(occurrences, EXPECTED_CONSUMERS);
-  assert.ok(kernel.includes('escapeHtml(knowledgeCategoryLabel(entry.category))'));
   assert.ok(kernel.includes('knowledgeCategoryLabel(a.category).localeCompare(knowledgeCategoryLabel(b.category)'));
   assert.ok(kernel.includes('escapeHtml(knowledgeCategoryLabel(entry.category))}</span><b>'));
   assert.equal(kernel.includes('function knowledgeCategoryLabel('), false);
   assert.ok(kernel.includes('const { knowledgeCategoryLabel } = CommunicationContextUtils.createKnowledgeCategoryLabeler({'));
+
+  const detail = extractNamedFunction(moduleSource, 'knowledgeDetailMarkup');
+  assert.equal(detail.split('knowledgeCategoryLabel(').length - 1, 1);
+  assert.ok(detail.includes('escapeHtml(knowledgeCategoryLabel(entry.category))'));
 });
 
 test('knowledgeCategoryLabel preserva rótulos conhecidos sem chamar fallback', () => {
