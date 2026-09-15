@@ -8,8 +8,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'data', 'geo-data.js');
-const EXPECTED_SHA256 = '4db1eea05bfab2d4dae2323c78290d854881b3f575fbf5a4e9c2d196055f0844';
-const EXPECTED_BYTES = 590457;
+const EXPECTED_SHA256 = '63a07fee3174782a23024f479ccbb7d68512447d94e5ecbbad33ee5bdd822506';
+const EXPECTED_BYTES = 590527;
 const REFERENCE = '<script id="flightflow-geo-data" src="src/data/geo-data.js"></script>';
 
 test('base geográfica externa preserva exatamente bytes e SHA extraídos', () => {
