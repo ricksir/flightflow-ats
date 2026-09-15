@@ -10,8 +10,8 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
-const MODULE_BYTES = 14828;
-const MODULE_SHA256 = '071667faa0ee75b44354a9ecee4a3c284dc13fe1753fa26b899a9bc5ce666718';
+const MODULE_BYTES = 17838;
+const MODULE_SHA256 = '7b1954d8f776fcc549d551727ef1af88cae4685a6a28a0251f652baf9c91d285';
 const TARGET_BYTES = 628;
 const TARGET_SHA256 = 'f844273330a6cec8df2f8137c209159434d7e76a1076b39e256f79cd5f4fc71a';
 
@@ -76,7 +76,7 @@ test('API pública preserva contratos existentes e expõe fábricas isoladas', (
   vm.runInNewContext(source, context);
   const api = context.window.FlightFlowCommunicationContextUtils;
   assert.ok(api);
-  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createRelatedKnowledgeButtons', 'createKnowledgeDetailMarkup', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
+  assert.deepEqual(Object.keys(api), ['internalTransitionDetails', 'parseAddresses', 'knowledgeEntryDocumentKey', 'normalizeKnowledgeText', 'createCanonicalKnowledgeCode', 'createEntryMatchesToken', 'createResolveKnowledgeEntry', 'createKnowledgeEntryFinder', 'createKnowledgeEntriesByCodeFinder', 'createRelatedKnowledgeButtons', 'createKnowledgeDetailMarkup', 'createKnowledgeDocumentLabeler', 'createKnowledgeCategoryLabeler', 'create', 'createAddressFormatter', 'createAddressDisplayFormatter', 'createFieldDisplayFormatter']);
   assert.equal(Object.isFrozen(api), true);
   assert.equal(typeof api.internalTransitionDetails, 'function');
   assert.equal(typeof api.parseAddresses, 'function');
@@ -101,6 +101,29 @@ test('API pública preserva contratos existentes e expõe fábricas isoladas', (
   assert.equal(Object.isFrozen(tokenMatcherScoped), true);
   assert.deepEqual(Object.keys(tokenMatcherScoped), ['entryMatchesToken']);
   assert.equal(tokenMatcherScoped.entryMatchesToken({ code: 'A-B/C', aliases: [] }, 'ABC'), true);
+  assert.equal(typeof api.createResolveKnowledgeEntry, 'function');
+  assert.throws(() => api.createResolveKnowledgeEntry({}), /FlightFlowCommunicationContextUtils requer normalizeKnowledgeText para resolver conhecimento/);
+  assert.throws(() => api.createResolveKnowledgeEntry({
+    normalizeKnowledgeText: value => String(value),
+  }), /FlightFlowCommunicationContextUtils requer knowledgeEntries para resolver conhecimento/);
+  assert.throws(() => api.createResolveKnowledgeEntry({
+    normalizeKnowledgeText: value => String(value),
+    knowledgeEntries: () => [],
+  }), /FlightFlowCommunicationContextUtils requer canonicalKnowledgeCode para resolver conhecimento/);
+  assert.throws(() => api.createResolveKnowledgeEntry({
+    normalizeKnowledgeText: value => String(value),
+    knowledgeEntries: () => [],
+    canonicalKnowledgeCode: value => String(value),
+  }), /FlightFlowCommunicationContextUtils requer entryMatchesToken para resolver conhecimento/);
+  const resolveScoped = api.createResolveKnowledgeEntry({
+    normalizeKnowledgeText: value => String(value || '').trim().toUpperCase(),
+    knowledgeEntries: () => [],
+    canonicalKnowledgeCode: value => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+    entryMatchesToken: () => false,
+  });
+  assert.equal(Object.isFrozen(resolveScoped), true);
+  assert.deepEqual(Object.keys(resolveScoped), ['resolveKnowledgeEntry']);
+  assert.equal(resolveScoped.resolveKnowledgeEntry('status', '', null), null);
   assert.equal(typeof api.createKnowledgeEntryFinder, 'function');
   assert.throws(() => api.createKnowledgeEntryFinder({}), /FlightFlowCommunicationContextUtils requer knowledgeEntries/);
   const entryA = { key: 'ENTRY:A' };
@@ -242,6 +265,9 @@ test('index carrega módulo antes do IIFE e núcleo usa aliases explícitos', ()
   assert.ok(html.includes('const { entryMatchesToken } = CommunicationContextUtils.createEntryMatchesToken({'));
   assert.ok(html.includes('normalizeKnowledgeText,'));
   assert.ok(html.includes('canonicalKnowledgeCode,'));
+  assert.ok(html.includes('const { resolveKnowledgeEntry } = CommunicationContextUtils.createResolveKnowledgeEntry({'));
+  assert.ok(html.includes('knowledgeEntries,'));
+  assert.ok(html.includes('entryMatchesToken,'));
   assert.ok(html.includes('const { findKnowledgeEntryByKey } = CommunicationContextUtils.createKnowledgeEntryFinder({'));
   assert.ok(html.includes('knowledgeEntries,'));
   assert.ok(html.includes('const { findKnowledgeEntriesByCode } = CommunicationContextUtils.createKnowledgeEntriesByCodeFinder({'));
