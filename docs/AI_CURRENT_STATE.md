@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#209** e conclusão verde do workflow pós-merge **#521**.
+> Última verificação: **15/09/2026**, após o encerramento analítico do PR **#211** e workflow **#524** verde. A rodada contínua de modularização foi encerrada por critério de parada.
 
 ## 1. Fonte de verdade atual
 
@@ -2267,74 +2267,86 @@ Também preservar:
 
 ## 6. Ponto exato para continuar
 
-O ciclo `stepTypography` está concluído em produção e validado no SHA exato:
+### Status: rodada de modularização ENCERRADA
+
+A rodada contínua de extrações/refatorações do ciclo v0.3.0 está **encerrada**.
+
+Último código de produção validado:
 
 `98384510f1ae62ce1d33b55aee23bb80accdef7e`
+— PR #209, `refactor: extract typography step controller`.
 
-Workflow pós-merge correspondente: **#521**, verde em **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**.
+`main` documental validado antes deste checkpoint:
 
-O corpo protegido permanece no módulo `src/ui/typography-step-controller.js` com **130 bytes** e SHA-256:
+`5fc725c9be073d5cb3f39c8c1be353c92e50455b`
+— PR #210.
 
-`a9fdef5d62eea60e5f3ea207a99f78bc26f83897da68384d5ce5eedec0914afd`
+### Critério de parada confirmado pelo PR #211
 
-Baseline atual do núcleo:
+O PR analítico descartável **#211** executou um fresh remap completo sobre o `main` atualizado.
 
-- **1.114.852 bytes**;
+Head analisado:
+
+`57f405f57ffc5a9ac8d658c5fbfe60ad6cccb45d`
+
+Workflow **#524**:
+
+- **46 passed**;
+- **0 flaky**;
+- **0 retry**;
+- **0 `SPATIAL_EQ_DIAG`**;
+- **0 failed**.
+
+Resultado do remapeamento:
+
+- **0 candidatos estritamente puros**;
+- 78 candidatos restantes eram apenas **near-misses infra-only**;
+- o primeiro deles foi `toggleFpv`, ainda acoplado a estado e às funções `minimizeFpv` / `setFpvVisible`;
+- os demais candidatos exigiam atravessar estado, DOM, infraestrutura ou áreas deliberadamente protegidas.
+
+Por isso, continuar abrindo PRs de contrato + extração apenas para diminuir o tamanho do kernel produziria retorno marginal e transformaria o processo em um ciclo sem fim.
+
+O PR #211 foi **fechado sem merge**.
+
+### Regra nova e obrigatória
+
+**NÃO criar outro fresh remap automaticamente.**
+
+**NÃO continuar extraindo funções apenas porque ainda existem funções dentro do IIFE principal.**
+
+A modularização atual é considerada suficiente enquanto:
+
+- todos os cinco gates permanecerem verdes;
+- a fidelidade temporal e espacial permanecer protegida;
+- não houver necessidade funcional concreta de alterar uma das áreas restantes.
+
+Baseline de produção preservado:
+
+- kernel: **1.114.852 bytes**;
 - **5.007 linhas**;
 - **282 funções nomeadas**;
 - SHA-256:
-  `1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b`.
+  `1bf973317ac5f0447cabaf91a28a1b041ec220f62ed82b68f7a53d404396204b`;
+- inventário global:
+  - **759 declarações function nomeadas**;
+  - **748 nomes únicos**;
+  - **9 nomes repetidos conhecidos**.
 
-Inventário global atual:
+### Próximo trabalho permitido
 
-- **759 declarações function nomeadas**;
-- **748 nomes únicos**;
-- **9 nomes repetidos conhecidos**.
+A partir deste checkpoint, o próximo trabalho deve ser orientado por **objetivo funcional ou de release**, não por nova extração automática.
 
-**Não reutilizar o ranking do PR #207**, porque o kernel mudou com a extração do PR #209.
+Exemplos válidos:
 
-Próximo fluxo seguro:
+1. corrigir bug reproduzível;
+2. implementar melhoria funcional solicitada;
+3. executar validação operacional/release readiness;
+4. preparar uma nova release quando houver decisão explícita;
+5. atualizar documentação necessária à entrega.
 
-1. mergear este checkpoint documental somente com todos os gates verdes;
-2. validar novamente o workflow `push` no SHA documental resultante de `main`;
-3. criar um **novo remapeamento fresco e descartável** sobre esse `main`;
-4. manter fora da seleção todas as fronteiras já extraídas, incluindo:
-   - `knowledgeCategoryLabel`;
-   - `parseAddresses`;
-   - `findKnowledgeEntryByKey`;
-   - `findKnowledgeEntriesByCode`;
-   - `knowledgeEntryDocumentLabel`;
-   - `knowledgeEntryDocumentKey`;
-   - `canonicalKnowledgeCode`;
-   - `isLocationCode`;
-   - `normalizeSearchText`;
-   - `normalizeKnowledgeText`;
-   - `initSourceManager`;
-   - `normalizeFieldLayout`;
-   - `knowledgeEntries`;
-   - `renderKnowledgeFieldLabel`;
-   - `fieldCardMarkup`;
-   - `stripCell`;
-   - `mergeConfig`;
-   - `entryMatchesToken`;
-   - `relatedKnowledgeButtons`;
-   - `knowledgeDetailMarkup`;
-   - `resolveKnowledgeEntry`;
-   - `inferCommunicationContext`;
-   - `minimizeFpv`;
-   - `minimizeStrip`;
-   - `hideKnowledgePopover`;
-   - `stepTypography`;
-5. manter a separação entre candidatos estritamente puros e near-misses infra-only;
-6. excluir novamente candidatos ligados a `goTo`, rota, DEP, timeline, scrubber, autoplay,
-   planner, interpolação, mapa, movimento, ground, geometria e outras fronteiras de alto blast radius;
-7. inspecionar manualmente o melhor candidato restante;
-8. abrir primeiro PR **somente de contrato**;
-9. validar no SHA exato e exigir **46 passed / 0 flaky / 0 retry / 0 `SPATIAL_EQ_DIAG` / 0 failed**;
-10. só depois iniciar a extração mecânica em PR separado.
+Se um trabalho futuro tocar `goTo()`, rota, DEP, timeline, scrubber, autoplay, planner, interpolação, mapa, movimento, ground ou geometria, continuar aplicando os contratos e gates já existentes.
 
-Regra central:
-**remapeamento fresco → inspeção → contrato → gates verdes → merge do contrato → pós-merge verde → extração mecânica → gates verdes → merge → pós-merge verde → documentação → gates verdes → merge → pós-merge verde → novo remapeamento fresco**.
+**Não há pendência obrigatória de nova modularização para considerar esta rodada concluída.**
 
 ## 7. Documentos históricos
 
