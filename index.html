@@ -5661,7 +5661,8 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
         code,lat,lon,
         uniqueNormalized([...(previous&&previous[3]||[]),...(Array.isArray(item[3])?item[3]:[])]),
         uniqueNormalized([...(previous&&previous[4]||[]),...(Array.isArray(item[4])?item[4]:[])]),
-        item[5]||(previous&&previous[5])||'AIRPORT'
+        item[5]||(previous&&previous[5])||'AIRPORT',
+        item[6]||(previous&&previous[6])||''
       ]);
     };
     (base.airports||[]).forEach(addAirport);
