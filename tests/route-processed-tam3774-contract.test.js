@@ -174,21 +174,6 @@ test('TAM3774 não cria mais aproximação sintética IMTBI → SBCT e limita o 
 });
 
 
-const GEO_DATA = path.join(ROOT, 'src', 'data', 'geo-data.js');
-
-function airportFromRepo(ident) {
-  const geoSource = fs.readFileSync(GEO_DATA, 'utf8');
-  const re = new RegExp('\\["' + ident + '",(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?),');
-  const match = geoSource.match(re);
-  assert.ok(match, `${ident} deve existir na base geográfica do FlightFlow`);
-  return {
-    ident,
-    lat: Number(match[1]),
-    lon: Number(match[2]),
-    source: 'FlightFlow base geográfica',
-    kind: 'airport',
-  };
-}
 
 const TAM3774_TER_FIXTURE = TAM3774_FIXTURE + `
 ############################################################
@@ -218,7 +203,9 @@ test('TAM3774 fecha visualmente no ADES somente após Ordem TER, sem alterar o h
   model.history = history;
 
   const seed = new Map(Array.from(api.officialSeed, row => [row.ident, row]));
-  model.embedded.set('SBCT', airportFromRepo('SBCT'));
+  const sbct = api.officialSeed.find(row => row.ident === 'SBCT');
+  assert.ok(sbct, 'SBCT deve estar disponível offline para o fechamento terminal');
+  model.embedded.set('SBCT', {...sbct});
 
   const snapshot = {
     ...history.snapshots[0],
@@ -308,7 +295,9 @@ test('sem Ordem TER o TAM3774 continua sem fechamento sintético até SBCT', () 
   const history = api.parseHistory(TAM3774_FIXTURE, 'TAM3774-sem-TER.txt');
   const model = api.getModel();
   model.history = history;
-  model.embedded.set('SBCT', airportFromRepo('SBCT'));
+  const sbct = api.officialSeed.find(row => row.ident === 'SBCT');
+  assert.ok(sbct, 'SBCT deve estar disponível offline para o cenário sem TER');
+  model.embedded.set('SBCT', {...sbct});
 
   const seed = new Map(Array.from(api.officialSeed, row => [row.ident, row]));
   const snapshot = {
