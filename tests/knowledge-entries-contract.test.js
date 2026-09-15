@@ -10,8 +10,10 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const HTML_PATH = path.join(ROOT, 'index.html');
 const MODULE_PATH = path.join(ROOT, 'src', 'knowledge', 'knowledge-entries.js');
+const COMMUNICATION_MODULE_PATH = path.join(ROOT, 'src', 'timeline', 'communication-context-utils.js');
 const HTML = fs.readFileSync(HTML_PATH, 'utf8');
 const MODULE_SOURCE = fs.readFileSync(MODULE_PATH, 'utf8');
+const COMMUNICATION_MODULE_SOURCE = fs.readFileSync(COMMUNICATION_MODULE_PATH, 'utf8');
 const scriptMatches = [...HTML.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
 const KERNEL = scriptMatches.map(match => match[1]).sort((a, b) => b.length - a.length)[0];
 
@@ -199,14 +201,18 @@ test('index carrega módulo antes do IIFE e injeta as três bases explicitamente
   assert.ok(KERNEL.includes('sagitarioKnowledge: SAGITARIO_ACC_KNOWLEDGE,'));
 });
 
-test('núcleo mantém os seis consumidores e não redeclara knowledgeEntries', () => {
+test('knowledgeEntries mantém seis consumidores distribuídos entre núcleo e resolver modular', () => {
   assert.equal((KERNEL.match(/\bfunction\s+knowledgeEntries\s*\(/g) || []).length, 0);
   assert.equal((KERNEL.match(/\bknowledgeEntries\b/g) || []).length, 7);
-  assert.equal((KERNEL.match(/\bknowledgeEntries\s*\(/g) || []).length, 4);
-  assert.equal(KERNEL.split('knowledgeEntries,').length - 1, 2);
+  assert.equal((KERNEL.match(/\bknowledgeEntries\s*\(/g) || []).length, 3);
+  assert.equal(KERNEL.split('knowledgeEntries,').length - 1, 3);
 
   assert.equal(KERNEL.split('return knowledgeEntries().map(entry => ({ ...entry }));').length - 1, 1);
-  assert.equal(KERNEL.split('const entries = knowledgeEntries().slice().sort').length - 1, 1);
   assert.equal(KERNEL.split('const initial = findKnowledgeEntryByKey(initialKey) || knowledgeEntries()[0];').length - 1, 1);
   assert.equal(KERNEL.split('const filtered = knowledgeEntries().filter(entry => {').length - 1, 1);
+  assert.ok(KERNEL.includes('CommunicationContextUtils.createResolveKnowledgeEntry({'));
+
+  const resolver = extractNamedFunction(COMMUNICATION_MODULE_SOURCE, 'resolveKnowledgeEntry');
+  assert.equal((resolver.match(/\bknowledgeEntries\s*\(/g) || []).length, 1);
+  assert.ok(resolver.includes('const entries = knowledgeEntries().slice().sort'));
 });
