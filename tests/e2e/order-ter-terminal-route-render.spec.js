@@ -119,6 +119,11 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
     const bridge = window.__FlightFlowFirBridge;
     if (!api || !bridge?.state?.parsed?.events?.length) throw new Error('FlightFlow/rota não inicializados');
 
+    const model = api.getModel();
+    if (model.passiveTimer) clearInterval(model.passiveTimer);
+    model.passiveTimer = null;
+    model.passiveBusy = true;
+
     const events = bridge.state.parsed.events;
     if (events.length < 4) throw new Error('histórico de demonstração sem eventos suficientes');
 
@@ -139,13 +144,21 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
     events[terIndex].messageType = 'TER';
 
     await api.analyzeText(fixture, 'TAM3774-order-ter-e2e.txt');
+    const context = api.terminalClosureContext();
     api.jumpToFlightEvent(terIndex - 1, { snap: true });
 
-    return { terIndex, total: events.length };
+    return {
+      terIndex,
+      total: events.length,
+      closureIndex: Number(context?.nativeIndex ?? -1),
+      closureSource: context?.source || null,
+    };
   }, TAM3774_ROUTE_FIXTURE);
 
   expect(setup.terIndex).toBeGreaterThan(0);
   expect(setup.terIndex + 1).toBeLessThan(setup.total);
+  expect(setup.closureIndex).toBe(setup.terIndex);
+  expect(setup.closureSource).toBe('native');
 
   await expect.poll(() => page.evaluate(() => Number(window.__FlightFlowFirBridge?.state?.index ?? -1))).toBe(setup.terIndex - 1);
   // analyzeText() é chamado diretamente pelo contrato, sem passar pelo fluxo visual
