@@ -1,0 +1,249 @@
+/* FlightFlow ATS — dashboard reference layer
+ * Visual-only shell reconstruction. Operational ATS colors inside STRIP/FPV,
+ * route history/declared/terminal semantics and map data are intentionally untouched.
+ */
+
+:root {
+  --ff-shell-accent: #35d7ff;
+  --ff-shell-accent-strong: #159dca;
+  --ff-shell-accent-soft: rgba(53,215,255,.12);
+  --ff-shell-surface: rgba(8,27,42,.88);
+  --ff-shell-surface-2: rgba(14,42,60,.78);
+  --ff-shell-border: rgba(126,190,239,.20);
+  --ff-shell-text: #e9f8ff;
+  --ff-shell-muted: #8fb0c4;
+}
+
+html[data-palette="flightflow"] {
+  --ff-shell-accent: #35d7ff;
+  --ff-shell-accent-strong: #159dca;
+  --ff-shell-accent-soft: rgba(53,215,255,.12);
+}
+
+html[data-palette="velox"] {
+  --ff-shell-accent: #67e6b5;
+  --ff-shell-accent-strong: #19b985;
+  --ff-shell-accent-soft: rgba(103,230,181,.13);
+}
+
+html[data-theme="light"] {
+  --ff-shell-surface: rgba(255,255,255,.92);
+  --ff-shell-surface-2: rgba(244,249,251,.92);
+  --ff-shell-border: rgba(33,82,111,.12);
+  --ff-shell-text: #17384e;
+  --ff-shell-muted: #607b8e;
+}
+
+html[data-theme="light"][data-palette="velox"] {
+  --ff-shell-accent: #29b987;
+  --ff-shell-accent-strong: #0e8d68;
+  --ff-shell-accent-soft: rgba(41,185,135,.11);
+  --ff-shell-border: rgba(20,116,87,.14);
+}
+
+/* Make the redesign visibly structural rather than a subtle restyle. */
+.app {
+  background:
+    radial-gradient(circle at 8% -8%, var(--ff-shell-accent-soft), transparent 31%),
+    radial-gradient(circle at 92% 108%, rgba(53,215,255,.055), transparent 28%);
+}
+
+.topbar,
+.workspace-card,
+.inspector-card,
+.transport {
+  border: 1px solid var(--ff-shell-border) !important;
+  background: var(--ff-shell-surface) !important;
+  box-shadow: 0 18px 50px rgba(1,20,32,.14), inset 0 1px rgba(255,255,255,.04) !important;
+  backdrop-filter: blur(14px);
+}
+
+.topbar {
+  position: relative;
+}
+
+.topbar::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--ff-shell-accent), transparent);
+  opacity: .56;
+  pointer-events: none;
+}
+
+.brand-mark {
+  border-radius: 14px !important;
+  box-shadow: 0 9px 24px var(--ff-shell-accent-soft) !important;
+}
+
+.brand-title .brand-product,
+.flight-route strong,
+.panel-heading h2 {
+  letter-spacing: -.018em;
+}
+
+.file-actions,
+.header-actions,
+.scene-status {
+  border-color: var(--ff-shell-border) !important;
+  background: var(--ff-shell-surface-2) !important;
+}
+
+.btn-primary,
+.play-btn,
+.tab.active,
+.ffrp-open-btn,
+.toggle-btn.active {
+  border-color: color-mix(in srgb, var(--ff-shell-accent-strong) 70%, transparent) !important;
+}
+
+html[data-palette="velox"] .btn-primary,
+html[data-palette="velox"] .play-btn {
+  background: linear-gradient(135deg, var(--ff-shell-accent-strong), #0e7d67) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 22px rgba(25,185,133,.22) !important;
+}
+
+html[data-palette="velox"] .tab.active::after,
+html[data-palette="velox"] .panel-heading::after {
+  background: linear-gradient(90deg, var(--ff-shell-accent), transparent) !important;
+  box-shadow: 0 0 12px rgba(103,230,181,.25) !important;
+}
+
+html[data-palette="velox"] :is(.icon-btn,.transport-btn,.toggle-btn,.btn):focus-visible {
+  outline-color: var(--ff-shell-accent) !important;
+}
+
+.content {
+  align-items: stretch;
+}
+
+.workspace-card {
+  overflow: hidden;
+}
+
+.inspector-card {
+  overflow: hidden;
+  background-image: linear-gradient(180deg,var(--ff-shell-accent-soft),transparent 150px) !important;
+}
+
+.scene-head {
+  border-bottom: 1px solid var(--ff-shell-border);
+}
+
+.scene-wrap {
+  box-shadow: inset 0 0 0 1px var(--ff-shell-border), 0 16px 32px rgba(0,20,32,.09);
+}
+
+.inspector-tabs {
+  border-bottom: 1px solid var(--ff-shell-border);
+  background: color-mix(in srgb, var(--ff-shell-surface-2) 90%, transparent);
+}
+
+.tab {
+  border: 1px solid transparent;
+}
+
+.tab.active {
+  background: var(--ff-shell-accent-soft) !important;
+  color: var(--ff-shell-text) !important;
+  border-color: color-mix(in srgb,var(--ff-shell-accent) 24%,transparent) !important;
+}
+
+html[data-theme="light"] .tab.active {
+  color: #17384e !important;
+}
+
+.field-card {
+  border-color: var(--ff-shell-border) !important;
+  background: color-mix(in srgb,var(--ff-shell-surface-2) 86%,transparent) !important;
+  box-shadow: 0 7px 18px rgba(4,31,48,.045), inset 0 1px rgba(255,255,255,.22) !important;
+}
+
+.field-card:hover {
+  border-color: color-mix(in srgb,var(--ff-shell-accent) 36%,transparent) !important;
+}
+
+.transport {
+  position: relative;
+}
+
+.scrubber::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px var(--ff-shell-accent-soft);
+}
+
+/* Palette control injected beside Light/Dark; theme and palette are independent. */
+.palette-heading {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ff-shell-border);
+}
+
+.palette-heading h4 {
+  margin: 0 0 5px;
+  font-size: .78rem;
+  color: var(--ff-shell-text);
+}
+
+html[data-theme="light"] .palette-heading h4 { color: #17384e; }
+
+.palette-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .55rem;
+  line-height: 1.45;
+}
+
+.palette-switch {
+  margin-top: 10px !important;
+}
+
+.palette-option.active {
+  border-color: var(--ff-shell-accent) !important;
+  box-shadow: 0 0 0 2px var(--ff-shell-accent-soft), 0 10px 25px rgba(0,0,0,.09) !important;
+}
+
+.palette-preview-flightflow {
+  background: #071d2d !important;
+}
+.palette-preview-flightflow i:first-child { background: #35d7ff !important; }
+.palette-preview-flightflow i:nth-child(2) { background: #0e5598 !important; }
+.palette-preview-flightflow i:nth-child(3) { background: #eaf7fb !important; }
+
+.palette-preview-velox {
+  background: #09241f !important;
+}
+.palette-preview-velox i:first-child { background: #67e6b5 !important; }
+.palette-preview-velox i:nth-child(2) { background: #137c62 !important; }
+.palette-preview-velox i:nth-child(3) { background: #effaf6 !important; }
+
+/* Stronger Velox-reference palette on non-operational shell only. */
+html[data-palette="velox"][data-theme="dark"] .topbar,
+html[data-palette="velox"][data-theme="dark"] .workspace-card,
+html[data-palette="velox"][data-theme="dark"] .inspector-card,
+html[data-palette="velox"][data-theme="dark"] .transport {
+  background: linear-gradient(145deg,rgba(6,27,26,.96),rgba(7,20,29,.96)) !important;
+  border-color: rgba(103,230,181,.15) !important;
+}
+
+html[data-palette="velox"][data-theme="light"] .topbar,
+html[data-palette="velox"][data-theme="light"] .workspace-card,
+html[data-palette="velox"][data-theme="light"] .inspector-card,
+html[data-palette="velox"][data-theme="light"] .transport {
+  background: linear-gradient(145deg,rgba(253,255,254,.98),rgba(244,250,247,.98)) !important;
+  border-color: rgba(20,116,87,.13) !important;
+}
+
+/* Explicitly preserve regulated/semantic visual areas from palette recoloring. */
+html[data-palette="velox"] :is(.strip-window,.strip-paper,.fpv-window,.radar-tag,.ffrp-map) {
+  --ff-shell-accent: initial;
+  --ff-shell-accent-strong: initial;
+}
+
+@media (max-width: 760px) {
+  .palette-switch { grid-template-columns: 1fr !important; }
+}
