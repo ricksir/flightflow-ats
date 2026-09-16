@@ -317,7 +317,7 @@ test('sem Ordem TER o TAM3774 continua sem fechamento sintético até SBCT', () 
 test('contrato visual marca fechamento terminal como derivado e não histórico', () => {
   const source = fs.readFileSync(MODULE, 'utf8');
   assert.match(source, /ffrpTerminalClosureActive/);
-  assert.match(source, /class="route-terminal"/);
+  assert.match(source, /class="route-terminal\\$\\{pending\\}"/);
   assert.match(source, /Fechamento terminal derivado da Ordem TER/);
   assert.match(source, /sem ETIM histórico/);
   assert.match(source, /sem STAR\/fixos inventados/);
