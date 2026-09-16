@@ -7,7 +7,7 @@
 
   function validateConfig(config) {
     if (!config || typeof config !== 'object') throw new Error('o conteúdo deve ser um objeto JSON.');
-    if (config.theme !== undefined && !['dark','light'].includes(config.theme)) throw new Error("theme deve ser 'dark' ou 'light'.");
+    if (config.theme !== undefined && !['dark','light','velox'].includes(config.theme)) throw new Error("theme deve ser 'dark', 'light' ou 'velox'.");
     if (config.fontScale !== undefined && (Number(config.fontScale) < .9 || Number(config.fontScale) > 1.6)) throw new Error('fontScale deve ficar entre 0.9 e 1.6.');
     if (config.visibleFields && !Array.isArray(config.visibleFields)) throw new Error('visibleFields deve ser uma lista.');
     if (config.addressPatterns && !Array.isArray(config.addressPatterns)) throw new Error('addressPatterns deve ser uma lista.');

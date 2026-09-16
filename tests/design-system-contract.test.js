@@ -49,6 +49,8 @@ test('Design System contempla temas, Rota Processada e janelas operacionais sem 
   const css = designSystemSection();
   assert.match(css, /html\[data-theme="dark"\] body/);
   assert.match(css, /html\[data-theme="light"\] body/);
+  assert.match(css, /html\[data-palette="velox"\] body/);
+  assert.match(css, /\.theme-preview-velox/);
   assert.match(css, /html body \.ffrp-window/);
   assert.match(css, /\.fpv-window,\s*\n\.strip-window/);
   assert.doesNotMatch(css, /\bgoTo\s*\(/);
