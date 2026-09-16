@@ -38,6 +38,7 @@ Use este checklist em qualquer mudança que toque histórico, rota, mapa, timeli
 - [ ] com Ordem TER, o fechamento até o ADES é explicitamente marcado como derivado/não histórico.
 - [ ] o fechamento por Ordem TER não cria ETIM, CFL, STAR nem fixos intermediários.
 - [ ] Anterior a partir da Ordem TER retorna ao estado espacial imediatamente anterior.
+- [ ] a transição pré-TER → TER → pós-TER não produz frame intermediário com fechamento ausente, duplicado ou desalinhado do ADES.
 - [ ] o ADES derivado por Ordem TER não vira checkpoint ETIM histórico.
 - [ ] a conexão ao destino só ocorre quando existir evidência operacional aplicável ou a regra explícita de fechamento por Ordem TER.
 
