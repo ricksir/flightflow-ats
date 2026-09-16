@@ -152,7 +152,7 @@
       .ffrp-toolbar button{background:#e8f4f8;color:#07576a;border:1px solid #c8e1e9}.ffrp-toolbar button:hover{background:#d8edf4}.ffrp-toolbar button.active{background:#0d7084;color:#fff;border-color:#0d7084}
       .ffrp-toolbar .ffrp-danger{background:#fff2e8;color:#9a4a00;border-color:#ffd2ac}
       .ffrp-stat{display:inline-flex;gap:5px;align-items:center;border:1px solid #d8e4ea;border-radius:999px;padding:5px 8px;background:#f8fbfc;font:800 .54rem/1.1 Inter,system-ui,sans-serif;color:#536b79}.ffrp-stat b{color:#123e54}
-      .ffrp-body{min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) minmax(390px,440px);gap:0}
+      .ffrp-body{min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,360px);gap:0}
       .ffrp-map-wrap{position:relative;min-width:0;min-height:0;background:#dceaf0;border-right:1px solid #ccdce3;overflow:hidden}
       .ffrp-map{width:100%;height:100%;display:block;background:linear-gradient(#d9eaf0,#e8f2f5)}
       .ffrp-map .grid{stroke:#527585;stroke-opacity:.13;stroke-width:1;vector-effect:non-scaling-stroke}.ffrp-map .grid-label{fill:#526f7d;font:600 11px ui-monospace,monospace;opacity:.72}
@@ -220,7 +220,7 @@
       .ffrp-side h3{font-size:.82rem}.ffrp-point{font-size:.72rem;line-height:1.35}.ffrp-point-main strong{font-size:.75rem}.ffrp-point-main span{font-size:.69rem;line-height:1.4}.ffrp-point-source{font-size:.66rem;line-height:1.4}.ffrp-route-kind{font-size:.56rem;padding:3px 6px}.ffrp-tail-note,.ffrp-unresolved{font-size:.69rem;line-height:1.5}
       .ffrp-tool-label{font-size:.60rem}.ffrp-toolbar button{font-size:.69rem}.ffrp-stat,.ffrp-id-card{font-size:.67rem}.ffrp-eventbar label,.ffrp-eventbar select,.ffrp-event-info{font-size:.68rem}.ffrp-head-title .ffrp-eyebrow{font-size:.58rem}.ffrp-head-title strong{font-size:1rem}.ffrp-head-title .ffrp-head-subtitle{font-size:.70rem}.ffrp-time{font-size:.68rem}
       .leaflet-tooltip.ffrp-native-fix-label{padding:5px 7px;font:800 11px/1.2 Inter,system-ui,sans-serif}.ffrp-native-fix-label b{font-size:11px}.ffrp-native-fix-label span{font-size:10px;line-height:1.2}.leaflet-tooltip.ffrp-native-fix-hover{background:rgba(255,255,255,.98);box-shadow:0 5px 14px rgba(3,29,57,.16)}
-      #ffrpVectorFixLayer .ffrp-vfix{opacity:.35;transition:opacity .14s ease}#ffrpVectorFixLayer .ffrp-vfix.labelled,#ffrpVectorFixLayer .ffrp-vfix.current,#ffrpVectorFixLayer .ffrp-vfix.transfer{opacity:1}
+      #ffrpVectorFixLayer .ffrp-vroute-history{fill:none;stroke:#d23a2d;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}#ffrpVectorFixLayer .ffrp-vroute-declared{fill:none;stroke:#0d7084;stroke-width:3;stroke-dasharray:8 7;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}#ffrpVectorFixLayer .ffrp-vroute-terminal-underlay{stroke:#d59a20;stroke-width:1.4;stroke-opacity:.34;vector-effect:non-scaling-stroke}#ffrpVectorFixLayer .ffrp-vroute-terminal{stroke:#d59a20;stroke-width:4;stroke-dasharray:7 9;stroke-linecap:round;stroke-opacity:.96;vector-effect:non-scaling-stroke}#ffrpVectorFixLayer .ffrp-vroute-terminal.pending{stroke-width:3;stroke-dasharray:5 10;stroke-opacity:.62}#ffrpVectorFixLayer .ffrp-vfix{opacity:.35;transition:opacity .14s ease}#ffrpVectorFixLayer .ffrp-vfix.labelled,#ffrpVectorFixLayer .ffrp-vfix.current,#ffrpVectorFixLayer .ffrp-vfix.transfer,#ffrpVectorFixLayer .ffrp-vfix.destination{opacity:1}
       .ffrp-focus-btn[aria-pressed="true"]{background:#0d7084!important;color:#fff!important;border-color:#0d7084!important;box-shadow:0 4px 12px rgba(13,112,132,.20)!important}.ffrp-point.selected-point{border-color:#d6aa45;box-shadow:inset 3px 0 #d59a20,0 5px 14px rgba(90,65,12,.08)}
       .ffrp-map .route-terminal-underlay{fill:none;stroke:#d59a20;stroke-width:1.4;stroke-opacity:.34;stroke-linecap:round;stroke-linejoin:round}.ffrp-map .route-terminal{fill:none;stroke:#d59a20;stroke-width:4;stroke-dasharray:7 9;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px rgba(213,154,32,.18))}.ffrp-map .route-terminal-underlay.pending{stroke-opacity:.16}.ffrp-map .route-terminal.pending{stroke-opacity:.62;stroke-width:3;stroke-dasharray:5 10;filter:none}
       .ffrp-lg-terminal{display:inline-block;width:20px;height:0;border-top:3px dashed #d59a20}.ffrp-point.terminal-point{border-color:#e0bb65;background:#fffaf0}.ffrp-tail-note.terminal{border-color:#e0bb65;background:#fffaf0;color:#6d520f}
@@ -1186,13 +1186,20 @@
     let group=qs('#ffrpVectorFixLayer',svg);
     if(!group){group=document.createElementNS('http://www.w3.org/2000/svg','g');group.id='ffrpVectorFixLayer';svg.appendChild(group);}
     group.innerHTML='';
-    group.style.display=model.fixesVisible?'':'none';
-    if(!model.fixesVisible || !snapshotIsComplete(snapshot))return true;
+    group.style.display='';
+    if(!snapshotIsComplete(snapshot))return true;
     const bridge=window.__FlightFlowFirBridge;
     if(!bridge?.projectGeo)return false;
     const context=routeDisplayContext(snapshot,model.routeProgress);
+    const continuation=declaredRouteContinuation(snapshot);
+    const terminal=terminalClosureState(snapshot);
+    const pointXY=p=>bridge.projectGeo(Number(p.geo.lon),Number(p.geo.lat));
+    const pointsAttr=points=>points.map(p=>{const q=pointXY(p);return Number(q.x).toFixed(2)+','+Number(q.y).toFixed(2)}).join(' ');
     let html='';
-    snapshot.points.forEach((p,i)=>{
+    if(snapshot.points.length>1)html+='<polyline class="ffrp-vroute-history" points="'+pointsAttr(snapshot.points)+'"/>';
+    if(continuation.length){const declared=[snapshot.points.at(-1),...continuation];html+='<polyline class="ffrp-vroute-declared" points="'+pointsAttr(declared)+'"><title>Continuação publicada da rota declarada · sem ETIM histórico</title></polyline>';}
+    if(terminal.visible&&terminal.from?.geo&&terminal.destination?.geo){const a=pointXY(terminal.from),z=pointXY(terminal.destination),pending=terminal.active?'':' pending',attrs='x1="'+Number(a.x).toFixed(2)+'" y1="'+Number(a.y).toFixed(2)+'" x2="'+Number(z.x).toFixed(2)+'" y2="'+Number(z.y).toFixed(2)+'"';html+='<line class="ffrp-vroute-terminal-underlay'+pending+'" '+attrs+'/><line class="ffrp-vroute-terminal'+pending+'" '+attrs+'><title>'+(terminal.active?'Fechamento terminal derivado da Ordem TER':'Trajeto terminal não especificado até o ADES')+' · sem ETIM/CFL/STAR/fixos inventados</title></line>';}
+    if(model.fixesVisible)snapshot.points.forEach((p,i)=>{
       if(!p.geo)return;
       const q=bridge.projectGeo(Number(p.geo.lon),Number(p.geo.lat));
       const airport=/^[A-Z]{4}$/.test(p.ident)&&(i===0||i===snapshot.points.length-1);
@@ -1202,6 +1209,8 @@
       const label=state.labelled?`<text x="8" y="-6">${esc(p.ident)}</text>${meta?`<text class="meta" x="8" y="8">${esc(meta)}</text>`:''}`:'';
       html+=`<g class="ffrp-vfix ${cls}" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><title>${esc(p.ident)}${meta?` · ${esc(meta)}`:''}</title><circle r="${state.current?6:5}"/>${label}</g>`;
     });
+    if(model.fixesVisible&&continuation.length){continuation.forEach(p=>{const q=pointXY(p);html+=`<g class="ffrp-vfix declared" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><title>${esc(p.ident)} · rota declarada · sem ETIM/CFL</title><circle r="4.5"/></g>`;});}
+    if(model.fixesVisible&&terminal.visible&&terminal.destination?.geo){const q=pointXY(terminal.destination);html+=`<g class="ffrp-vfix destination" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><title>${esc(terminal.destination.ident)} · ADES · sem ETIM/CFL</title><circle r="6"/></g>`;}
     if(model.handoffsVisible){transferMarkersForSnapshot(snapshot).forEach(t=>{const q=bridge.projectGeo(Number(t.point.geo.lon),Number(t.point.geo.lat));html+=`<g class="ffrp-vfix transfer" transform="translate(${Number(q.x).toFixed(2)} ${Number(q.y).toFixed(2)})"><title>Transferência ${esc(t.label)} · ${esc(t.detail)}</title><rect x="-7" y="-7" width="14" height="14" rx="2" transform="rotate(45)" fill="#8a48bd" stroke="#fff" stroke-width="2"/><text x="12" y="4">TRF ${esc(t.label)}</text></g>`;});}
     group.innerHTML=html;
     return true;
@@ -1373,9 +1382,9 @@
         const terminalLatLngs=[[Number(terminal.from.geo.lat),Number(terminal.from.geo.lon)],[Number(terminal.destination.geo.lat),Number(terminal.destination.geo.lon)]];
         // A mesma geometria fica visível como previsão antes do TER e vira fechamento ativo no TER.
         // A aeronave continua limitada ao histórico/ETIM até o evento de encerramento.
-        const terminalUnderlay=L.polyline(terminalLatLngs,{color:'#d59a20',weight:1.25,opacity:terminal.active?.32:.15,lineCap:'round',lineJoin:'round',interactive:false});
+        const terminalUnderlay=L.polyline(terminalLatLngs,{className:'ffrp-native-terminal-underlay',color:'#d59a20',weight:1.25,opacity:terminal.active?.32:.15,lineCap:'round',lineJoin:'round',interactive:false});
         terminalUnderlay.addTo(model.nativeMapLayer);
-        const terminalLine=L.polyline(terminalLatLngs,{color:'#d59a20',weight:terminal.active?3.4:2.8,opacity:terminal.active?.96:.60,dashArray:terminal.active?'6 9':'5 10',lineCap:'round',lineJoin:'round',interactive:true});
+        const terminalLine=L.polyline(terminalLatLngs,{className:'ffrp-native-terminal-route',color:'#d59a20',weight:terminal.active?3.4:2.8,opacity:terminal.active?.96:.60,dashArray:terminal.active?'6 9':'5 10',lineCap:'round',lineJoin:'round',interactive:true});
         terminalLine.bindTooltip(terminal.active?'Fechamento terminal derivado da Ordem TER · sem ETIM histórico · sem STAR/fixos inventados':'Fechamento terminal previsto até o ADES · referência derivada · a aeronave só percorre este trecho na Ordem TER',{sticky:true,className:'ffrp-transfer-tip'});terminalLine.addTo(model.nativeMapLayer);
       }
       if(model.fixesVisible&&model.nativeFixLayer){

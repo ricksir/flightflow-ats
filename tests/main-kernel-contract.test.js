@@ -6,9 +6,9 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
-const EXPECTED_BYTES = 1116585;
-const EXPECTED_SHA256 = '81a35273a14af3e8cf330ed76adfc1b16bd9711a66dcb7bae10c79be5d7a1560';
-const EXPECTED_LINES = 5033;
+const EXPECTED_BYTES = 1116694;
+const EXPECTED_SHA256 = '2205227f3e9ae274e62753974874cba6c9fa89ae50964e56e54666f64d820ecd';
+const EXPECTED_LINES = 5035;
 const EXPECTED_DUPLICATES = [];
 const FILE_PROTOCOL_MAP_GUARD = `    if(window.location.protocol==='file:'){\n      activateVectorMapFallback('Mapa vetorial offline ativo · para cartografia online execute npm start e abra http://127.0.0.1:4173');\n      return Promise.resolve(false);\n    }\n`;
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
@@ -235,7 +235,7 @@ test('núcleo mantém dependências explícitas de módulos externos e identidad
     'const TimelineBuilderController = window.FlightFlowTimelineBuilderController;',
     "if (!TimelineBuilderController) throw new Error('FlightFlowTimelineBuilderController não foi carregado.');",
     'const { buildTimeline } = TimelineBuilderController.create({',
-    "name: 'FlightFlow ATS - TIOP Cindacta1'",
+    "name: 'FlightFlow ATS'",
     "subtitle: 'Histórico animado de Plano de Voo'",
     "version: '0.2.1-dev'"
   ]) assert.ok(source.includes(token), `contrato ausente: ${token}`);

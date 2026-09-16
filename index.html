@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<!-- FlightFlow ATS — compilação definitiva v7.3.5: bases ACCAZ/SBRE incorporadas e seletor manual de FIR. -->
+<!-- FlightFlow ATS — linha de desenvolvimento v0.2.1-dev: bases ACCAZ/SBRE incorporadas e seletor manual de FIR. -->
 <html data-font-layout="normal" data-theme="light" lang="pt-BR" style="--font-scale:1;font-size:16px">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="light dark" name="color-scheme"/>
 <meta content="#030811" id="themeColorMeta" name="theme-color"/>
-<title>FlightFlow ATS — TIOP CINDACTA I</title>
+<title>FlightFlow ATS v0.2.1-dev</title>
 <style>
 
 :root {
@@ -3660,7 +3660,7 @@ html[data-theme="dark"] .ai-summary-card strong,html[data-theme="dark"] .ai-sect
   .ai-confidence-pill { grid-column:2; justify-self:start; }
 }
 
-/* FlightFlow v7.3.5 — seletor manual de FIR */
+/* FlightFlow ATS v0.2.1-dev — seletor manual de FIR */
 .ff-fir-picker{position:relative;display:inline-flex;align-items:center;}
 .ff-fir-button{border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(255,255,255,.08);color:#fff;padding:7px 10px;font-weight:800;font-size:.68rem;letter-spacing:.04em;white-space:nowrap;}
 .ff-fir-button:hover,.ff-fir-button.active{background:#15518b;border-color:#5ca5df;box-shadow:0 0 0 2px rgba(92,165,223,.16);}
@@ -3682,7 +3682,7 @@ html[data-theme="dark"] .ai-summary-card strong,html[data-theme="dark"] .ai-sect
 .manual-fir-layer .fir-label text{fill:#fff;font-size:11px;font-weight:850;text-anchor:middle;paint-order:stroke;stroke:#071726;stroke-width:2px;}
 @media(max-width:760px){.ff-fir-menu{right:-82px;width:232px}.ff-fir-button{padding:6px 8px}}
 
-/* FlightFlow v7.3.5 — permite que o menu FIR ultrapasse a barra de camadas.
+/* FlightFlow ATS v0.2.1-dev — permite que o menu FIR ultrapasse a barra de camadas.
    A regra global da v6.0 aplicava overflow:hidden!important ao grupo e
    recortava completamente o painel, embora o clique estivesse funcionando. */
 #realMapControls > .real-map-layer-switches{overflow:visible!important;}
@@ -4605,12 +4605,12 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <body>
 <div class="app" id="app">
 <header class="topbar">
-<div aria-label="FlightFlow ATS - TIOP Cindacta1" class="brand">
+<div aria-label="FlightFlow ATS" class="brand">
 <span aria-hidden="true" class="brand-mark">
 <svg viewbox="0 0 48 48"><path d="M4 25h15l9-16 5 2-4 14h11l4-5 3 1-3 8-1 8-3 1-1-6H28l-2 13-5 1-2-14H4z"></path></svg>
 </span>
 <div class="brand-copy">
-<div class="brand-title" id="appTitle"><span class="brand-product">FlightFlow ATS</span><span class="brand-separator"> - </span><span class="brand-unit">TIOP Cindacta1</span></div>
+<div class="brand-title" id="appTitle"><span class="brand-product">FlightFlow ATS</span></div>
 <div class="brand-subtitle">Histórico animado de Plano de Voo</div>
 <div class="brand-credit" id="appCredit">Desenvolvido por 2S BCO Richard</div>
 </div>
@@ -5326,7 +5326,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <h3>Sobre o programa</h3>
 <div class="about-card">
 <div class="about-mark" aria-hidden="true">✈</div>
-<div><strong id="aboutAppName">FlightFlow ATS - TIOP Cindacta1</strong><span>Monitoramento e revisualização de históricos de Plano de Voo</span><small id="aboutDeveloper">Desenvolvido por 2S BCO Richard</small></div>
+<div><strong id="aboutAppName">FlightFlow ATS v0.2.1-dev</strong><span>Monitoramento e revisualização de históricos de Plano de Voo</span><small id="aboutDeveloper">Desenvolvido por 2S BCO Richard</small></div>
 </div>
 <p class="about-edit-note">A identificação exibida acompanha a versão do projeto. A versão de desenvolvimento atual é sincronizada com <code>package.json</code>.</p>
 </section>
@@ -5592,7 +5592,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 
   // Identidade do programa. A versão deve permanecer sincronizada com package.json.
   const APP_META = Object.freeze({
-    name: 'FlightFlow ATS - TIOP Cindacta1',
+    name: 'FlightFlow ATS',
     subtitle: 'Histórico animado de Plano de Voo',
     developerCredit: 'Desenvolvido por 2S BCO Richard',
     version: '0.2.1-dev'
@@ -10159,6 +10159,7 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
       const input = JSON.parse(els.advancedConfig.value);
       validateConfig(input);
       state.config = mergeConfig(input);
+      if (input?.theme === 'velox') state.config.theme = 'velox';
       applyTheme(state.config.theme, { persist: false, notify: false });
       applyTypography(state.config.fontScale, { persist: false, notify: false });
       saveConfig();
@@ -10191,6 +10192,7 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
     try {
       const saved = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) || 'null');
       const loaded = saved ? mergeConfig(saved) : clone(DEFAULT_CONFIG);
+      if (saved?.theme === 'velox') loaded.theme = 'velox';
       // A aparência escolhida pelo operador é persistente. Configurações antigas
       // continuam válidas via savedConfig; o padrão para instalações novas é claro.
       // Reabilita a exibição das áreas ATS nas versões em que esse recurso foi
