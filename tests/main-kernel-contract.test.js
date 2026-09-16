@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const EXPECTED_BYTES = 1116585;
 const EXPECTED_SHA256 = 'f287b08d450945e1f6c58f9c7e22ae1b84a5af6957221788fa4e09e951030462';
-const EXPECTED_LINES = 5034;
+const EXPECTED_LINES = 5033;
 const EXPECTED_DUPLICATES = [];
 const FILE_PROTOCOL_MAP_GUARD = `    if(window.location.protocol==='file:'){\n      activateVectorMapFallback('Mapa vetorial offline ativo · para cartografia online execute npm start e abra http://127.0.0.1:4173');\n      return Promise.resolve(false);\n    }\n`;
 const EXTRACTED_CURRENT_EVENT = ['currentEvent'];
