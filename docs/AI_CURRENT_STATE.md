@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas/agentes.
 >
-> Última verificação: **15/09/2026**, após o merge do PR **#227** e a certificação pós-merge do workflow **#562**.
+> Última verificação: **16/09/2026**, após o merge do PR **#230** e a certificação pós-merge do workflow **#579**.
 >
 > **A modularização contínua continua encerrada. A fase atual é PRODUTO, VALIDAÇÃO OPERACIONAL e preparação de release.**
 
@@ -11,34 +11,35 @@
 - Repositório: `ricksir/flightflow-ats`.
 - Visibilidade: **público**.
 - Branch principal: `main`.
-- SHA de produção certificado:
-  `bb46d863236f5e1edd3d3ce81aa660e16e79623d`
-  — `feat: establish FlightFlow ATS design system (#227)`.
+- SHA funcional certificado:
+  `1d69d7b6711a80cd4021e922a57c4fb8bd58c8cb`
+  — `fix: eliminate Order TER terminal route transition flash (#230)`.
+- Commits exclusivamente documentais podem ficar acima desse SHA em `main`; para continuidade funcional, usar o SHA certificado acima como referência e conferir o topo real de `main` antes de qualquer nova alteração.
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0`: `e089820456c08eb42df968faa9da59b062a32b6f`.
-- As mudanças dos PRs #225–#227 estão em **Unreleased** até nova decisão de release.
-- Após a certificação do #227: nenhum PR funcional aberto e nenhuma branch temporária `feat/*`/`fix/*` remanescente.
+- As mudanças dos PRs #225–#230 estão em **Unreleased** até nova decisão de release.
+- Após a certificação do #230 e o housekeeping #17: nenhum PR funcional aberto e nenhuma branch temporária `feat/*`/`fix/*` remanescente.
 
 Este arquivo é um checkpoint. Ao retomar, conferir primeiro o SHA real de `main`, PRs abertos e workflows recentes.
 
 ## 2. Certificação atual
 
-### PR #227 — Design System / reconstrução visual
+### PR #230 — Ordem TER: renderização terminal sem frame intermediário
 
-- Head certificado: `e4184f827a457d4f33015cdee5b6fc062c7ab049`.
-- Workflow PR **#561**: sucesso.
-- Node: **627/627 passed**.
-- Playwright: **50/50 passed**.
+- Head certificado: `164984c9cf64eb30284383ded9ee026b1f6d1c44`.
+- Workflow PR **#578**: sucesso.
+- Node: **635/635 passed**.
+- Playwright: **52/52 passed**.
 - **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG**.
 
 ### Pós-merge
 
-- `main`: `bb46d863236f5e1edd3d3ce81aa660e16e79623d`.
-- Workflow **#562**: sucesso.
-- Node: **627/627 passed**.
-- Playwright: **50/50 passed**.
+- SHA funcional certificado em `main`: `1d69d7b6711a80cd4021e922a57c4fb8bd58c8cb`.
+- Workflow **#579**: sucesso.
+- Node: **635/635 passed**.
+- Playwright: **52/52 passed**.
 - **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG**.
-- Housekeeping **#14**: sucesso.
+- Housekeeping **#17**: sucesso; branch temporária do PR #230 removida.
 
 Gates obrigatórios antes e depois de merge:
 
@@ -152,6 +153,46 @@ Contratos novos de navegador validam:
 - foco explícito por teclado;
 - fluxo vertical abaixo de 900 px.
 
+### PR #229 — alinhamento do trecho terminal com o ADES
+
+Merge:
+`4f871f3202b2b9f4b2b9df0604582d44cbef79eb`.
+
+Entregas relevantes:
+
+- a rota legada deixa de competir visualmente com a Rota Processada quando `ffrpProcessed=true`;
+- o ARP oficial de SBCT passa a prevalecer no fechamento terminal, evitando divergência com coordenada customizada/stale;
+- underlay e linha terminal usam os mesmos endpoints;
+- nenhuma alteração em `goTo()` ou no motor temporal.
+
+### PR #230 — eliminação do pisca da Ordem TER
+
+Merge funcional certificado:
+`1d69d7b6711a80cd4021e922a57c4fb8bd58c8cb`.
+
+Correção:
+
+- `renderMap()` monta o próximo SVG fora do DOM observado e troca os filhos de forma atômica com `replaceChildren(...)`;
+- a sincronização da Rota Processada após Próximo/Anterior, scrubber e setas usa microtask do mesmo evento, depois do estado nativo ser atualizado e antes do próximo frame;
+- desaparece a janela em que o índice já estava em TER sem a linha terminal, bem como a janela inversa no retrocesso;
+- `goTo()` permanece inalterado;
+- o motor temporal e a semântica histórica permanecem inalterados.
+
+Regressão específica:
+
+- pré-TER → TER → evento seguinte → TER → pré-TER → TER;
+- exatamente um fechamento `UMGUL → SBCT` quando ativo;
+- nenhum fechamento antes do TER;
+- endpoint coincidente com o marcador ADES;
+- nenhum frame intermediário ausente, duplicado ou desalinhado;
+- nenhum ETIM, CFL, STAR ou fixo intermediário inventado.
+
+Certificação:
+
+- PR workflow **#578**: **635/635 Node + 52/52 Playwright**;
+- pós-merge workflow **#579**: **635/635 Node + 52/52 Playwright**;
+- zero failed/flaky/retry/`SPATIAL_EQ_DIAG` em ambos.
+
 ## 4. Histórico real TAM3774 — contrato atual
 
 Referência:
@@ -201,6 +242,7 @@ Nunca introduzir regressões em:
 - teclado equivalente;
 - autoplay equivalente;
 - retrocesso fiel;
+- transição da Ordem TER sem frame intermediário com fechamento ausente, duplicado ou desalinhado;
 - distinção entre histórico, rota declarada sem ETIM e fechamento terminal derivado;
 - sequência crítica `PADIL → IRISO → LIBEC → EGDOD → IBGAM → PMS → ILVES → MASVA`;
 - `ILVES 01:34` antes de `MASVA 01:36`.
