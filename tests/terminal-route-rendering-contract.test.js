@@ -46,8 +46,8 @@ test('fechamento terminal usa underlay e tracejado sobre exatamente a mesma geom
   assert.match(nativeBlock, /terminalUnderlay\.addTo\(model\.nativeMapLayer\)/);
   assert.match(nativeBlock, /terminalLine\.addTo\(model\.nativeMapLayer\)/);
 
-  assert.match(route, /class="route-terminal-underlay\\$\\{pending\\}"/);
-  assert.match(route, /class="route-terminal\\$\\{pending\\}"/);
+  assert.match(route, /class="route-terminal-underlay\$\{pending\}"/);
+  assert.match(route, /class="route-terminal\$\{pending\}"/);
   assert.match(route, /const visible=!!\(context&&destination&&from\)/);
   assert.match(route, /const active=!!\(visible&&Number\(index\)>=Number\(context\.nativeIndex\)\)/);
   assert.match(route, /\.ffrp-map \.route-terminal-underlay\{/);
