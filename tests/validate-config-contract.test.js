@@ -10,11 +10,11 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML = path.join(ROOT, 'index.html');
 const MODULE = path.join(ROOT, 'src', 'config', 'config-validation.js');
 const REFERENCE = '<script id="flightflow-config-validation" src="src/config/config-validation.js"></script>';
-const MODULE_BYTES = 1574;
-const MODULE_SHA256 = 'cbf56ceab9d1e3a76ab152d2d50dca5a1444f7b866e61f1c7d9fe9ec5b12e08b';
-const EXPECTED_BYTES = 1259;
+const MODULE_BYTES = 1591;
+const MODULE_SHA256 = 'ad311d41e0034fd82a8494298dac7b6353753c3e43879eb39fb8f665d644f235';
+const EXPECTED_BYTES = 1276;
 const EXPECTED_LINES = 10;
-const EXPECTED_SHA256 = '296244487d56d1852f29fca12881857b6c84f8615c22c7f8893d56e37441162e';
+const EXPECTED_SHA256 = 'd17fd88941d78ca70b839858c6cee3dc280e3234626516c4f718c1a471e576e5';
 
 function kernelSource() {
   const html = fs.readFileSync(HTML, 'utf8');
@@ -151,6 +151,7 @@ test('validateConfig preserva enumeração estrita do tema', () => {
   const validateConfig = loadValidateConfig();
   assert.equal(validateConfig({ theme: 'dark' }), undefined);
   assert.equal(validateConfig({ theme: 'light' }), undefined);
+  assert.equal(validateConfig({ theme: 'velox' }), undefined);
   assert.equal(validateConfig({ theme: undefined }), undefined);
   for (const value of ['LIGHT', 'auto', '', null, 1]) {
     throwsMessage(() => validateConfig({ theme: value }), /theme deve ser/);
