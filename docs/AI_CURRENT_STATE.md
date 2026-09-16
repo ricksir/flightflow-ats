@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas/agentes.
 >
-> Última verificação: **16/09/2026**, após o merge do PR **#230** e a certificação pós-merge do workflow **#579**.
+> Última verificação: **16/09/2026**, após o merge do PR **#232**, certificação pós-merge do workflow **#592** e housekeeping **#19**.
 >
 > **A modularização contínua continua encerrada. A fase atual é PRODUTO, VALIDAÇÃO OPERACIONAL e preparação de release.**
 
@@ -12,34 +12,35 @@
 - Visibilidade: **público**.
 - Branch principal: `main`.
 - SHA funcional certificado:
-  `1d69d7b6711a80cd4021e922a57c4fb8bd58c8cb`
-  — `fix: eliminate Order TER terminal route transition flash (#230)`.
+  `69be39c5da551ebad7f49bf6f74fbb7094b509a0`
+  — `fix: complete visual acceptance and terminal route preview (#232)`.
 - Commits exclusivamente documentais podem ficar acima desse SHA em `main`; para continuidade funcional, usar o SHA certificado acima como referência e conferir o topo real de `main` antes de qualquer nova alteração.
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0`: `e089820456c08eb42df968faa9da59b062a32b6f`.
-- As mudanças dos PRs #225–#230 estão em **Unreleased** até nova decisão de release.
-- Após a certificação do #230 e o housekeeping #17: nenhum PR funcional aberto e nenhuma branch temporária `feat/*`/`fix/*` remanescente.
+- As mudanças dos PRs #225–#232 estão em **Unreleased** até nova decisão de release.
+- O PR **#233** foi fechado sem merge por ter ficado divergente e conter uma linha incompleta/sem ligação efetiva ao `index.html`; foi substituído pelo #232.
+- Após a certificação do #232 e o housekeeping #19: nenhum PR funcional aberto deve ser considerado pendente; conferir sempre o estado real antes de nova alteração.
 
 Este arquivo é um checkpoint. Ao retomar, conferir primeiro o SHA real de `main`, PRs abertos e workflows recentes.
 
 ## 2. Certificação atual
 
-### PR #230 — Ordem TER: renderização terminal sem frame intermediário
+### PR #232 — aceitação visual, identidade e rota terminal
 
-- Head certificado: `164984c9cf64eb30284383ded9ee026b1f6d1c44`.
-- Workflow PR **#578**: sucesso.
-- Node: **635/635 passed**.
-- Playwright: **52/52 passed**.
-- **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG**.
+- Head certificado: `0bfa9201efe89d644a117d6fe69983bb823fecfb`.
+- Workflow PR **#591**: sucesso.
+- Node: **637/637 passed**.
+- Playwright: **53/53 passed**.
+- Log bruto: **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG / 0 not ok / 0 AssertionError**.
 
 ### Pós-merge
 
-- SHA funcional certificado em `main`: `1d69d7b6711a80cd4021e922a57c4fb8bd58c8cb`.
-- Workflow **#579**: sucesso.
-- Node: **635/635 passed**.
-- Playwright: **52/52 passed**.
-- **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG**.
-- Housekeeping **#17**: sucesso; branch temporária do PR #230 removida.
+- SHA funcional certificado em `main`: `69be39c5da551ebad7f49bf6f74fbb7094b509a0`.
+- Workflow **#592**: sucesso.
+- Node: **637/637 passed**.
+- Playwright: **53/53 passed**.
+- Log bruto: **0 failed / 0 flaky / 0 retry / 0 SPATIAL_EQ_DIAG / 0 not ok / 0 AssertionError**.
+- Housekeeping **#19**: sucesso; remoção de branches temporárias seguras.
 
 Gates obrigatórios antes e depois de merge:
 
@@ -52,7 +53,7 @@ Gates obrigatórios antes e depois de merge:
 
 Nunca fazer merge apenas pelo badge verde.
 
-## 3. Rodada de produto concluída em 15/09/2026
+## 3. Rodada de produto e aceitação concluída até 16/09/2026
 
 ### PR #225 — Rota Processada: foco operacional e redução de densidade
 
@@ -192,6 +193,34 @@ Certificação:
 - PR workflow **#578**: **635/635 Node + 52/52 Playwright**;
 - pós-merge workflow **#579**: **635/635 Node + 52/52 Playwright**;
 - zero failed/flaky/retry/`SPATIAL_EQ_DIAG` em ambos.
+
+### PR #232 — fechamento da aceitação manual de dashboard, identidade e rota terminal
+
+Merge funcional certificado:
+`69be39c5da551ebad7f49bf6f74fbb7094b509a0`.
+
+Entregas:
+
+- identidade inicial e runtime unificadas em **FlightFlow ATS**;
+- versão de desenvolvimento coerente com `package.json`: **0.2.1-dev**;
+- remoção da identificação inicial legada `TIOP Cindacta1` do título/header/Sobre;
+- terceiro preset de aparência **Velox / referência** disponível nas Configurações, mantendo os modos claro e escuro do FlightFlow;
+- persistência do preset `velox` corrigida no carregamento/aplicação de configuração;
+- Rota Processada com sidebar reduzida para preservar dominância do mapa;
+- no fallback vetorial/offline do mapa principal, a camada processada passa a desenhar a rota histórica, a continuação declarada e o trecho terminal previsto/ativo;
+- no Leaflet, o trecho terminal possui classes próprias para inspeção e testes;
+- antes da Ordem TER, `UMGUL → SBCT` permanece referência espacial derivada e tracejada, sem movimentar antecipadamente a aeronave;
+- no TER, a mesma geometria torna-se fechamento ativo;
+- nenhum ETIM, CFL, STAR ou fixo intermediário é inventado;
+- `goTo()`, o motor temporal e as garantias do PR #230 permanecem inalterados.
+
+Certificação:
+
+- PR workflow **#591**: **637/637 Node + 53/53 Playwright**;
+- pós-merge workflow **#592**: **637/637 Node + 53/53 Playwright**;
+- zero `failed`, `flaky`, `retry`, `SPATIAL_EQ_DIAG`, `not ok` e `AssertionError` no log bruto de ambos;
+- housekeeping **#19** concluído com sucesso;
+- PR **#233** fechado sem merge por ter ficado divergente e não representar uma linha segura de continuidade.
 
 ## 4. Histórico real TAM3774 — contrato atual
 
