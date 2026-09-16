@@ -89,6 +89,7 @@ test('sem Ordem TER o fechamento terminal permanece inativo e SBCT não entra no
   const { snapshot } = prepare(api, FIXTURE_NO_TER);
 
   assert.equal(api.terminalClosureContext(), null);
+  assert.equal(api.terminalClosureState(snapshot, 999).visible, false);
   assert.equal(api.terminalClosureState(snapshot, 999).active, false);
   assert.equal(
     api.movementPointsForProfile(snapshot).some(point => point.ident === 'SBCT'),
@@ -110,8 +111,11 @@ test('Ordem TER mantém um único segmento lógico UMGUL → SBCT com endpoint o
   const atTer = api.terminalClosureState(snapshot, terIndex);
   const afterTer = api.terminalClosureState(snapshot, terIndex + 1);
 
-  assert.equal(pre.active, false, 'antes do TER o fechamento não pode ser desenhado');
+  assert.equal(pre.visible, true, 'antes do TER a referência terminal deve permanecer visível quando o encerramento futuro é conhecido');
+  assert.equal(pre.active, false, 'antes do TER a referência não pode ser percorrida pela aeronave');
+  assert.equal(atTer.visible, true, 'no TER a mesma geometria deve permanecer visível');
   assert.equal(atTer.active, true, 'no TER o fechamento deve ficar ativo');
+  assert.equal(afterTer.visible, true, 'após o TER o fechamento deve permanecer visível');
   assert.equal(afterTer.active, true, 'após o TER o fechamento deve permanecer ativo');
 
   const sbct = seed.get('SBCT');
