@@ -21,9 +21,26 @@
     if (value.includes('ARQUIV')) return 'status-archived';
     return 'status-empty';
   }
+
+  function loadCompanionScript(id, src) {
+    if (document.getElementById(id)) return;
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = src;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  function bootstrapAcceptanceControllers() {
+    loadCompanionScript('flightflow-application-shell-controller', 'src/ui/application-shell-controller.js');
+    loadCompanionScript('flightflow-terminal-context-visual', 'src/route/terminal-context-visual.js');
+  }
+
   window.FlightFlowOperationalStateUtils = Object.freeze({
     themeSwatch,
     stripTheme,
     statusClass,
   });
+
+  bootstrapAcceptanceControllers();
 })();
