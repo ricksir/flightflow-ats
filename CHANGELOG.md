@@ -10,6 +10,9 @@
 - incorporado o ARP oficial de **SBCT** à base offline mínima para permitir o encerramento terminal do TAM3774 sem depender de WFS/proxy;
 - consolidado o **FlightFlow ATS Design System 1.0**, com tokens de spacing/tipografia/radius, temas claro/escuro, hierarquia de shell, mapa dominante, inspector/timeline, transporte, responsividade e focus-visible;
 - adicionada `docs/DESIGN_SYSTEM.md` e contratos Node/Playwright para estrutura visual, legibilidade, dark theme, foco por teclado e layout vertical abaixo de 900 px;
+- corrigido o **pisca da linha terminal da Ordem TER** na Rota Processada: o SVG agora é montado fora do DOM observado e substituído atomicamente, evitando frame intermediário sem `UMGUL → SBCT`;
+- adicionados contratos Node/Playwright específicos para pré-TER → TER → pós-TER → retrocesso → TER, endpoint oficial do ADES, segmento único e ausência de ETIM/CFL/STAR inventados;
+- certificação do PR #230 antes do registro documental: **634 testes Node + 52/52 Playwright**, com zero failed, flaky, retry e `SPATIAL_EQ_DIAG`;
 - certificação mais recente: **627/627 testes Node + 50/50 Playwright**, com zero failed, flaky, retry e `SPATIAL_EQ_DIAG`;
 
 ## 0.2.0 — 2026-09-11
