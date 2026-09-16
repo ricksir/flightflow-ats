@@ -1954,9 +1954,9 @@
     });
     // v7.4.12: a troca de eventos usa etapas intermediárias nos fixos cujos ETIM
     // ficam entre os dois eventos, garantindo passagem visível e ordenada pelos pontos da rota.
-    document.addEventListener('click',event=>{const item=event.target?.closest?.('.timeline-item'),transport=event.target?.closest?.('#prevBtn,#nextBtn,#restartBtn');if(item||transport)setTimeout(()=>syncFromNativeTimeline(),0)},true);
-    document.addEventListener('input',event=>{if(event.target?.id==='scrubber')setTimeout(()=>syncFromNativeTimeline(),0)},true);
-    document.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight')setTimeout(()=>syncFromNativeTimeline(),0)},true);
+    document.addEventListener('click',event=>{const item=event.target?.closest?.('.timeline-item'),transport=event.target?.closest?.('#prevBtn,#nextBtn,#restartBtn');if(item||transport)queueMicrotask(()=>syncFromNativeTimeline())},true);
+    document.addEventListener('input',event=>{if(event.target?.id==='scrubber')queueMicrotask(()=>syncFromNativeTimeline())},true);
+    document.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight')queueMicrotask(()=>syncFromNativeTimeline())},true);
   }
 
   function startPassiveBridge() {
