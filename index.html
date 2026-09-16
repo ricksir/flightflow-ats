@@ -10192,7 +10192,7 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
       const saved = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) || 'null');
       const loaded = saved ? mergeConfig(saved) : clone(DEFAULT_CONFIG);
       // A aparência escolhida pelo operador é persistente. Configurações antigas
-      // continuam válidas via mergeConfig; o padrão para instalações novas é claro.
+      // continuam válidas via savedConfig; o padrão para instalações novas é claro.
       // Reabilita a exibição das áreas ATS nas versões em que esse recurso foi
       // temporariamente desativado por compatibilidade. O operador ainda pode
       // ocultá-las manualmente pelos controles do mapa.
