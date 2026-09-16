@@ -5196,18 +5196,22 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <div class="drawer-content">
 <section class="appearance-settings">
 <h3>Aparência</h3>
-<p>O programa sempre inicia em modo claro. Durante o uso, você pode alternar para o modo escuro.</p>
+<p>Escolha a aparência do workspace. A preferência fica salva neste navegador.</p>
 <div aria-label="Selecionar tema" class="theme-switch" role="group">
 <button aria-pressed="false" class="theme-option" id="themeDarkBtn" type="button">
 <span aria-hidden="true" class="theme-preview theme-preview-dark"><i></i><i></i><i></i></span>
-<span><b>Modo escuro</b><small>Painel operacional noturno</small></span>
+<span><b>Modo escuro</b><small>FlightFlow operacional noturno</small></span>
 </button>
 <button aria-pressed="true" class="theme-option active" id="themeLightBtn" type="button">
 <span aria-hidden="true" class="theme-preview theme-preview-light"><i></i><i></i><i></i></span>
-<span><b>Modo claro</b><small>Interface clara de alto contraste</small></span>
+<span><b>Modo claro</b><small>FlightFlow claro de alto contraste</small></span>
+</button>
+<button aria-pressed="false" class="theme-option" id="themeVeloxBtn" type="button">
+<span aria-hidden="true" class="theme-preview theme-preview-velox"><i></i><i></i><i></i></span>
+<span><b>Velox / referência</b><small>Dashboard escuro com acentos emerald</small></span>
 </button>
 </div>
-<p class="theme-regulation-note"><strong>Cores operacionais preservadas:</strong> a STRIP e a etiqueta continuam usando as cores correspondentes ao estado do plano. O tema altera apenas a interface ao redor e ajustes mínimos de contraste.</p>
+<p class="theme-regulation-note"><strong>Cores operacionais preservadas:</strong> STRIP, rota histórica, fechamento terminal, alertas e transferências mantêm suas cores semânticas. O preset Velox altera somente o chrome do dashboard.</p>
 </section>
 <section class="ai-module-settings">
 <h3>Recursos experimentais</h3>
@@ -5324,7 +5328,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 <div class="about-mark" aria-hidden="true">✈</div>
 <div><strong id="aboutAppName">FlightFlow ATS - TIOP Cindacta1</strong><span>Monitoramento e revisualização de históricos de Plano de Voo</span><small id="aboutDeveloper">Desenvolvido por 2S BCO Richard</small></div>
 </div>
-<p class="about-edit-note">Para alterar o nome ou a assinatura posteriormente, edite o objeto <code>APP_META</code> no arquivo JavaScript principal.</p>
+<p class="about-edit-note">A identificação exibida acompanha a versão do projeto. A versão de desenvolvimento atual é sincronizada com <code>package.json</code>.</p>
 </section>
 </div>
 </aside>
@@ -5586,12 +5590,12 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   const { formatFieldDisplay } = CommunicationContextUtils.createFieldDisplayFormatter({ cleanDisplay, formatAddressCode, formatAddressDisplay, displayValue });
 
 
-  // Identidade do programa: altere estes valores para personalizar nome e assinatura.
+  // Identidade do programa. A versão deve permanecer sincronizada com package.json.
   const APP_META = Object.freeze({
     name: 'FlightFlow ATS - TIOP Cindacta1',
     subtitle: 'Histórico animado de Plano de Voo',
     developerCredit: 'Desenvolvido por 2S BCO Richard',
-    version: '7.3.2'
+    version: '0.2.1-dev'
   });
 
 
@@ -8045,7 +8049,7 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
 
   function cacheElements() {
     const ids = [
-      'appTitle','appCredit','aboutAppName','aboutDeveloper','themeColorMeta','themeDarkBtn','themeLightBtn','aiModuleVisibilityToggle','aiMainTab','aiMainPanel','fontScaleRange','fontScaleValue','fontScaleDownBtn','fontScaleResetBtn','fontScaleUpBtn','fontLayoutHint','fontLayoutRepairBtn',
+      'appTitle','appCredit','aboutAppName','aboutDeveloper','themeColorMeta','themeDarkBtn','themeLightBtn','themeVeloxBtn','aiModuleVisibilityToggle','aiMainTab','aiMainPanel','fontScaleRange','fontScaleValue','fontScaleDownBtn','fontScaleResetBtn','fontScaleUpBtn','fontLayoutHint','fontLayoutRepairBtn',
       'fileInput','chooseFileBtn','readStartBtn','demoBtn','selectedFileLabel','newFileBtn','exportBtn','configBtn','fullscreenBtn','helpBtn',
       'overlayChooseBtn','overlayDemoBtn','dropZone','emptyOverlay','callsignTitle','adepTitle','adesTitle','statusBadge','stageBadge','frameCounter',
       'departureCode','arrivalCode','planeLabel','planeGroup','planeVisual','planeGroundShadow','flightPath','completedPath','messageBeacon','beaconText','communicationLines','networkLayer','sceneBackdrop','sceneSvg','geoGridLayer','stateBoundaryLayer','mapPlaceLabelLayer','accAreaLayer','appAreaLayer','inactiveAirportLayer','activeLocationLayer','routeHistoryLayer','routeRevisionLayer','mapControls','mapZoomInBtn','mapZoomOutBtn','mapFitRouteBtn','mapBrazilBtn','mapUnusedToggle','mapAreasToggle','mapFollowToggle','mapStatusBar','mapRouteMode','mapRouteRevisionStatus','mapCoordReadout','mapTooltip',
@@ -8100,6 +8104,7 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     els.helpBtn.addEventListener('click', () => els.helpModal.showModal());
     if (els.themeDarkBtn) els.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
     if (els.themeLightBtn) els.themeLightBtn.addEventListener('click', () => setTheme('light'));
+    if (els.themeVeloxBtn) els.themeVeloxBtn.addEventListener('click', () => setTheme('velox'));
     if (els.aiModuleVisibilityToggle) {
       els.aiModuleVisibilityToggle.checked = false;
       els.aiModuleVisibilityToggle.addEventListener('change', () => setAIModuleVisibility(els.aiModuleVisibilityToggle.checked, { notify: true }));
@@ -8267,19 +8272,24 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
   }
 
   function setTheme(theme) {
-    const normalized = theme === 'light' ? 'light' : 'dark';
-    if (state.config.theme === normalized && document.documentElement.dataset.theme === normalized) return;
+    const normalized = ['light','dark','velox'].includes(theme) ? theme : 'dark';
+    const shellTheme = normalized === 'light' ? 'light' : 'dark';
+    const palette = normalized === 'velox' ? 'velox' : 'flightflow';
+    if (state.config.theme === normalized && document.documentElement.dataset.theme === shellTheme && document.documentElement.dataset.palette === palette) return;
     state.config.theme = normalized;
     applyTheme(normalized, { persist: true, notify: true });
     syncAdvancedConfig();
   }
 
   function applyTheme(theme, options = {}) {
-    const normalized = theme === 'light' ? 'light' : 'dark';
+    const normalized = ['light','dark','velox'].includes(theme) ? theme : 'dark';
+    const shellTheme = normalized === 'light' ? 'light' : 'dark';
+    const palette = normalized === 'velox' ? 'velox' : 'flightflow';
     state.config.theme = normalized;
-    document.documentElement.dataset.theme = normalized;
-    document.documentElement.style.colorScheme = normalized;
-    if (els.themeColorMeta) els.themeColorMeta.setAttribute('content', normalized === 'light' ? '#eef4f8' : '#030811');
+    document.documentElement.dataset.theme = shellTheme;
+    document.documentElement.dataset.palette = palette;
+    document.documentElement.style.colorScheme = shellTheme;
+    if (els.themeColorMeta) els.themeColorMeta.setAttribute('content', normalized === 'velox' ? '#071712' : shellTheme === 'light' ? '#eef4f8' : '#030811');
     if (els.themeDarkBtn) {
       const active = normalized === 'dark';
       els.themeDarkBtn.classList.toggle('active', active);
@@ -8290,15 +8300,24 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
       els.themeLightBtn.classList.toggle('active', active);
       els.themeLightBtn.setAttribute('aria-pressed', String(active));
     }
+    if (els.themeVeloxBtn) {
+      const active = normalized === 'velox';
+      els.themeVeloxBtn.classList.toggle('active', active);
+      els.themeVeloxBtn.setAttribute('aria-pressed', String(active));
+    }
     ['fpv','strip'].forEach(kind => {
       const popup = state.popouts[kind];
       if (popup && !popup.closed) {
-        popup.document.documentElement.dataset.theme = normalized;
-        popup.document.documentElement.style.colorScheme = normalized;
+        popup.document.documentElement.dataset.theme = shellTheme;
+        popup.document.documentElement.dataset.palette = palette;
+        popup.document.documentElement.style.colorScheme = shellTheme;
       }
     });
     if (options.persist) saveConfig();
-    if (options.notify) toast(`Modo ${normalized === 'light' ? 'claro' : 'escuro'} aplicado.`, 'success');
+    if (options.notify) {
+      const label = normalized === 'velox' ? 'Velox / referência' : normalized === 'light' ? 'Modo claro' : 'Modo escuro';
+      toast(`${label} aplicado.`, 'success');
+    }
   }
 
   function updateTypographyControls(scale, layout) {
@@ -10172,9 +10191,8 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
     try {
       const saved = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) || 'null');
       const loaded = saved ? mergeConfig(saved) : clone(DEFAULT_CONFIG);
-      // Cada nova abertura começa em modo claro. A troca para o modo escuro
-      // continua disponível durante a sessão, mas não altera o modo inicial.
-      loaded.theme = 'light';
+      // A aparência escolhida pelo operador é persistente. Configurações antigas
+      // continuam válidas via mergeConfig; o padrão para instalações novas é claro.
       // Reabilita a exibição das áreas ATS nas versões em que esse recurso foi
       // temporariamente desativado por compatibilidade. O operador ainda pode
       // ocultá-las manualmente pelos controles do mapa.
