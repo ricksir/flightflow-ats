@@ -142,3 +142,10 @@ test('Ordem TER mantém um único segmento lógico UMGUL → SBCT com endpoint o
   assert.equal(profile.targets[terIndex], 1, 'TER deve terminar exatamente no ADES');
   assert.ok(profile.targets.slice(terIndex).every(value => value === 1), 'após TER o endpoint não pode mudar');
 });
+
+
+test('renderer SVG da Rota Processada troca o frame de forma atômica', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  assert.match(source, /svg\.replaceChildren\(\.\.\.Array\.from\(next\.childNodes\)\)/);
+  assert.doesNotMatch(source, /svg\.innerHTML\s*=\s*html/);
+});
