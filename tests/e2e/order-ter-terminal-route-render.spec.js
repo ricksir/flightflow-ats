@@ -79,6 +79,7 @@ async function readTerminalState(page) {
 
     return {
       index,
+      expectedVisible: Boolean(terminal?.visible),
       expectedActive: Boolean(terminal?.active),
       lineCount: lines.length,
       underlayCount: underlays.length,
@@ -91,16 +92,17 @@ async function readTerminalState(page) {
   });
 }
 
-async function expectTerminal(page, expectedIndex, active) {
+async function expectTerminal(page, expectedIndex, active, visible = true) {
   await expect.poll(() => page.evaluate(() => Number(window.__FlightFlowFirBridge?.state?.index ?? -1))).toBe(expectedIndex);
-  await expect.poll(async () => (await readTerminalState(page)).lineCount).toBe(active ? 1 : 0);
+  await expect.poll(async () => (await readTerminalState(page)).lineCount).toBe(visible ? 1 : 0);
 
   const state = await readTerminalState(page);
+  expect(state.expectedVisible).toBe(visible);
   expect(state.expectedActive).toBe(active);
-  expect(state.lineCount).toBe(active ? 1 : 0);
-  expect(state.underlayCount).toBe(active ? 1 : 0);
+  expect(state.lineCount).toBe(visible ? 1 : 0);
+  expect(state.underlayCount).toBe(visible ? 1 : 0);
 
-  if (active) {
+  if (visible) {
     expect(state.destinationIdent).toBe('SBCT');
     expect(state.fromIdent).toBe('UMGUL');
     expect(state.geometry).not.toBeNull();
@@ -189,6 +191,7 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
 
       return {
         index,
+        expectedVisible: Boolean(terminal.visible),
         expectedActive: Boolean(terminal.active),
         lineCount,
         underlayCount,
@@ -249,7 +252,7 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
 
   expect(samples.length).toBeGreaterThan(0);
   const invalid = samples.filter(sample => {
-    if (sample.expectedActive) {
+    if (sample.expectedVisible) {
       return sample.lineCount !== 1
         || sample.underlayCount !== 1
         || !sample.startMatches
@@ -260,5 +263,8 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
   });
 
   expect(invalid, 'nenhum frame lógico pode ter fechamento ausente, duplicado ou desalinhado').toEqual([]);
-  expect(before.lineCount).toBe(0);
+  expect(before.expectedActive).toBe(false);
+  expect(before.expectedVisible).toBe(true);
+  expect(before.lineCount).toBe(1);
+  expect(before.geometry.coords).toEqual(atTer.geometry.coords);
 });
