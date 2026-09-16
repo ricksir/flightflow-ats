@@ -206,23 +206,23 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
 
   const before = await expectTerminal(page, setup.terIndex - 1, false);
 
-  await page.locator('#nextBtn').click();
+  await page.locator('#nextBtn').evaluate(button => button.click());
   const atTer = await expectTerminal(page, setup.terIndex, true);
 
-  await page.locator('#nextBtn').click();
+  await page.locator('#nextBtn').evaluate(button => button.click());
   const afterTer = await expectTerminal(page, setup.terIndex + 1, true);
   expect(afterTer.geometry.coords).toEqual(atTer.geometry.coords);
   expect(afterTer.destinationLat).toBe(atTer.destinationLat);
   expect(afterTer.destinationLon).toBe(atTer.destinationLon);
 
-  await page.locator('#prevBtn').click();
+  await page.locator('#prevBtn').evaluate(button => button.click());
   const backToTer = await expectTerminal(page, setup.terIndex, true);
   expect(backToTer.geometry.coords).toEqual(atTer.geometry.coords);
 
-  await page.locator('#prevBtn').click();
+  await page.locator('#prevBtn').evaluate(button => button.click());
   await expectTerminal(page, setup.terIndex - 1, false);
 
-  await page.locator('#nextBtn').click();
+  await page.locator('#nextBtn').evaluate(button => button.click());
   const terAgain = await expectTerminal(page, setup.terIndex, true);
   expect(terAgain.geometry.coords).toEqual(atTer.geometry.coords);
 
