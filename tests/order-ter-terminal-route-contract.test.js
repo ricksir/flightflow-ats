@@ -149,3 +149,12 @@ test('renderer SVG da Rota Processada troca o frame de forma atômica', () => {
   assert.match(source, /svg\.replaceChildren\(\.\.\.Array\.from\(next\.childNodes\)\)/);
   assert.doesNotMatch(source, /svg\.innerHTML\s*=\s*html/);
 });
+
+
+test('bridge da timeline sincroniza a Rota Processada na microtask do mesmo evento', () => {
+  const source = fs.readFileSync(MODULE, 'utf8');
+  assert.match(source, /if\(item\|\|transport\)queueMicrotask\(\(\)=>syncFromNativeTimeline\(\)\)/);
+  assert.match(source, /id==='scrubber'\)queueMicrotask\(\(\)=>syncFromNativeTimeline\(\)\)/);
+  assert.match(source, /ArrowRight'\)queueMicrotask\(\(\)=>syncFromNativeTimeline\(\)\)/);
+  assert.doesNotMatch(source, /if\(item\|\|transport\)setTimeout\(\(\)=>syncFromNativeTimeline\(\),0\)/);
+});
