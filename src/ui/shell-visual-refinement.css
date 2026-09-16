@@ -1747,3 +1747,36 @@ html[data-theme="light"] .field-card {
     transition-duration: 0ms !important;
   }
 }
+
+
+/* ==========================================================================
+   FlightFlow ATS — preset opcional Velox / referência
+   Mantém a semântica operacional; altera somente o chrome do dashboard.
+   ========================================================================== */
+.theme-switch{grid-template-columns:repeat(3,minmax(0,1fr))}
+.theme-preview-velox{background:radial-gradient(circle at 78% 20%,rgba(73,231,173,.34),transparent 30%),linear-gradient(145deg,#071712 0%,#0a211a 56%,#0b2b22 100%);border-color:rgba(73,231,173,.34)}
+.theme-preview-velox i:first-child{background:#49e7ad}.theme-preview-velox i:nth-child(2){background:#14352b}.theme-preview-velox i:last-child{background:#0e251e}
+html[data-palette="velox"]{--ffds-accent:#49e7ad;--ffds-accent-strong:#1ebd86;--ffds-accent-soft:rgba(73,231,173,.10);--ffds-glow:0 0 0 1px rgba(73,231,173,.12),0 0 26px rgba(73,231,173,.10)}
+html[data-palette="velox"] body{background:radial-gradient(circle at 14% -6%,rgba(73,231,173,.12),transparent 31%),radial-gradient(circle at 92% 2%,rgba(55,188,205,.08),transparent 29%),linear-gradient(145deg,#050d0b 0%,#071712 42%,#081d17 100%)}
+html[data-palette="velox"] .app{gap:12px;padding:12px}
+html[data-palette="velox"] .topbar,html[data-palette="velox"] .workspace-card,html[data-palette="velox"] .inspector-card,html[data-palette="velox"] .transport{border-color:rgba(92,226,181,.16);background:linear-gradient(180deg,rgba(13,31,26,.975),rgba(8,22,18,.975));box-shadow:0 22px 60px rgba(0,0,0,.30),inset 0 1px rgba(255,255,255,.025)}
+html[data-palette="velox"] .workspace-card,html[data-palette="velox"] .inspector-card{position:relative;overflow:hidden}
+html[data-palette="velox"] .workspace-card::before,html[data-palette="velox"] .inspector-card::before{content:"";position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(73,231,173,.38),transparent);pointer-events:none;z-index:4}
+html[data-palette="velox"] .brand-mark{border-color:rgba(73,231,173,.30);background:linear-gradient(145deg,#153d32,#0d291f);box-shadow:0 0 0 1px rgba(73,231,173,.08),0 10px 28px rgba(0,0,0,.28),0 0 22px rgba(73,231,173,.09)}
+html[data-palette="velox"] .brand-title,html[data-palette="velox"] .flight-route strong,html[data-palette="velox"] .panel-title,html[data-palette="velox"] .timeline-op{color:#effff9}
+html[data-palette="velox"] .file-actions,html[data-palette="velox"] .header-actions,html[data-palette="velox"] .scene-status,html[data-palette="velox"] .inspector-tabs{border-color:rgba(92,226,181,.13);background:rgba(255,255,255,.018)}
+html[data-palette="velox"] .btn-primary,html[data-palette="velox"] .play-btn{border-color:rgba(73,231,173,.34);background:linear-gradient(135deg,#1fbd88,#43d7ab);color:#04120e;box-shadow:0 8px 24px rgba(30,189,134,.18)}
+html[data-palette="velox"] .tab.active{color:#effff9;background:rgba(73,231,173,.08)}
+html[data-palette="velox"] .tab.active::after{background:#49e7ad;box-shadow:0 0 12px rgba(73,231,173,.34)}
+html[data-palette="velox"] .field-card,html[data-palette="velox"] .timeline-body,html[data-palette="velox"] .map-control-group,html[data-palette="velox"] .map-layer-controls,html[data-palette="velox"] .map-status-bar{border-color:rgba(92,226,181,.10);background:rgba(255,255,255,.022)}
+html[data-palette="velox"] .field-card:hover{border-color:rgba(73,231,173,.22);background:rgba(73,231,173,.035)}
+html[data-palette="velox"] .status-badge.active,html[data-palette="velox"] .ops-live{border-color:rgba(73,231,173,.24);background:rgba(73,231,173,.075)}
+html[data-palette="velox"] .transport{border-top:1px solid rgba(92,226,181,.14)}
+html[data-palette="velox"] .transport input[type="range"]{accent-color:#49e7ad}
+html[data-palette="velox"] .config-drawer{border-left-color:rgba(92,226,181,.16);background:linear-gradient(180deg,#0b1e18,#071511)}
+html[data-palette="velox"] .theme-option.active{border-color:rgba(73,231,173,.62);box-shadow:0 0 0 2px rgba(73,231,173,.08),0 14px 30px rgba(0,0,0,.22)}
+html[data-palette="velox"] body .ffrp-window{--ffrp-navy:#0a281f;--ffrp-cyan:#1ebd86;border-color:rgba(73,231,173,.20);box-shadow:0 30px 90px rgba(0,0,0,.40),0 0 0 1px rgba(73,231,173,.06)}
+html[data-palette="velox"] body .ffrp-head{background:linear-gradient(110deg,#09251d 0%,#0e3a2c 68%,#15543f 100%)}
+html[data-palette="velox"] body .ffrp-toolbar button,html[data-palette="velox"] body .ffrp-eventbar button{border-color:rgba(30,189,134,.28)}
+html[data-palette="velox"] body .ffrp-focus-btn[aria-pressed="true"]{background:#178b67!important;border-color:#178b67!important}
+@media(max-width:760px){.theme-switch{grid-template-columns:1fr}}
