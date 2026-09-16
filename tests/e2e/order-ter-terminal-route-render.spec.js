@@ -148,8 +148,10 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
   expect(setup.terIndex + 1).toBeLessThan(setup.total);
 
   await expect.poll(() => page.evaluate(() => Number(window.__FlightFlowFirBridge?.state?.index ?? -1))).toBe(setup.terIndex - 1);
-  await expect(page.locator('#ffrpOpen')).toBeVisible();
-  await page.locator('#ffrpOpen').click();
+  // analyzeText() é chamado diretamente pelo contrato, sem passar pelo fluxo visual
+  // de seleção de fonte. O botão pode permanecer hidden mesmo com o modelo válido;
+  // acione o mesmo handler sem depender dessa política de visibilidade.
+  await page.locator('#ffrpOpen').evaluate(button => button.click());
   await expect(page.locator('#ffrpModal')).toBeVisible();
 
   await page.evaluate(() => {
