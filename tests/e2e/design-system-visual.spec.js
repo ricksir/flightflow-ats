@@ -96,3 +96,26 @@ test('Design System collapses desktop zones into a vertical card flow below 900p
   expect(layout.caption.width).toBeGreaterThan(layout.scene.width * 0.85);
   expect(layout.caption.bottom).toBeLessThanOrEqual(layout.scene.bottom);
 });
+
+
+test('Velox reference preset is selectable, visually distinct and persists after reload', async ({ page }) => {
+  await page.goto('/index.html', { waitUntil: 'load' });
+  await page.locator('#configBtn').click();
+  await expect(page.locator('#themeVeloxBtn')).toBeVisible();
+  await page.locator('#themeVeloxBtn').click();
+  const selected = await page.evaluate(() => {
+    const root = document.documentElement;
+    const topbar = getComputedStyle(document.querySelector('.topbar'));
+    const accent = getComputedStyle(root).getPropertyValue('--ffds-accent').trim();
+    const saved = JSON.parse(localStorage.getItem('flightflow-config-v2') || '{}');
+    return { theme:root.dataset.theme,palette:root.dataset.palette,accent,background:topbar.backgroundImage,savedTheme:saved.theme };
+  });
+  expect(selected.theme).toBe('dark');
+  expect(selected.palette).toBe('velox');
+  expect(selected.accent).toBe('#49e7ad');
+  expect(selected.background).toContain('linear-gradient');
+  expect(selected.savedTheme).toBe('velox');
+  await page.reload({ waitUntil: 'load' });
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.palette)).toBe('velox');
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('flightflow-config-v2') || '{}').theme)).toBe('velox');
+});
