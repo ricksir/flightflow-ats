@@ -5,38 +5,47 @@ Aplicação web para análise e visualização de históricos ATS, ciclo de vida
 ## Estado do projeto
 
 - **Release estável:** `v0.2.0`
+- **Versão atual para validação:** `main` / `0.2.1-dev` — contém as mudanças ainda não publicadas da rodada de dashboard, Rota Processada e Ordem TER
 - **Execução:** aplicação web sem etapa obrigatória de build
 - **Branch de referência:** `main`
 - **Quality gates:** auditoria estática, inventário de funções, testes Node, disponibilidade do navegador e Playwright
 - **Design System:** documentado em `docs/DESIGN_SYSTEM.md`
 - **Estado técnico certificado:** documentado em `docs/AI_CURRENT_STATE.md`
+- **Aceitação manual da versão atual:** `docs/MANUAL-ACCEPTANCE.md`
 - **Modularização contínua:** encerrada após o PR #211; novas extrações só devem ocorrer quando houver necessidade funcional concreta
+
+> **Importante para testar as mudanças mais recentes:** a release `v0.2.0` não contém as alterações dos PRs #225–#235. Para validar o dashboard atual, a Rota Processada e o fechamento terminal por Ordem TER, use a branch `main`.
 
 O projeto permanece em manutenção evolutiva. A rodada de modularização do ciclo v0.3.0 reduziu o acoplamento do núcleo e consolidou módulos já extraídos em `src/`, sem alterar os contratos temporais e espaciais protegidos.
 
-## Executar
+## Baixar e executar a versão atual
 
-Forma recomendada:
+Para testar o que está hoje em `main` — inclusive **Dashboard moderno**, refinamentos da **Rota Processada** e semântica pré-TER/TER — baixe a branch `main`, não o ZIP da release `v0.2.0`.
+
+No GitHub, use **Code → Download ZIP** estando na branch `main`, ou clone o repositório normalmente. Depois, na pasta extraída:
 
 ```bash
 npm install
 npm start
 ```
 
-Depois, abra no navegador:
+Abra no navegador:
 
 ```text
 http://127.0.0.1:4173
 ```
 
-O servidor local usa apenas recursos nativos do Node.js e não adiciona dependências de runtime.
+O servidor local usa apenas recursos nativos do Node.js e não adiciona dependências de runtime. Se estiver no Windows e o navegador mostrar uma versão antiga após atualizar os arquivos, faça um recarregamento forçado com **Ctrl+F5**.
 
-Como alternativa, a aplicação também pode ser aberta diretamente pelo arquivo `index.html` em Chrome, Edge ou Firefox.
+Como alternativa, a aplicação também pode ser aberta diretamente pelo arquivo `index.html` em Chrome, Edge ou Firefox. Essa alternativa é útil para teste básico, mas o servidor local é preferível porque evita limitações do protocolo `file://` em recursos cartográficos e integrações.
 
 Depois de abrir a aplicação:
 
-1. carregue o histórico desejado;
-2. utilize timeline, mapa, Rota Processada, STRIP, FPV e demais ferramentas normalmente.
+1. confirme que o cabeçalho identifica o produto como **FlightFlow ATS**;
+2. abra **Configurações → Aparência** e confirme a opção **Dashboard moderno**;
+3. carregue o histórico desejado;
+4. utilize timeline, mapa, Rota Processada, STRIP, FPV e demais ferramentas normalmente;
+5. para a rodada de aceitação completa, siga `docs/MANUAL-ACCEPTANCE.md`.
 
 Alguns recursos cartográficos e consultas externas dependem de conectividade, mas o projeto também mantém dados e recursos locais.
 

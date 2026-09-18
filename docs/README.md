@@ -11,6 +11,7 @@ Este diretório reúne documentação operacional, arquitetural, de testes e o h
 | `ARCHITECTURE.md` | arquitetura vigente e princípios de manutenção |
 | `REGRESSION-CHECKLIST.md` | invariantes e regressões críticas |
 | `RELEASE-READINESS.md` | gates e checklist para futuras releases |
+| `MANUAL-ACCEPTANCE.md` | roteiro manual para validar o `main` atual antes de nova release |
 | `ROADMAP.md` | prioridades atuais e itens fora de escopo automático |
 | `TEST-PLAN-TIMELINE-ROUTE.md` | plano de teste específico de timeline/rota |
 
