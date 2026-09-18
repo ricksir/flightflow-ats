@@ -28,11 +28,20 @@
 
   function sourceLabel(airport) {
     const source = cleanAerodromeReviewText(airport?.source).toLowerCase();
-    if (!airport) return 'Sem coordenadas cadastradas';
-    if (source === 'official-aip') return 'Coordenadas oficiais disponíveis';
+    if (!airport) return 'Sem coordenadas';
+    if (source === 'official-aip') return 'Oficial AIP';
+    if (source === 'user-confirmed') return 'Confirmado';
+    if (source === 'imported') return 'Importado';
+    return 'Base geográfica';
+  }
+
+  function sourceDetailLabel(airport) {
+    const source = cleanAerodromeReviewText(airport?.source).toLowerCase();
+    if (!airport) return 'Aeródromo sem coordenadas cadastradas';
+    if (source === 'official-aip') return 'Coordenadas oficiais disponíveis na base AIP';
     if (source === 'user-confirmed') return 'Posição confirmada pelo operador';
-    if (source === 'imported') return 'Coordenadas importadas';
-    return 'Coordenadas disponíveis na base';
+    if (source === 'imported') return 'Coordenadas importadas para a base local';
+    return 'Coordenadas disponíveis na base geográfica';
   }
 
   function coordinateLabel(airport) {
@@ -74,13 +83,13 @@
     }
 
     grid.innerHTML = cards.map(item => `
-      <article class="current-flight-aerodrome-card" data-role="${escapeHtml(item.role)}" data-known="${item.known ? 'true' : 'false'}">
+      <article class="current-flight-aerodrome-card" data-role="${escapeHtml(item.role)}" data-known="${item.known ? 'true' : 'false'}" data-source="${escapeHtml(cleanAerodromeReviewText(item.airport?.source || 'missing').toLowerCase())}">
         <div class="current-flight-aerodrome-head">
           <span class="current-flight-aerodrome-role">${escapeHtml(item.role)}</span>
-          <span class="current-flight-aerodrome-status">${escapeHtml(sourceLabel(item.airport))}</span>
+          <span class="current-flight-aerodrome-status" title="${escapeHtml(sourceDetailLabel(item.airport))}">${escapeHtml(sourceLabel(item.airport))}</span>
         </div>
         <strong class="current-flight-aerodrome-code">${escapeHtml(item.code)}</strong>
-        <span class="current-flight-aerodrome-name">${escapeHtml(item.name)}</span>
+        <span class="current-flight-aerodrome-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
         <small class="current-flight-aerodrome-coord">${escapeHtml(coordinateLabel(item.airport))}</small>
         <button class="btn btn-secondary current-flight-aerodrome-review-btn" type="button" data-review-aerodrome="${escapeHtml(item.code)}">
           ${item.known ? 'Revisar localização' : 'Cadastrar localização'}
