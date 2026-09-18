@@ -48,6 +48,14 @@ test('endereço ATS não cadastrado em Originador pode ser clicado e cadastrado'
   await expect(originator.locator('.ats-address-entry.is-known')).toContainText('ACC Belo Horizonte');
 
   await expect(recipients.locator('[data-register-ats-address="SBGLZQZX"]')).toBeVisible();
+
+  await page.locator('#closeConfigBtn').click();
+  await expect(page.locator('#configDrawer')).not.toHaveClass(/open/);
+
+  await recipients.locator('[data-register-ats-address="SBGLZQZX"]').click();
+  await expect(page.locator('#configDrawer')).toHaveClass(/open/);
+  await expect(page.locator('#localityCodeInput')).toHaveValue('SBGLZQZX');
+  await expect(page.locator('#localityNameInput')).toBeFocused();
 });
 
 test('endereços ATS já cadastrados continuam exibindo código e localidade sem ação de cadastro', async ({ page }) => {
