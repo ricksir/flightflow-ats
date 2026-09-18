@@ -5291,6 +5291,14 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 </section>
 <section class="locality-settings">
 <h3>Base de endereços e localidades</h3>
+<div class="current-flight-aerodrome-review" id="currentFlightAerodromeReview" data-has-flight="false">
+  <div class="current-flight-aerodrome-review-head">
+    <div><strong>Aeródromos do voo atual</strong><span>Revise ADEP e ADES mesmo quando as coordenadas já estiverem disponíveis.</span></div>
+  </div>
+  <div class="current-flight-aerodrome-grid" id="currentFlightAerodromeCards">
+    <div class="current-flight-aerodrome-empty">Carregue um histórico para revisar ADEP e ADES.</div>
+  </div>
+</div>
 <p>Associe códigos de aeródromos e endereços ATS aos nomes das localidades. Para um aeródromo sem coordenadas, use o botão <strong>📍</strong>: o programa pesquisa candidatos, permite confirmar no Google Maps e salva a posição para atualizar as rotas futuras.</p>
 <div class="locality-form">
 <label><span>Endereço ou código</span><input id="localityCodeInput" maxlength="16" placeholder="Ex.: SBBSZQZX" autocomplete="off"/></label>
@@ -10574,6 +10582,7 @@ const { resetMotionController, motionRoute, applyMotionFrame, snapMotionTo, star
 
 
 <script id="flightflow-fir-layers" src="src/map/fir-layers.js"></script>
+<script id="flightflow-current-aerodrome-review" src="src/ui/current-flight-aerodrome-review.js"></script>
 
 
 

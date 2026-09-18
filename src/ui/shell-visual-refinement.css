@@ -1811,3 +1811,112 @@ html[data-palette="velox"] .transport-btn,html[data-palette="velox"] .toggle-btn
 html[data-palette="velox"] .play-btn{box-shadow:0 9px 28px rgba(73,231,173,.15)}
 @media(max-width:1180px){html[data-palette="velox"] .content{grid-template-columns:minmax(0,1fr) minmax(315px,340px)}}
 @media(max-width:900px){html[data-palette="velox"] .content{grid-template-columns:1fr}html[data-palette="velox"] .scene-caption{width:calc(100% - 24px)}}
+
+
+/* FlightFlow ATS — current-flight aerodrome review */
+.current-flight-aerodrome-review{
+  margin:0 0 14px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(42,153,202,.055),rgba(255,255,255,.018));
+}
+.current-flight-aerodrome-review-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:9px;
+}
+.current-flight-aerodrome-review-head strong{
+  display:block;
+  font-size:.72rem;
+  color:var(--ink);
+}
+.current-flight-aerodrome-review-head span{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:.59rem;
+  line-height:1.45;
+}
+.current-flight-aerodrome-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+.current-flight-aerodrome-card{
+  display:grid;
+  gap:5px;
+  min-width:0;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface-1,rgba(255,255,255,.72));
+}
+.current-flight-aerodrome-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+}
+.current-flight-aerodrome-role{
+  font-size:.54rem;
+  font-weight:900;
+  letter-spacing:.12em;
+  color:var(--muted);
+}
+.current-flight-aerodrome-status{
+  max-width:72%;
+  padding:3px 6px;
+  border-radius:999px;
+  background:rgba(43,164,114,.09);
+  border:1px solid rgba(43,164,114,.2);
+  color:var(--success,#237a56);
+  font-size:.52rem;
+  font-weight:800;
+  line-height:1.25;
+  text-align:right;
+}
+.current-flight-aerodrome-card[data-known="false"] .current-flight-aerodrome-status{
+  background:rgba(241,174,50,.10);
+  border-color:rgba(241,174,50,.28);
+  color:#966513;
+}
+.current-flight-aerodrome-code{
+  font-size:.86rem;
+  letter-spacing:.02em;
+  color:var(--blue-900,var(--ink));
+}
+.current-flight-aerodrome-name{
+  min-height:1.5em;
+  color:var(--ink);
+  font-size:.64rem;
+  line-height:1.4;
+}
+.current-flight-aerodrome-coord{
+  color:var(--muted);
+  font-size:.57rem;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+.current-flight-aerodrome-review-btn{
+  width:100%;
+  margin-top:4px;
+  min-height:34px;
+}
+.current-flight-aerodrome-empty{
+  grid-column:1/-1;
+  padding:10px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  color:var(--muted);
+  font-size:.62rem;
+  text-align:center;
+}
+html[data-theme="dark"] .current-flight-aerodrome-card{
+  background:rgba(255,255,255,.025);
+}
+@media(max-width:760px){
+  .current-flight-aerodrome-grid{grid-template-columns:1fr}
+}
