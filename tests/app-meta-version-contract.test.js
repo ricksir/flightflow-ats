@@ -23,3 +23,13 @@ test('Configurações oferecem o preset visual de referência sem remover claro/
   assert.match(HTML, /id="themeVeloxBtn"/);
   assert.match(HTML, /setTheme\('velox'\)/);
 });
+
+
+test('Identidade institucional usa FlightFlow ATS como produto e mantém contexto secundário', () => {
+  assert.match(HTML, /name:\s*'FlightFlow ATS'/);
+  assert.match(HTML, /contextLabel:\s*'Ferramenta de análise operacional ATS'/);
+  assert.match(HTML, /developerCredit:\s*'Desenvolvimento: 2S BCO Richard'/);
+  assert.doesNotMatch(HTML, /FlightFlow ATS - TIOP Cindacta1/);
+  assert.match(HTML, /appCredit\.textContent = APP_META\.contextLabel/);
+  assert.match(HTML, /aboutDeveloper\.textContent = APP_META\.developerCredit/);
+});
