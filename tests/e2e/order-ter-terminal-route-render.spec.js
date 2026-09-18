@@ -77,10 +77,22 @@ async function readTerminalState(page) {
       },
     } : null;
 
+    const terminalStatus = document.querySelector('#ffrpTerminalStatus');
+
     return {
       index,
       expectedVisible: Boolean(terminal?.visible),
       expectedActive: Boolean(terminal?.active),
+      statusHidden: terminalStatus ? terminalStatus.hidden : null,
+      statusState: terminalStatus?.dataset?.state || null,
+      statusText: terminalStatus?.textContent?.replace(/\s+/g, ' ').trim() || '',
+      statusAria: terminalStatus?.getAttribute('aria-label') || '',
+      statusFontSize: terminalStatus ? Number.parseFloat(getComputedStyle(terminalStatus).fontSize) : null,
+      statusBorderStyle: terminalStatus ? getComputedStyle(terminalStatus).borderStyle : '',
+      statusTransitionDuration: terminalStatus ? getComputedStyle(terminalStatus).transitionDuration : '',
+      statusColor: terminalStatus ? getComputedStyle(terminalStatus).color : '',
+      statusBackgroundColor: terminalStatus ? getComputedStyle(terminalStatus).backgroundColor : '',
+      statusBoxShadow: terminalStatus ? getComputedStyle(terminalStatus).boxShadow : '',
       lineCount: lines.length,
       underlayCount: underlays.length,
       terminalState: line?.getAttribute('data-terminal-state') || null,
@@ -109,6 +121,14 @@ async function expectTerminal(page, expectedIndex, active, visible = true) {
   expect(state.underlayCount).toBe(visible ? 1 : 0);
 
   if (visible) {
+    expect(state.statusHidden).toBe(false);
+    expect(state.statusState).toBe(active ? 'active' : 'preview');
+    expect(state.statusText).toContain(active ? 'Destino alcançado por Ordem TER' : 'Destino previsto');
+    expect(state.statusText).toContain('SBCT');
+    expect(state.statusAria).toContain(active ? 'Destino alcançado por Ordem TER' : 'Destino previsto');
+    expect(state.statusFontSize).toBeGreaterThanOrEqual(10.5);
+    expect(state.statusBorderStyle).toBe(active ? 'solid' : 'dashed');
+    expect(state.statusColor).not.toBe(state.statusBackgroundColor);
     expect(state.destinationIdent).toBe('SBCT');
     expect(state.fromIdent).toBe('UMGUL');
     expect(state.geometry).not.toBeNull();
@@ -121,6 +141,10 @@ async function expectTerminal(page, expectedIndex, active, visible = true) {
     expect(state.terminalEtim).toBe('');
     expect(state.terminalCfl).toBe('');
     expect(state.terminalStar).toBe('');
+  } else {
+    expect(state.statusHidden).toBe(true);
+    expect(state.statusState).toBeNull();
+    expect(state.statusText).toBe('');
   }
   return state;
 }
@@ -234,8 +258,42 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
 
   const before = await expectTerminal(page, setup.terIndex - 1, false);
 
+  const setVisualMode = async (theme, palette = '') => {
+    await page.evaluate(({ theme, palette }) => {
+      const root = document.documentElement;
+      root.dataset.theme = theme;
+      if (palette) root.dataset.palette = palette;
+      else delete root.dataset.palette;
+    }, { theme, palette });
+    return readTerminalState(page);
+  };
+
+  const lightPreview = await setVisualMode('light');
+  expect(lightPreview.statusBorderStyle).toBe('dashed');
+  expect(lightPreview.statusFontSize).toBeGreaterThanOrEqual(10.5);
+  expect(lightPreview.statusColor).not.toBe(lightPreview.statusBackgroundColor);
+
+  const darkPreview = await setVisualMode('dark');
+  expect(darkPreview.statusBorderStyle).toBe('dashed');
+  expect(darkPreview.statusFontSize).toBeGreaterThanOrEqual(10.5);
+  expect(darkPreview.statusColor).not.toBe(darkPreview.statusBackgroundColor);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+  await expect.poll(async () => {
+    const state = await readTerminalState(page);
+    return state.statusTransitionDuration.split(',').every(value => value.trim() === '0s');
+  }).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
   await page.locator('#nextBtn').evaluate(button => button.click());
   const atTer = await expectTerminal(page, setup.terIndex, true);
+
+  const darkActive = await setVisualMode('dark');
+  const modernActive = await setVisualMode('dark', 'velox');
+  expect(modernActive.statusState).toBe('active');
+  expect(modernActive.statusBorderStyle).toBe('solid');
+  expect(modernActive.statusBoxShadow).not.toBe(darkActive.statusBoxShadow);
 
   await page.locator('#nextBtn').evaluate(button => button.click());
   const afterTer = await expectTerminal(page, setup.terIndex + 1, true);
