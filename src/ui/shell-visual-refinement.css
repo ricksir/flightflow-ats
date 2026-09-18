@@ -1551,7 +1551,7 @@ html[data-theme="dark"] body .ffrp-terminal-status[data-state="active"] {
     0 5px 14px rgba(0,0,0,.12);
 }
 
-html[data-theme="velox"] body .ffrp-terminal-status[data-state="active"] {
+html[data-palette="velox"] body .ffrp-terminal-status[data-state="active"] {
   box-shadow:
     inset 0 1px rgba(255,255,255,.05),
     0 0 16px rgba(255,176,46,.10);
@@ -1576,6 +1576,12 @@ html[data-theme="velox"] body .ffrp-terminal-status[data-state="active"] {
   html body .ffrp-terminal-status {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .ffrp-terminal-status {
+    transition: none;
   }
 }
 
