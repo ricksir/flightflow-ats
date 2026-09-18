@@ -2090,3 +2090,122 @@ html[data-palette="velox"] .current-flight-aerodrome-review-btn:hover{
   .current-flight-aerodrome-grid{grid-template-columns:1fr}
   .current-flight-aerodrome-card{min-height:160px}
 }
+
+
+/* FlightFlow ATS — ATS address locality registration */
+.ats-address-field .field-value{
+  margin-top:7px;
+}
+.ats-address-list{
+  display:grid;
+  gap:5px;
+}
+.ats-address-entry{
+  min-width:0;
+  color:inherit;
+}
+.ats-address-entry.is-known{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:5px;
+  line-height:1.4;
+}
+.ats-address-entry.is-known strong{
+  color:#17384b;
+  font:850 .72rem/1.25 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  letter-spacing:.025em;
+}
+.ats-address-entry.is-known .ats-address-locality{
+  color:#456475;
+  font-size:.67rem;
+  font-weight:700;
+}
+.ats-address-register{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:38px;
+  padding:7px 9px;
+  border:1px dashed #95bfd2;
+  border-radius:9px;
+  background:#f7fbfd;
+  color:#17384b;
+  text-align:left;
+  cursor:pointer;
+  transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+.ats-address-register strong{
+  flex:0 0 auto;
+  color:#102f42;
+  font:850 .72rem/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  letter-spacing:.025em;
+}
+.ats-address-register-label{
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:3px;
+  color:#17688b;
+  font-size:.58rem;
+  font-weight:850;
+  line-height:1.25;
+  text-align:right;
+}
+.ats-address-register:hover{
+  border-color:#5d9fbc;
+  background:#edf7fb;
+  box-shadow:0 3px 10px rgba(23,104,139,.08);
+  transform:translateY(-1px);
+}
+.ats-address-register:focus-visible{
+  outline:2px solid rgba(23,104,139,.34);
+  outline-offset:2px;
+}
+.field-card.changed .ats-address-register{
+  background:rgba(255,255,255,.72);
+  border-color:#d4a94a;
+}
+html[data-theme="dark"] .ats-address-entry.is-known strong{
+  color:#edf9ff;
+}
+html[data-theme="dark"] .ats-address-entry.is-known .ats-address-locality{
+  color:#b7ceda;
+}
+html[data-theme="dark"] .ats-address-register{
+  border-color:rgba(104,183,216,.42);
+  background:rgba(69,153,190,.07);
+  color:#e9f7ff;
+}
+html[data-theme="dark"] .ats-address-register strong{
+  color:#effbff;
+}
+html[data-theme="dark"] .ats-address-register-label{
+  color:#8bd8f4;
+}
+html[data-theme="dark"] .ats-address-register:hover{
+  border-color:rgba(104,201,237,.66);
+  background:rgba(69,153,190,.13);
+}
+html[data-palette="velox"] .ats-address-entry.is-known strong{
+  color:#effff9;
+}
+html[data-palette="velox"] .ats-address-entry.is-known .ats-address-locality{
+  color:#bbdace;
+}
+html[data-palette="velox"] .ats-address-register{
+  border-color:rgba(73,231,173,.36);
+  background:rgba(73,231,173,.055);
+}
+html[data-palette="velox"] .ats-address-register strong{
+  color:#effff9;
+}
+html[data-palette="velox"] .ats-address-register-label{
+  color:#7be9c1;
+}
+html[data-palette="velox"] .ats-address-register:hover{
+  border-color:rgba(73,231,173,.62);
+  background:rgba(73,231,173,.10);
+}
