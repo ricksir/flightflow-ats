@@ -83,6 +83,12 @@ async function readTerminalState(page) {
       expectedActive: Boolean(terminal?.active),
       lineCount: lines.length,
       underlayCount: underlays.length,
+      terminalState: line?.getAttribute('data-terminal-state') || null,
+      terminalFrom: line?.getAttribute('data-terminal-from') || null,
+      terminalDestination: line?.getAttribute('data-terminal-destination') || null,
+      terminalEtim: line?.getAttribute('data-etim') ?? null,
+      terminalCfl: line?.getAttribute('data-cfl') ?? null,
+      terminalStar: line?.getAttribute('data-star') ?? null,
       geometry,
       destinationIdent: terminal?.destination?.ident || null,
       destinationLat: Number(terminal?.destination?.geo?.lat),
@@ -109,6 +115,12 @@ async function expectTerminal(page, expectedIndex, active, visible = true) {
     expect(state.geometry.startMatches).toBe(true);
     expect(state.geometry.endpointMatches).toBe(true);
     expect(state.geometry.underlayMatches).toBe(true);
+    expect(state.terminalState).toBe(active ? 'active' : 'preview');
+    expect(state.terminalFrom).toBe('UMGUL');
+    expect(state.terminalDestination).toBe('SBCT');
+    expect(state.terminalEtim).toBe('');
+    expect(state.terminalCfl).toBe('');
+    expect(state.terminalStar).toBe('');
   }
   return state;
 }
