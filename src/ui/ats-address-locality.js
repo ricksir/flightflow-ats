@@ -10,7 +10,7 @@
     return window.__FlightFlowFirBridge || null;
   }
 
-  function normalizeCode(value) {
+  function normalizeAtsAddressCode(value) {
     return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').trim();
   }
 
@@ -22,7 +22,7 @@
     return events[index].snapshot || {};
   }
 
-  function addressCodes(value) {
+  function extractAtsAddressCodes(value) {
     const source = Array.isArray(value) ? value.join(' ') : String(value || '');
     return [...new Set((source.toUpperCase().match(ADDRESS_RE) || []).map(normalizeCode).filter(Boolean))];
   }
@@ -63,7 +63,7 @@
     const valueNode = card?.querySelector('.field-value');
     if (!card || !valueNode) return;
 
-    const codes = addressCodes(rawValue);
+    const codes = extractAtsAddressCodes(rawValue);
     if (!codes.length) {
       card.classList.remove('ats-address-field');
       delete card.dataset.atsAddressSignature;
@@ -100,7 +100,7 @@
   }
 
   function openLocalityRegistration(code) {
-    const normalized = normalizeCode(code);
+    const normalized = normalizeAtsAddressCode(code);
     if (!normalized) return;
 
     const configButton = document.getElementById('configBtn');
@@ -121,7 +121,7 @@
     }, 40);
   }
 
-  function bind() {
+  function bindAtsAddressLocality() {
     const fields = document.getElementById('fieldsGrid');
     if (!fields) return;
 
@@ -143,7 +143,7 @@
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true });
-  else bind();
+  else bindAtsAddressLocality();
 
   window.FlightFlowAtsAddressLocality = Object.freeze({
     decorate: scheduleDecorate,
