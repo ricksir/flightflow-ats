@@ -1581,7 +1581,7 @@ html[data-palette="velox"] body .ffrp-terminal-status[data-state="active"] {
 
 @media (prefers-reduced-motion: reduce) {
   html body .ffrp-terminal-status {
-    transition: none;
+    transition: none !important;
   }
 }
 
