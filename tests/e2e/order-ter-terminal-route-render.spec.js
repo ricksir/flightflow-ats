@@ -265,6 +265,16 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
       if (palette) root.dataset.palette = palette;
       else delete root.dataset.palette;
     }, { theme, palette });
+
+    await expect.poll(() => page.evaluate(({ theme, palette }) => {
+      const root = document.documentElement;
+      return root.dataset.theme === theme && (root.dataset.palette || '') === palette;
+    }, { theme, palette })).toBe(true);
+
+    await page.evaluate(() => new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
+
     return readTerminalState(page);
   };
 
@@ -290,10 +300,11 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
   const atTer = await expectTerminal(page, setup.terIndex, true);
 
   const darkActive = await setVisualMode('dark');
-  const modernActive = await setVisualMode('dark', 'velox');
+  await setVisualMode('dark', 'velox');
+  await expect.poll(async () => (await readTerminalState(page)).statusBoxShadow).not.toBe(darkActive.statusBoxShadow);
+  const modernActive = await readTerminalState(page);
   expect(modernActive.statusState).toBe('active');
   expect(modernActive.statusBorderStyle).toBe('solid');
-  expect(modernActive.statusBoxShadow).not.toBe(darkActive.statusBoxShadow);
 
   await page.locator('#nextBtn').evaluate(button => button.click());
   const afterTer = await expectTerminal(page, setup.terIndex + 1, true);
