@@ -279,8 +279,11 @@ test('Ordem TER mantém um único fechamento UMGUL → SBCT estável em Próximo
   expect(darkPreview.statusColor).not.toBe(darkPreview.statusBackgroundColor);
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const reducedPreview = await readTerminalState(page);
-  expect(reducedPreview.statusTransitionDuration.split(',').every(value => value.trim() === '0s')).toBe(true);
+  await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+  await expect.poll(async () => {
+    const state = await readTerminalState(page);
+    return state.statusTransitionDuration.split(',').every(value => value.trim() === '0s');
+  }).toBe(true);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   await page.locator('#nextBtn').evaluate(button => button.click());
