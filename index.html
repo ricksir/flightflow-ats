@@ -4611,8 +4611,8 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 </span>
 <div class="brand-copy">
 <div class="brand-title" id="appTitle"><span class="brand-product">FlightFlow ATS</span></div>
-<div class="brand-subtitle">Histórico animado de Plano de Voo</div>
-<div class="brand-credit" id="appCredit">Desenvolvido por 2S BCO Richard</div>
+<div class="brand-subtitle">Histórico operacional animado de Plano de Voo</div>
+<div class="brand-credit" id="appCredit">Ferramenta de análise operacional ATS</div>
 </div>
 </div>
 <div class="file-actions">
@@ -5208,7 +5208,7 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
 </button>
 <button aria-pressed="false" class="theme-option" id="themeVeloxBtn" type="button">
 <span aria-hidden="true" class="theme-preview theme-preview-velox"><i></i><i></i><i></i></span>
-<span><b>Velox / referência</b><small>Dashboard escuro com acentos emerald</small></span>
+<span><b>Dashboard moderno</b><small>Referência Velox · zonas operacionais e mapa dominante</small></span>
 </button>
 </div>
 <p class="theme-regulation-note"><strong>Cores operacionais preservadas:</strong> STRIP, rota histórica, fechamento terminal, alertas e transferências mantêm suas cores semânticas. O preset Velox altera somente o chrome do dashboard.</p>
@@ -5593,8 +5593,9 @@ html[data-theme="dark"] .secure-storage-stat{background:rgba(255,255,255,.025)}
   // Identidade do programa. A versão deve permanecer sincronizada com package.json.
   const APP_META = Object.freeze({
     name: 'FlightFlow ATS',
-    subtitle: 'Histórico animado de Plano de Voo',
-    developerCredit: 'Desenvolvido por 2S BCO Richard',
+    subtitle: 'Histórico operacional animado de Plano de Voo',
+    contextLabel: 'Ferramenta de análise operacional ATS',
+    developerCredit: 'Desenvolvimento: 2S BCO Richard',
     version: '0.2.1-dev'
   });
 
@@ -8266,7 +8267,7 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
       }
       els.appTitle.setAttribute('title', APP_META.name);
     }
-    if (els.appCredit) els.appCredit.textContent = APP_META.developerCredit;
+    if (els.appCredit) els.appCredit.textContent = APP_META.contextLabel;
     if (els.aboutAppName) els.aboutAppName.textContent = `${APP_META.name} v${APP_META.version}`;
     if (els.aboutDeveloper) els.aboutDeveloper.textContent = APP_META.developerCredit;
   }
@@ -8315,7 +8316,7 @@ const { maybeFollowAircraft } = AircraftFollowController.create({ state, setMapV
     });
     if (options.persist) saveConfig();
     if (options.notify) {
-      const label = normalized === 'velox' ? 'Velox / referência' : normalized === 'light' ? 'Modo claro' : 'Modo escuro';
+      const label = normalized === 'velox' ? 'Dashboard moderno' : normalized === 'light' ? 'Modo claro' : 'Modo escuro';
       toast(`${label} aplicado.`, 'success');
     }
   }
