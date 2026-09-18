@@ -1978,6 +1978,18 @@ html[data-palette="velox"] .play-btn{box-shadow:0 9px 28px rgba(73,231,173,.15)}
   outline:2px solid rgba(39,137,183,.38);
   outline-offset:2px;
 }
+/* O tema claro possui uma regra global .btn-secondary mais específica;
+   este seletor garante que o contraste local do painel prevaleça. */
+html[data-theme="light"] .current-flight-aerodrome-review-btn{
+  border-color:#8fb9cd;
+  background:#eef7fb;
+  color:#123246;
+}
+html[data-theme="light"] .current-flight-aerodrome-review-btn:hover:not(:disabled){
+  border-color:#76a9c1;
+  background:#e2f1f7;
+  color:#0d2a3b;
+}
 .current-flight-aerodrome-empty{
   grid-column:1/-1;
   padding:11px;
