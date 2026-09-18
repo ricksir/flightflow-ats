@@ -2,7 +2,7 @@
 
 > Checkpoint operacional para continuidade entre conversas/agentes.
 >
-> Última verificação: **16/09/2026**, após o merge do PR **#232**, certificação pós-merge do workflow **#592** e housekeeping **#19**.
+> Última verificação: **18/09/2026**, após o merge do PR **#235**, certificação pós-merge do workflow **#601** e housekeeping **#21**.
 >
 > **A modularização contínua continua encerrada. A fase atual é PRODUTO, VALIDAÇÃO OPERACIONAL e preparação de release.**
 
@@ -12,8 +12,8 @@
 - Visibilidade: **público**.
 - Branch principal: `main`.
 - SHA funcional certificado:
-  `69be39c5da551ebad7f49bf6f74fbb7094b509a0`
-  — `fix: complete visual acceptance and terminal route preview (#232)`.
+  `3d93e3ba6031613faa4b2cab9f5f18af0408886a`
+  — `fix: strengthen dashboard acceptance and terminal route semantics (#235)`.
 - Commits exclusivamente documentais podem ficar acima desse SHA em `main`; para continuidade funcional, usar o SHA certificado acima como referência e conferir o topo real de `main` antes de qualquer nova alteração.
 - Release estável publicada: **FlightFlow ATS v0.2.0**.
 - Tag `v0.2.0`: `e089820456c08eb42df968faa9da59b062a32b6f`.
@@ -24,6 +24,24 @@
 Este arquivo é um checkpoint. Ao retomar, conferir primeiro o SHA real de `main`, PRs abertos e workflows recentes.
 
 ## 2. Certificação atual
+
+### PR #235 — aceitação reforçada de dashboard, terminal e Rota Processada
+
+- Head funcional certificado antes do merge: `e2e827b5949ba71e8ca24c7dc34518f9d88c6fef`.
+- Workflow PR **#600**: sucesso.
+- Node: **638/638 passed**.
+- Playwright: **55/55 passed**.
+- Log bruto: **0 failed / 0 flaky / 0 retry / 0 timeout / 0 uncaught / 0 SPATIAL_EQ_DIAG / 0 not ok**.
+
+### Pós-merge do PR #235
+
+- SHA funcional certificado em `main`: `3d93e3ba6031613faa4b2cab9f5f18af0408886a`.
+- Workflow **#601**: sucesso.
+- Node: **638/638 passed**.
+- Playwright: **55/55 passed**.
+- Log bruto: **0 failed / 0 flaky / 0 retry / 0 timeout / 0 uncaught / 0 SPATIAL_EQ_DIAG / 0 not ok**.
+- Housekeeping **#21**: sucesso; branch funcional temporária removida.
+- Nenhum PR funcional permaneceu aberto após a certificação.
 
 ### PR #232 — aceitação visual, identidade e rota terminal
 
@@ -221,6 +239,39 @@ Certificação:
 - zero `failed`, `flaky`, `retry`, `SPATIAL_EQ_DIAG`, `not ok` e `AssertionError` no log bruto de ambos;
 - housekeeping **#19** concluído com sucesso;
 - PR **#233** fechado sem merge por ter ficado divergente e não representar uma linha segura de continuidade.
+
+### PR #235 — reforço perceptível do dashboard e semântica explícita do fechamento terminal
+
+Merge funcional certificado:
+`3d93e3ba6031613faa4b2cab9f5f18af0408886a`.
+
+Entregas:
+
+- a opção de aparência de referência passa a ser apresentada como **Dashboard moderno**;
+- o preset moderno ganha contraste estrutural perceptível: shell, topbar, workspace, inspector, cards, tabs, timeline e transportes com hierarquia mais clara, preservando cores ATS;
+- a Rota Processada passa a usar mapa ainda mais dominante e sidebar mais compacta;
+- a faixa explicativa da Rota Processada fica em uma linha própria, fora da área gráfica, evitando cobrir a rota;
+- o fechamento visual `UMGUL → SBCT` recebe semântica explícita `preview` antes da Ordem TER e `active` no TER;
+- o mesmo segmento registra por contrato ausência de ETIM, CFL e STAR;
+- o endpoint continua coincidente com o ADES;
+- a aeronave não é antecipada ao ADES antes do TER;
+- o renderer principal e a camada vetorial secundária usam a mesma semântica;
+- `goTo()`, `replaceChildren()` atômico e `queueMicrotask()` do bridge da timeline foram preservados.
+
+Testes adicionados/reforçados:
+
+- identidade institucional sem reintrodução de `TIOP Cindacta1`;
+- aparência moderna realmente distinta;
+- mapa dominante e sidebar compacta na Rota Processada;
+- pré-TER/TER/retrocesso com estado terminal explícito e geometria estável;
+- ausência de ETIM/CFL/STAR no fechamento derivado.
+
+Certificação:
+
+- PR workflow **#600**: **638/638 Node + 55/55 Playwright**;
+- pós-merge workflow **#601**: **638/638 Node + 55/55 Playwright**;
+- zero failed/flaky/retry/timeout/uncaught/`SPATIAL_EQ_DIAG`/`not ok`;
+- housekeeping **#21** concluído com sucesso.
 
 ## 4. Histórico real TAM3774 — contrato atual
 
