@@ -243,7 +243,7 @@
       .ffrp-map-hud-card span{font-size:.69rem}
       .ffrp-legend{top:10px;right:10px;max-width:min(430px,calc(100% - 20px))}
       .ffrp-legend summary{min-height:32px;font-size:.71rem}
-      .ffrp-map-note{position:relative!important;inset:auto!important;min-height:40px;margin:0!important;padding:8px 10px;font-size:.72rem;transform:none!important}.ffrp-map-wrap{grid-template-rows:minmax(0,1fr) max-content!important}
+      .ffrp-map-note{position:relative!important;inset:auto!important;flex:0 0 auto;min-height:40px;margin:0!important;padding:8px 10px;font-size:.72rem;transform:none!important}.ffrp-map-wrap{display:flex!important;flex-direction:column!important}.ffrp-map-stage{flex:1 1 auto;min-height:0!important}
       .ffrp-map .route-terminal.pending{stroke-opacity:.76;stroke-width:3.2;stroke-dasharray:5 9}
       #ffrpVectorFixLayer .ffrp-vroute-terminal.pending{stroke-opacity:.76;stroke-width:3.2;stroke-dasharray:5 9}
       @media(max-width:1180px){.ffrp-body{grid-template-columns:minmax(0,1fr) minmax(250px,285px)}}
