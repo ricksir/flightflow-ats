@@ -48,3 +48,27 @@ test('Rota Processada prioriza mapa, separa explicação e reduz labels permanen
   await expect(legend).toHaveAttribute('open', '');
   await expect(legend.locator('.ffrp-legend-items')).toBeVisible();
 });
+
+
+test('Rota Processada mantém mapa como área dominante e sidebar compacta', async ({ page }) => {
+  await page.goto('/index.html', { waitUntil: 'load' });
+  await expect.poll(() => page.evaluate(() => Boolean(window.FlightFlowRouteProcessedV7412 && window.__SAMPLE_HISTORY__))).toBe(true);
+  await page.evaluate(async () => {
+    await window.FlightFlowRouteProcessedV7412.analyzeText(window.__SAMPLE_HISTORY__, 'Aceitação de layout');
+    document.querySelector('#ffrpOpen')?.click();
+  });
+  await expect(page.locator('#ffrpModal')).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const body = document.querySelector('.ffrp-body').getBoundingClientRect();
+    const map = document.querySelector('.ffrp-map-wrap').getBoundingClientRect();
+    const side = document.querySelector('.ffrp-side').getBoundingClientRect();
+    const note = document.querySelector('#ffrpMapNote').getBoundingClientRect();
+    return { body, map, side, note, noteFont: Number.parseFloat(getComputedStyle(document.querySelector('#ffrpMapNote')).fontSize) };
+  });
+
+  expect(layout.map.width).toBeGreaterThan(layout.side.width * 2.2);
+  expect(layout.map.width).toBeGreaterThan(layout.body.width * 0.68);
+  expect(layout.noteFont).toBeGreaterThanOrEqual(11);
+  expect(layout.note.width).toBeGreaterThan(layout.side.width);
+});
