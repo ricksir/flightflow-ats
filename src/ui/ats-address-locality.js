@@ -24,7 +24,7 @@
 
   function extractAtsAddressCodes(value) {
     const source = Array.isArray(value) ? value.join(' ') : String(value || '');
-    return [...new Set((source.toUpperCase().match(ADDRESS_RE) || []).map(normalizeCode).filter(Boolean))];
+    return [...new Set((source.toUpperCase().match(ADDRESS_RE) || []).map(normalizeAtsAddressCode).filter(Boolean))];
   }
 
   function localityName(code) {
@@ -142,7 +142,7 @@
     scheduleDecorate();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindAtsAddressLocality, { once: true });
   else bindAtsAddressLocality();
 
   window.FlightFlowAtsAddressLocality = Object.freeze({
