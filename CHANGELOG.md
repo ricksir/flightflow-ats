@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- reforçada a aceitação visual do **Dashboard moderno**, tornando o preset de referência perceptivelmente distinto no shell, workspace, inspector, tabs, timeline e transportes, sem substituir cores ATS com significado operacional;
+- refinada novamente a **Rota Processada** para ampliar a dominância do mapa, compactar a sidebar e manter a faixa explicativa fisicamente fora do palco cartográfico;
+- formalizada a semântica do trecho terminal `UMGUL → SBCT`: `preview` antes da Ordem TER e `active` no TER, com endpoint no ADES e ausência explícita de ETIM, CFL e STAR;
+- preservados `goTo()`, a troca SVG atômica e a sincronização por `queueMicrotask()`;
+- certificação do PR #235 e pós-merge workflow #601: **638/638 Node + 55/55 Playwright**, sem failed, flaky, retry, timeout, uncaught ou `SPATIAL_EQ_DIAG`;
 - documentação do repositório reorganizada e alinhada ao estado atual;
 - adicionadas políticas de contribuição e segurança;
 - adicionado housekeeping de branches temporárias encerradas para evitar novo acúmulo no GitHub;
