@@ -1458,6 +1458,127 @@ html body .ffrp-map-note {
   font-size: .7rem;
 }
 
+
+/* Rota Processada — estado visual explícito do ADES terminal. */
+html body .ffrp-terminal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ffds-space-1);
+  min-height: 30px;
+  max-width: min(360px,38vw);
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb,var(--ffds-warning) 54%,transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb,var(--ffds-warning) 10%,transparent);
+  color: #76500a;
+  font: 850 var(--ffds-type-xs)/1.15 Inter,system-ui,sans-serif;
+  letter-spacing: .005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: inset 0 1px rgba(255,255,255,.25);
+  transition:
+    background var(--ffds-motion-base) ease,
+    border-color var(--ffds-motion-base) ease,
+    box-shadow var(--ffds-motion-base) ease,
+    color var(--ffds-motion-base) ease;
+}
+
+html body .ffrp-terminal-status[hidden] {
+  display: none !important;
+}
+
+html body .ffrp-terminal-status[data-state="preview"] {
+  border-style: dashed;
+  background: color-mix(in srgb,var(--ffds-warning) 8%,transparent);
+}
+
+html body .ffrp-terminal-status[data-state="active"] {
+  border-style: solid;
+  border-color: color-mix(in srgb,var(--ffds-warning) 78%,#8a5a00);
+  background: color-mix(in srgb,var(--ffds-warning) 18%,transparent);
+  color: #684300;
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.30),
+    0 0 0 1px color-mix(in srgb,var(--ffds-warning) 13%,transparent),
+    0 5px 14px color-mix(in srgb,var(--ffds-warning) 12%,transparent);
+}
+
+html body .ffrp-terminal-status-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: .7rem;
+  line-height: 1;
+}
+
+html body .ffrp-terminal-status[data-state="active"] .ffrp-terminal-status-icon {
+  background: var(--ffds-warning);
+  border-color: var(--ffds-warning);
+  color: #3c2a00;
+  font-weight: 950;
+}
+
+html body .ffrp-terminal-status strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html body .ffrp-terminal-status-ades {
+  flex: 0 0 auto;
+  font-family: ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-weight: 900;
+}
+
+html[data-theme="dark"] body .ffrp-terminal-status {
+  color: #ffd47e;
+  background: rgba(255,176,46,.08);
+  border-color: rgba(255,176,46,.38);
+}
+
+html[data-theme="dark"] body .ffrp-terminal-status[data-state="active"] {
+  color: #ffe6ad;
+  background: rgba(255,176,46,.16);
+  border-color: rgba(255,176,46,.62);
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.04),
+    0 0 0 1px rgba(255,176,46,.08),
+    0 5px 14px rgba(0,0,0,.12);
+}
+
+html[data-theme="velox"] body .ffrp-terminal-status[data-state="active"] {
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.05),
+    0 0 16px rgba(255,176,46,.10);
+}
+
+@media (max-width: 1080px) {
+  html body .ffrp-eventbar {
+    flex-wrap: wrap;
+  }
+
+  html body .ffrp-terminal-status {
+    order: 5;
+    max-width: 100%;
+  }
+
+  html body .ffrp-event-info {
+    order: 6;
+  }
+}
+
+@media (max-width: 620px) {
+  html body .ffrp-terminal-status {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Dark theme: layered cockpit-like shell, FlightFlow blue/cyan identity. */
 
 html[data-theme="dark"] body {
