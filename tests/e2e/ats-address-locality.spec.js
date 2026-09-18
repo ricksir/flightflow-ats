@@ -26,6 +26,11 @@ test('endereço ATS não cadastrado em Originador pode ser clicado e cadastrado'
   });
   await page.locator('#readStartBtn').click();
   await expect(page.locator('#callsignTitle')).toHaveText('TAM3542');
+  // No histórico de demonstração, o primeiro evento com comunicação ATS
+  // (Originador/Destinatários preenchidos) é o terceiro evento.
+  await page.locator('#nextBtn').click();
+  await page.locator('#nextBtn').click();
+  await expect(page.locator('#eventLabel')).toContainText('Evento 3');
 
   const originator = page.locator('.field-card[data-field="originator"]');
   const recipients = page.locator('.field-card[data-field="recipients"]');
@@ -65,6 +70,9 @@ test('endereços ATS já cadastrados continuam exibindo código e localidade sem
   else await page.locator('#demoBtn').click();
 
   await expect(page.locator('#callsignTitle')).toHaveText('TAM3542');
+  await page.locator('#nextBtn').click();
+  await page.locator('#nextBtn').click();
+  await expect(page.locator('#eventLabel')).toContainText('Evento 3');
 
   const originator = page.locator('.field-card[data-field="originator"]');
   await expect(originator.locator('.ats-address-entry.is-known')).toContainText('SBBSZQZX');
