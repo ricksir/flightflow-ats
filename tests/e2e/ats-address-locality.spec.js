@@ -12,6 +12,28 @@ async function loadHistory(page, text, name = 'ats-addresses.txt') {
   await expect(page.locator('#callsignTitle')).not.toHaveText('—');
 }
 
+async function goToFirstAddressedEvent(page) {
+  const targetIndex = await page.evaluate(() => {
+    const state = window.__FlightFlowFirBridge?.state;
+    const events = state?.parsed?.events || [];
+    return events.findIndex(event => {
+      const snapshot = event?.snapshot || {};
+      return String(snapshot.originator || '').trim() && String(snapshot.recipients || '').trim();
+    });
+  });
+
+  expect(targetIndex).toBeGreaterThanOrEqual(0);
+
+  let currentIndex = await page.evaluate(() => Number(window.__FlightFlowFirBridge?.state?.index ?? 0));
+  while (currentIndex < targetIndex) {
+    await page.locator('#nextBtn').click();
+    currentIndex += 1;
+  }
+
+  await expect.poll(() => page.evaluate(() => Number(window.__FlightFlowFirBridge?.state?.index ?? -1))).toBe(targetIndex);
+  return targetIndex;
+}
+
 test('endereço ATS não cadastrado em Originador pode ser clicado e cadastrado', async ({ page }) => {
   await page.goto('/index.html', { waitUntil: 'load' });
   const sample = await page.evaluate(() => window.__SAMPLE_HISTORY__);
@@ -26,11 +48,7 @@ test('endereço ATS não cadastrado em Originador pode ser clicado e cadastrado'
   });
   await page.locator('#readStartBtn').click();
   await expect(page.locator('#callsignTitle')).toHaveText('TAM3542');
-  // No histórico de demonstração, o primeiro evento com comunicação ATS
-  // (Originador/Destinatários preenchidos) é o terceiro evento.
-  await page.locator('#nextBtn').click();
-  await page.locator('#nextBtn').click();
-  await expect(page.locator('#eventLabel')).toContainText('Evento 3');
+  await goToFirstAddressedEvent(page);
 
   const originator = page.locator('.field-card[data-field="originator"]');
   const recipients = page.locator('.field-card[data-field="recipients"]');
@@ -70,9 +88,7 @@ test('endereços ATS já cadastrados continuam exibindo código e localidade sem
   else await page.locator('#demoBtn').click();
 
   await expect(page.locator('#callsignTitle')).toHaveText('TAM3542');
-  await page.locator('#nextBtn').click();
-  await page.locator('#nextBtn').click();
-  await expect(page.locator('#eventLabel')).toContainText('Evento 3');
+  await goToFirstAddressedEvent(page);
 
   const originator = page.locator('.field-card[data-field="originator"]');
   await expect(originator.locator('.ats-address-entry.is-known')).toContainText('SBBSZQZX');
