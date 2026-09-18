@@ -45,28 +45,22 @@ test('ADEP e ADES realmente ausentes da base abrem o cadastro automático em seq
 });
 
 test('histórico com SBBR e SBCT conhecidos não abre cadastro automático', async ({ page }) => {
-  const fixture = String.raw`
-Indicativo do plano: TAM3774
-ADEP: SBBR
-ADES: SBCT
+  await page.goto('/index.html', { waitUntil: 'load' });
+  const sample = await page.evaluate(() => window.__SAMPLE_HISTORY__);
+  const tam3774 = sample
+    .replaceAll('TAM3542', 'TAM3774')
+    .replaceAll('SBGO', 'SBCT');
 
-############################################################
-OPERAÇÃO : Criação pelo Arquivo de RPL
-data:   08/07/2026      hora:   18:00:34      posição: SPA01      ambiente: OpA
+  await page.locator('#fileInput').setInputFiles({
+    name: 'tam3774-known-endpoints.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from(tam3774, 'utf8'),
+  });
+  await expect(page.locator('#readStartBtn')).toBeEnabled();
+  await page.locator('#readStartBtn').click();
 
-Indicativo   : TAM3774
-ADEP        : SBBR
-ADES        : SBCT
-Estado      : INA
-PONTOS : SBBR UMSUB KUKOL UMGUL
-CFL/IFL: 340 340 340 340
-ETIM   : 08-23:45 08-23:50 08-23:55 09-00:10
-############################################################
-`;
-
-  await loadHistory(page, fixture, 'tam3774-known-endpoints.txt');
+  await expect(page.locator('#callsignTitle')).toHaveText('TAM3774');
   await page.waitForTimeout(500);
-
   await expect(page.locator('#aerodromeLocationModal')).not.toBeVisible();
 
   const known = await page.evaluate(() => {
