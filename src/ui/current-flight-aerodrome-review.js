@@ -12,7 +12,7 @@
     return window.__flightflowGeoResolver || null;
   }
 
-  function clean(value) {
+  function cleanAerodromeReviewText(value) {
     return String(value ?? '').replace(/\s+/g, ' ').trim();
   }
 
@@ -27,7 +27,7 @@
   }
 
   function sourceLabel(airport) {
-    const source = clean(airport?.source).toLowerCase();
+    const source = cleanAerodromeReviewText(airport?.source).toLowerCase();
     if (!airport) return 'Sem coordenadas cadastradas';
     if (source === 'official-aip') return 'Coordenadas oficiais disponíveis';
     if (source === 'user-confirmed') return 'Posição confirmada pelo operador';
@@ -52,9 +52,9 @@
     return [
       { role: 'ADEP', code: endpoints.dep, airport: endpoints.depAirport },
       { role: 'ADES', code: endpoints.arr, airport: endpoints.arrAirport }
-    ].filter(item => clean(item.code)).map(item => {
-      const code = clean(item.code).toUpperCase();
-      const name = clean(localities[code] || item.airport?.name || code);
+    ].filter(item => cleanAerodromeReviewText(item.code)).map(item => {
+      const code = cleanAerodromeReviewText(item.code).toUpperCase();
+      const name = cleanAerodromeReviewText(localities[code] || item.airport?.name || code);
       const known = Boolean(item.airport && Number.isFinite(Number(item.airport.lat)) && Number.isFinite(Number(item.airport.lon)));
       return { ...item, code, name, known };
     });
@@ -90,14 +90,14 @@
   }
 
   function reviewAerodrome(code) {
-    const normalized = clean(code).toUpperCase();
+    const normalized = cleanAerodromeReviewText(code).toUpperCase();
     if (!normalized) return;
 
     const localityList = document.getElementById('localityList');
     if (!localityList) return;
 
     const existing = Array.from(localityList.querySelectorAll('[data-locate-locality]'))
-      .find(button => clean(button.dataset.locateLocality).toUpperCase() === normalized);
+      .find(button => cleanAerodromeReviewText(button.dataset.locateLocality).toUpperCase() === normalized);
 
     if (existing) {
       existing.click();
