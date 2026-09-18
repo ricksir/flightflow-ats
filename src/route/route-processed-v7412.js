@@ -226,6 +226,29 @@
       .ffrp-lg-terminal{display:inline-block;width:20px;height:0;border-top:3px dashed #d59a20}.ffrp-point.terminal-point{border-color:#e0bb65;background:#fffaf0}.ffrp-tail-note.terminal{border-color:#e0bb65;background:#fffaf0;color:#6d520f}
       @media(max-width:900px){.ffrp-map-note{font-size:.68rem}.ffrp-legend{top:8px;right:8px;max-width:calc(100% - 16px)}}
       @media(max-width:640px){.ffrp-map-note{font-size:.66rem;padding:8px 10px}.ffrp-legend{left:auto;right:8px;bottom:auto}.ffrp-map-hud{max-width:calc(100% - 110px)}}
+      /* Rota Processada acceptance v3 — mapa dominante e terminal semanticamente explícito. */
+      .ffrp-window{width:min(1460px,calc(100vw - 28px));height:min(900px,calc(100vh - 28px))}
+      .ffrp-body{grid-template-columns:minmax(0,1fr) minmax(270px,310px);gap:10px;padding:9px 11px 10px}
+      .ffrp-map-wrap{min-width:0;min-height:0;border-radius:15px}
+      .ffrp-map-stage{min-height:430px}
+      .ffrp-side{padding:9px;overflow:auto}
+      .ffrp-snap-head{padding:5px 2px 7px;margin:-1px -1px 7px}
+      .ffrp-route-list{gap:5px}
+      .ffrp-point{padding:7px 8px;border-radius:9px}
+      .ffrp-point-main strong{font-size:.78rem}
+      .ffrp-point-main span,.ffrp-point-source{font-size:.70rem}
+      .ffrp-map-hud{left:10px;top:10px;max-width:min(430px,calc(100% - 20px))}
+      .ffrp-map-hud-card{padding:7px 9px}
+      .ffrp-map-hud-card strong{font-size:.78rem}
+      .ffrp-map-hud-card span{font-size:.69rem}
+      .ffrp-legend{top:10px;right:10px;max-width:min(430px,calc(100% - 20px))}
+      .ffrp-legend summary{min-height:32px;font-size:.71rem}
+      .ffrp-map-note{position:relative!important;inset:auto!important;flex:0 0 auto;min-height:40px;margin:0!important;padding:8px 10px;font-size:.72rem;transform:none!important}.ffrp-map-wrap{display:flex!important;flex-direction:column!important}.ffrp-map-stage{flex:1 1 auto;min-height:0!important}
+      .ffrp-map .route-terminal.pending{stroke-opacity:.76;stroke-width:3.2;stroke-dasharray:5 9}
+      #ffrpVectorFixLayer .ffrp-vroute-terminal.pending{stroke-opacity:.76;stroke-width:3.2;stroke-dasharray:5 9}
+      @media(max-width:1180px){.ffrp-body{grid-template-columns:minmax(0,1fr) minmax(250px,285px)}}
+      @media(max-width:900px){.ffrp-body{grid-template-columns:1fr;grid-template-rows:minmax(380px,1fr) minmax(170px,230px)}.ffrp-map-stage{min-height:360px}.ffrp-side{padding:8px}}
+
 
     `;
     document.head.appendChild(s);
@@ -1198,7 +1221,7 @@
     let html='';
     if(snapshot.points.length>1)html+='<polyline class="ffrp-vroute-history" points="'+pointsAttr(snapshot.points)+'"/>';
     if(continuation.length){const declared=[snapshot.points.at(-1),...continuation];html+='<polyline class="ffrp-vroute-declared" points="'+pointsAttr(declared)+'"><title>Continuação publicada da rota declarada · sem ETIM histórico</title></polyline>';}
-    if(terminal.visible&&terminal.from?.geo&&terminal.destination?.geo){const a=pointXY(terminal.from),z=pointXY(terminal.destination),pending=terminal.active?'':' pending',attrs='x1="'+Number(a.x).toFixed(2)+'" y1="'+Number(a.y).toFixed(2)+'" x2="'+Number(z.x).toFixed(2)+'" y2="'+Number(z.y).toFixed(2)+'"';html+='<line class="ffrp-vroute-terminal-underlay'+pending+'" '+attrs+'/><line class="ffrp-vroute-terminal'+pending+'" '+attrs+'><title>'+(terminal.active?'Fechamento terminal derivado da Ordem TER':'Trajeto terminal não especificado até o ADES')+' · sem ETIM/CFL/STAR/fixos inventados</title></line>';}
+    if(terminal.visible&&terminal.from?.geo&&terminal.destination?.geo){const a=pointXY(terminal.from),z=pointXY(terminal.destination),pending=terminal.active?'':' pending',state=terminal.active?'active':'preview',attrs='x1="'+Number(a.x).toFixed(2)+'" y1="'+Number(a.y).toFixed(2)+'" x2="'+Number(z.x).toFixed(2)+'" y2="'+Number(z.y).toFixed(2)+'" data-terminal-state="'+state+'" data-terminal-from="'+esc(terminal.from.ident||'')+'" data-terminal-destination="'+esc(terminal.destination.ident||'')+'" data-etim="" data-cfl="" data-star=""';html+='<line class="ffrp-vroute-terminal-underlay'+pending+'" '+attrs+'/><line class="ffrp-vroute-terminal'+pending+'" '+attrs+'><title>'+(terminal.active?'Fechamento terminal derivado da Ordem TER':'Trajeto terminal não especificado até o ADES')+' · sem ETIM/CFL/STAR/fixos inventados</title></line>';}
     if(model.fixesVisible)snapshot.points.forEach((p,i)=>{
       if(!p.geo)return;
       const q=bridge.projectGeo(Number(p.geo.lon),Number(p.geo.lat));
@@ -1382,9 +1405,9 @@
         const terminalLatLngs=[[Number(terminal.from.geo.lat),Number(terminal.from.geo.lon)],[Number(terminal.destination.geo.lat),Number(terminal.destination.geo.lon)]];
         // A mesma geometria fica visível como previsão antes do TER e vira fechamento ativo no TER.
         // A aeronave continua limitada ao histórico/ETIM até o evento de encerramento.
-        const terminalUnderlay=L.polyline(terminalLatLngs,{className:'ffrp-native-terminal-underlay',color:'#d59a20',weight:1.25,opacity:terminal.active?.32:.15,lineCap:'round',lineJoin:'round',interactive:false});
+        const terminalState=terminal.active?'active':'preview';const terminalUnderlay=L.polyline(terminalLatLngs,{className:'ffrp-native-terminal-underlay ffrp-native-terminal-'+terminalState,color:'#d59a20',weight:1.25,opacity:terminal.active?.32:.15,lineCap:'round',lineJoin:'round',interactive:false});
         terminalUnderlay.addTo(model.nativeMapLayer);
-        const terminalLine=L.polyline(terminalLatLngs,{className:'ffrp-native-terminal-route',color:'#d59a20',weight:terminal.active?3.4:2.8,opacity:terminal.active?.96:.60,dashArray:terminal.active?'6 9':'5 10',lineCap:'round',lineJoin:'round',interactive:true});
+        const terminalLine=L.polyline(terminalLatLngs,{className:'ffrp-native-terminal-route ffrp-native-terminal-'+terminalState,color:'#d59a20',weight:terminal.active?3.4:2.8,opacity:terminal.active?.96:.68,dashArray:terminal.active?'6 9':'5 10',lineCap:'round',lineJoin:'round',interactive:true});
         terminalLine.bindTooltip(terminal.active?'Fechamento terminal derivado da Ordem TER · sem ETIM histórico · sem STAR/fixos inventados':'Fechamento terminal previsto até o ADES · referência derivada · a aeronave só percorre este trecho na Ordem TER',{sticky:true,className:'ffrp-transfer-tip'});terminalLine.addTo(model.nativeMapLayer);
       }
       if(model.fixesVisible&&model.nativeFixLayer){
@@ -1657,7 +1680,7 @@
     let current=[];const flush=()=>{if(current.length>=2){const str=current.map(q=>`${q.x},${q.y}`).join(' ');html+=`<polyline class="route-underlay" points="${str}"/><polyline class="route-line" points="${str}"/>`;}current=[]};pts.forEach(pt=>{if(pt.geo)current.push(pxy(pt.geo.lat,pt.geo.lon));else flush()});flush();
     for(let i=0;i<pts.length;i++)if(!pts[i].geo){let l=i-1;while(l>=0&&!pts[l].geo)l--;let r=i+1;while(r<pts.length&&!pts[r].geo)r++;if(l>=0&&r<pts.length){const a=pxy(pts[l].geo.lat,pts[l].geo.lon),c=pxy(pts[r].geo.lat,pts[r].geo.lon);html+=`<line class="route-gap" x1="${a.x}" y1="${a.y}" x2="${c.x}" y2="${c.y}"/>`;i=r-1;}}
     if(continuation.length){const declaredPoints=[pts.at(-1),...continuation].filter(p=>p?.geo).map(p=>pxy(p.geo.lat,p.geo.lon)),str=declaredPoints.map(q=>`${q.x},${q.y}`).join(' ');if(declaredPoints.length>=2)html+=`<polyline class="route-underlay" points="${str}"/><polyline class="route-declared" points="${str}"/>`;}
-    if(terminal.visible&&terminal.from?.geo&&terminal.destination?.geo){const from=pxy(terminal.from.geo.lat,terminal.from.geo.lon),to=pxy(terminal.destination.geo.lat,terminal.destination.geo.lon),pending=terminal.active?'':' pending',terminalTitle=terminal.active?'Fechamento terminal derivado da Ordem TER · sem ETIM histórico':'Fechamento terminal previsto até o ADES · referência derivada · a aeronave só percorre este trecho na Ordem TER';html+=`<line class="route-terminal-underlay${pending}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/><line class="route-terminal${pending}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"><title>${terminalTitle}</title></line>`;}
+    if(terminal.visible&&terminal.from?.geo&&terminal.destination?.geo){const from=pxy(terminal.from.geo.lat,terminal.from.geo.lon),to=pxy(terminal.destination.geo.lat,terminal.destination.geo.lon),pending=terminal.active?'':' pending',terminalState=terminal.active?'active':'preview',terminalAttrs=`x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" data-terminal-state="${terminalState}" data-terminal-from="${esc(terminal.from.ident||'')}" data-terminal-destination="${esc(terminal.destination.ident||'')}" data-etim="" data-cfl="" data-star=""`,terminalTitle=terminal.active?'Fechamento terminal derivado da Ordem TER · sem ETIM histórico':'Fechamento terminal previsto até o ADES · referência derivada · a aeronave só percorre este trecho na Ordem TER';html+=`<line class="route-terminal-underlay${pending}" ${terminalAttrs}/><line class="route-terminal${pending}" ${terminalAttrs}><title>${terminalTitle}</title></line>`;}
     const occupied=[];
     const overlap=(a,c)=>Math.max(0,Math.min(a.x2,c.x2)-Math.max(a.x1,c.x1))*Math.max(0,Math.min(a.y2,c.y2)-Math.max(a.y1,c.y1));
     const placeLabel=(q,ident,index)=>{const w=Math.max(82,Math.min(175,66+String(ident||'').length*8.2)),h=32;const prefs=index%2?[[14,-14,'start'],[14,25,'start'],[-14,-14,'end'],[-14,25,'end'],[0,-34,'middle'],[0,39,'middle']]:[[14,25,'start'],[14,-14,'start'],[-14,25,'end'],[-14,-14,'end'],[0,39,'middle'],[0,-34,'middle']];let best=null,bestScore=Infinity;for(let rank=0;rank<prefs.length;rank++){const [dx,dy,anchor]=prefs[rank];let x=q.x+dx,y=q.y+dy;let x1=anchor==='start'?x:anchor==='end'?x-w:x-w/2;let y1=y-15;const r={x1,y1,x2:x1+w,y2:y1+h};let score=rank;for(const o of occupied)score+=overlap(r,o)*25;score+=(r.x1<70||r.x2>1130||r.y1<72||r.y2>625)?50000:0;if(score<bestScore){bestScore=score;best={x,y,anchor,rect:r}}}occupied.push(best.rect);return best;};

@@ -119,3 +119,36 @@ test('Velox reference preset is selectable, visually distinct and persists after
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.palette)).toBe('velox');
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('flightflow-config-v2') || '{}').theme)).toBe('velox');
 });
+
+
+test('modern preset changes dashboard proportions and visual hierarchy perceptibly', async ({ page }) => {
+  await page.goto('/index.html', { waitUntil: 'load' });
+  await page.locator('#configBtn').click();
+  await page.locator('#themeVeloxBtn').click();
+
+  const metrics = await page.evaluate(() => {
+    const rect = selector => document.querySelector(selector).getBoundingClientRect();
+    const style = selector => getComputedStyle(document.querySelector(selector));
+    return {
+      palette: document.documentElement.dataset.palette,
+      workspace: rect('.workspace-card'),
+      inspector: rect('.inspector-card'),
+      scene: rect('.scene-wrap'),
+      topbarBackground: style('.topbar').backgroundImage,
+      workspaceBackground: style('.workspace-card').backgroundImage,
+      inspectorBackground: style('.inspector-card').backgroundImage,
+      captionWidth: rect('.scene-caption').width,
+      accent: getComputedStyle(document.documentElement).getPropertyValue('--ffds-accent').trim(),
+      label: document.querySelector('#themeVeloxBtn b')?.textContent?.trim(),
+    };
+  });
+
+  expect(metrics.palette).toBe('velox');
+  expect(metrics.accent).toBe('#49e7ad');
+  expect(metrics.label).toBe('Dashboard moderno');
+  expect(metrics.workspace.width).toBeGreaterThan(metrics.inspector.width * 2.15);
+  expect(metrics.captionWidth).toBeLessThan(metrics.scene.width * 0.72);
+  expect(metrics.topbarBackground).toContain('linear-gradient');
+  expect(metrics.workspaceBackground).toContain('linear-gradient');
+  expect(metrics.inspectorBackground).toContain('linear-gradient');
+});
