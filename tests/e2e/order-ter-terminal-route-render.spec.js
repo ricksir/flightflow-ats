@@ -77,10 +77,17 @@ async function readTerminalState(page) {
       },
     } : null;
 
+    const terminalStatus = document.querySelector('#ffrpTerminalStatus');
+
     return {
       index,
       expectedVisible: Boolean(terminal?.visible),
       expectedActive: Boolean(terminal?.active),
+      statusHidden: terminalStatus ? terminalStatus.hidden : null,
+      statusState: terminalStatus?.dataset?.state || null,
+      statusText: terminalStatus?.textContent?.replace(/\s+/g, ' ').trim() || '',
+      statusAria: terminalStatus?.getAttribute('aria-label') || '',
+      statusFontSize: terminalStatus ? Number.parseFloat(getComputedStyle(terminalStatus).fontSize) : null,
       lineCount: lines.length,
       underlayCount: underlays.length,
       terminalState: line?.getAttribute('data-terminal-state') || null,
@@ -109,6 +116,12 @@ async function expectTerminal(page, expectedIndex, active, visible = true) {
   expect(state.underlayCount).toBe(visible ? 1 : 0);
 
   if (visible) {
+    expect(state.statusHidden).toBe(false);
+    expect(state.statusState).toBe(active ? 'active' : 'preview');
+    expect(state.statusText).toContain(active ? 'Destino alcançado por Ordem TER' : 'Destino previsto');
+    expect(state.statusText).toContain('SBCT');
+    expect(state.statusAria).toContain(active ? 'Destino alcançado por Ordem TER' : 'Destino previsto');
+    expect(state.statusFontSize).toBeGreaterThanOrEqual(10.5);
     expect(state.destinationIdent).toBe('SBCT');
     expect(state.fromIdent).toBe('UMGUL');
     expect(state.geometry).not.toBeNull();
@@ -121,6 +134,10 @@ async function expectTerminal(page, expectedIndex, active, visible = true) {
     expect(state.terminalEtim).toBe('');
     expect(state.terminalCfl).toBe('');
     expect(state.terminalStar).toBe('');
+  } else {
+    expect(state.statusHidden).toBe(true);
+    expect(state.statusState).toBeNull();
+    expect(state.statusText).toBe('');
   }
   return state;
 }
